@@ -4,10 +4,14 @@
   "configurations": [
     {
       "name": "ng serve",
-      "type": "chrome",
-      "request": "launch",
+      "type": "msedge",
+      "request": "attach",
+      "port": 9229,
+      "webRoot": "${workspaceFolder}",
+      "timeout": 600000,
       "preLaunchTask": "npm: start",
-      "url": "http://localhost:4200/"
+      "postDebugTask": "Stop Debug",
+      "url": "https://localhost:3000/"
     },
     {
       "name": "ng test",
