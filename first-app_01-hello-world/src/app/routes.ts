@@ -3,6 +3,7 @@ import {HomeComponent} from './home/home.component';
 import {DetailsComponent} from './details/details.component';
 
 const routeConfig: Routes = [
+  { path: 'index.html', redirectTo: '/' },
     {
       path: '',
       component: HomeComponent,
