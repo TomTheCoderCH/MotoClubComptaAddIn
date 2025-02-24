@@ -1,4 +1,28 @@
-
-<div>
-    <button type="button" (click)="test()" id="btn1">Test 2</button>
-</div>
+<button type="button" (click)="loadMetadata()" id="btn1">Load metadata</button>
+<button type="button" [disabled]="metadata.length == 0" (click)="indexData()" id="btn2">Index data</button>
+<table>
+  <thead>
+    <tr>
+      <th>Feuille</th>
+      <th>Table</th>
+      <th>Colonnes</th>
+      <th>Acronyms</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let item of this.metadata">
+      <td>{{ item.sheetName }}</td>
+      <td>{{ item.tableName }}</td>
+      <td>
+        <ul style="list-style-type: none; margin-block:0.2em;">
+            <li *ngFor="let column of item.columns">{{ column.name }} ({{column.index}})</li>
+          </ul>
+      </td>
+      <td>
+        <ul style="list-style-type: none; margin-block:0.2em;">
+          <li *ngFor="let acronym of item.acronyms">{{ acronym }}</li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
