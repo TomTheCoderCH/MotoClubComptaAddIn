@@ -1,6 +1,11 @@
 import { Injectable } from '@angular/core';
 import { ComptaMetadata, DataColumn, DataIndex, DataType } from './types/compta-metadata';
-import * as moment from 'moment';
+
+import moment from 'moment';
+import 'moment/locale/fr-ch';
+import 'moment-timezone';
+import 'moment-msdate';
+
 
 
 
@@ -31,6 +36,13 @@ export class ComptaOfficeService {
     return result;
   }
 
+  private convertExcelDateToJSDate(excelDate: number) {
+    // Excel dates are based on 1/1/1900
+    var excelEpoch = new Date(1899, 11, 30);
+    var jsDate = new Date(excelEpoch.getTime() + excelDate * 86400000);
+    return jsDate;
+  }
+
   async indexComptaData(metadata: ComptaMetadata[]): Promise<DataIndex[]> {
     let result: DataIndex[] = [];
     
@@ -48,22 +60,36 @@ export class ComptaOfficeService {
       let index = new Map();
       let data: DataType[] = [];
       for (const r of rows) {
-        r.load("values" );
+        r.load("valuesAsJsonLocal" );
         await this.context.sync();
+        var cell = r.getRange().getCell(0,dateIndex as number);
+        cell.load(["valuesAsJsonLocal","valueTypes","numberFormatLocal","text","numberFormat"]);
+        await this.context.sync();
+        var test = cell.valuesAsJsonLocal[0];
+        var test2 = cell.valueTypes[0];
+        var test3 = cell.numberFormatLocal[0];
+        var test4 = cell.text[0];
+        var test5 = r.valuesAsJsonLocal[0][0].basicValue as number;
+        var test6 = this.convertExcelDateToJSDate(test5+1462);
+        var test7 = moment(test6).format(cell.numberFormat[0][0]);
+        var num = 10;
         
-        for (const v of r.values) {
-          let msd = v[dateIndex as number];
-          // @ts-ignore
-          let d = moment.fn.fromOADate(msd);
-          if (d instanceof Date) {
-            let key = d.toISOString().substr(0, 10);
-            if (index.has(key)) {
-              index.get(key).push(v);
-            } else {
-              index.set(key, [v]);
-            }
-          }
-        }
+        // for (const v of r.valuesAsJsonLocal) {
+
+        //   let msd = v[dateIndex as number];
+
+        //   // const test : moment.Moment = moment();
+        //   // const testDate = moment.fromOADate(msd);
+          
+        //   // if (testDate instanceof Date) {
+        //   //   let key = testDate.toISOString().substr(0, 10);
+        //   //   if (index.has(key)) {
+        //   //     index.get(key).push(v);
+        //   //   } else {
+        //   //     index.set(key, [v]);
+        //   //   }
+        //   // }
+        // }
       }
       result.push({
         tableName: meta.tableName,
