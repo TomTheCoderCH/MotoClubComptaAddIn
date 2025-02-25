@@ -1,39 +1,110 @@
 import { Injectable } from '@angular/core';
-import { ComptaMetadata, DataColumn, DataIndex, DataType } from './types/compta-metadata';
-
+import { ComptaMetadata, DataColumn, DataIndex, DataType, DataVerificationResult, DataVerification, MissingDataVerification } from './types/compta-metadata';
 import moment from 'moment';
 import 'moment/locale/fr-ch';
 import 'moment-timezone';
 import 'moment-msdate';
 
-
-
-
 @Injectable({
   providedIn: 'root'
 })
 export class ComptaOfficeService {
-  
-  constructor(private context: Excel.RequestContext) { }
-
   async getComptaMetadata(): Promise<ComptaMetadata[]> {
-    const context = this.context;
-    let result: ComptaMetadata[] = [];
-    const tables = context.workbook.tables;
-    tables.load("items");
-    await context.sync();
-    for (const t of tables.items) {
-      t.worksheet.load("name");
-      t.load(["columns", "columns.items"]);
-      await context.sync();
-      let cols: DataColumn[] = t.columns.items.map(c => ({ index: Number(c.index), name: c.name }));
-      // for(const c of t.columns.items){
+    try {
+      let result: ComptaMetadata[] = [];
+      await Excel.run(async (context) => {
+        const tables = context.workbook.tables;
+        tables.load("items");
+        await context.sync();
+        for (const t of tables.items) {
+          t.worksheet.load("name");
+          t.load(["columns", "columns.items"]);
+          await context.sync();
+          let cols: DataColumn[] = t.columns.items.map(c => ({ index: Number(c.index), name: c.name }));
+          result.push(new ComptaMetadata(t.name, cols, t.worksheet.name, t.worksheet.name.split(/\s+/).filter(s => s.length > 2)));
 
-      // }
-      result.push(new ComptaMetadata(t.name,cols,t.worksheet.name,t.worksheet.name.split(/\s+/).filter(s => s.length > 2)));
-      
+        }
+      });
+      return result;
+    } catch (error) {
+      console.error(error);
     }
-    return result;
+    return [];
+  }
+
+  async indexComptaData(metadata: ComptaMetadata[]): Promise<DataIndex[]> {
+    try {
+      let result: DataIndex[] = [];
+      await Excel.run(async (context) => {
+        for (const meta of metadata) {
+          let table = context.workbook.tables.getItem(meta.tableName);
+          table.load(["rows", "rows.items", "rows.length"]);
+          await context.sync();
+          let rows = table.rows.items;
+          const dateIndex = meta.getColumnIndex("Date");
+          const libelleIndex = meta.getColumnIndex("Libellé");
+          const doitIndex = meta.getColumnIndex("Doit");
+          const avoirIndex = meta.getColumnIndex("Avoir");
+          const montantIndex = meta.getColumnIndex("Montant");
+          if (dateIndex === undefined)
+            return;
+
+          let index = new Map<number, DataIndex>();
+          let data: DataType[][] = [];
+
+          for (const r of rows) {
+            r.load("values");
+            await context.sync();
+            for (const v of r.values) {
+
+              if (v[0] === "") {
+                continue;
+              }
+              let serialDate = v[dateIndex as number];
+              const date: moment.Moment = moment.fromOADate(serialDate + 1462);
+
+              const libelle: String = v[libelleIndex as number];
+              let values: DataType[];
+              if (meta.tableName === "Journal") {
+                const montant: number = this.toNumber(v[montantIndex as number]);
+                values = [date.toDate(), libelle, montant];
+              }
+              else {
+                const doit: number = this.toNumber(v[doitIndex as number]);
+                const avoir: number = this.toNumber(v[avoirIndex as number]);
+                values = [date.toDate(), libelle, doit, avoir];
+              }
+
+
+              if (index.has(serialDate)) {
+                index.get(serialDate)?.data.push(values);
+              }
+              else {
+                index.set(serialDate, { tableName: meta.tableName, index: serialDate, data: [values] });
+              }
+            }
+          }
+          result.push(...index.values());
+        }
+      });
+      return result;
+    } catch (error) {
+      console.log(error);
+    }
+    return [];
+  }
+
+  async verifyComptaData(index: DataIndex[]): Promise<DataVerificationResult[]> { // DataVerification | MissingDataVerification
+    let result: DataVerificationResult[] = [];
+    let indexCopy = index.slice();
+    try {
+      
+      return result;
+    }
+    catch (error) {
+      console.error(error);
+    }
+    return [];
   }
 
   private convertExcelDateToJSDate(excelDate: number) {
@@ -43,61 +114,11 @@ export class ComptaOfficeService {
     return jsDate;
   }
 
-  async indexComptaData(metadata: ComptaMetadata[]): Promise<DataIndex[]> {
-    let result: DataIndex[] = [];
-    
-    
-    
-    for (const meta of metadata) {
-      let table = this.context.workbook.tables.getItem(meta.tableName);
-      table.load(["rows", "rows.items"]);
-      await this.context.sync();
-      let rows = table.rows.items;
-      let dateIndex = meta.getColumnIndex("Date");
-      if(dateIndex === undefined)
-        return [];
-      
-      let index = new Map();
-      let data: DataType[] = [];
-      for (const r of rows) {
-        r.load("valuesAsJsonLocal" );
-        await this.context.sync();
-        var cell = r.getRange().getCell(0,dateIndex as number);
-        cell.load(["valuesAsJsonLocal","valueTypes","numberFormatLocal","text","numberFormat"]);
-        await this.context.sync();
-        var test = cell.valuesAsJsonLocal[0];
-        var test2 = cell.valueTypes[0];
-        var test3 = cell.numberFormatLocal[0];
-        var test4 = cell.text[0];
-        var test5 = r.valuesAsJsonLocal[0][0].basicValue as number;
-        var test6 = this.convertExcelDateToJSDate(test5+1462);
-        var test7 = moment(test6).format(cell.numberFormat[0][0]);
-        var num = 10;
-        
-        // for (const v of r.valuesAsJsonLocal) {
-
-        //   let msd = v[dateIndex as number];
-
-        //   // const test : moment.Moment = moment();
-        //   // const testDate = moment.fromOADate(msd);
-          
-        //   // if (testDate instanceof Date) {
-        //   //   let key = testDate.toISOString().substr(0, 10);
-        //   //   if (index.has(key)) {
-        //   //     index.get(key).push(v);
-        //   //   } else {
-        //   //     index.set(key, [v]);
-        //   //   }
-        //   // }
-        // }
-      }
-      result.push({
-        tableName: meta.tableName,
-        index: new Date(),
-        data: data
-      });
+  private toNumber(value: string | number): number {
+    if (typeof value === "string" && value.trim() === "") {
+      return 0; // Default value for empty string
     }
-    return result;
+    return Number(value);
   }
 
 }

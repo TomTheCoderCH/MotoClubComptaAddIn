@@ -1,7 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ComptaOfficeService } from '../compta-office.service';
-import { ComptaMetadata, DataIndex } from '../types/compta-metadata';
+import { ComptaMetadata, DataIndex, DataVerificationResult, DataVerification, MissingDataVerification } from '../types/compta-metadata';
 
 
 
@@ -15,26 +15,19 @@ export class HomeComponent {
 
   metadata: ComptaMetadata[] = [];
   index: DataIndex[] = [];
+  verificationResults: DataVerificationResult[] = [];
+  private comptaService: ComptaOfficeService = inject(ComptaOfficeService);
+
   async loadMetadata(): Promise<void> {
-    try {
-      await Excel.run(async (context) => {
-        const comptaService = new ComptaOfficeService(context);
-        this.metadata = await comptaService.getComptaMetadata();
-      });
-    } catch (error) {
-      console.error(error);
-    }
+    this.metadata = await this.comptaService.getComptaMetadata();
   }
 
   async indexData(): Promise<void> {
-    try {
-      await Excel.run(async (context) => {
-        const comptaService = new ComptaOfficeService(context);
-        this.index = await comptaService.indexComptaData(this.metadata);
-      });
-    } catch (error) {
-      console.error(error);
-    }
+    this.index = await this.comptaService.indexComptaData(this.metadata);
+  }
+
+  async verifyData(): Promise<void> {
+    this.verificationResults = await this.comptaService.verifyComptaData(this.index);
   }
 
 }

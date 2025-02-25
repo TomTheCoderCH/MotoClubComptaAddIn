@@ -1,6 +1,7 @@
 <button type="button" (click)="loadMetadata()" id="btn1">Load metadata</button>
 <button type="button" [disabled]="metadata.length == 0" (click)="indexData()" id="btn2">Index data</button>
-<table>
+<button type="button" [disabled]="index.length === 0" (click)="verifyData()" id="btn3">Verifiy data</button>
+<!-- <table>
   <thead>
     <tr>
       <th>Feuille</th>
@@ -25,4 +26,4 @@
       </td>
     </tr>
   </tbody>
-</table>
+</table> -->

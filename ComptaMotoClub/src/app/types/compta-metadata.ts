@@ -13,10 +13,13 @@ export class ComptaMetadata {
         this.columns = columns;
         this.sheetName = sheetName;
         this.acronyms = acronyms;
-    }
-    setColumns(columns: DataColumn[])
-    {
-        this.columns = columns;
+        if(this.acronyms.length >= 2)
+        {
+            var composedAcronyms = this.acronyms.reduce<string>((prev, cur) => {
+                return prev+cur[0];
+            }, '');
+            this.acronyms = [...this.acronyms, composedAcronyms];
+        }
     }
 }
 
@@ -25,9 +28,27 @@ export interface DataColumn {
     name: string
 }
 
-export type DataType = "string" | "number" | "date" | "boolean" | "object" | "array" | "null";
+export type DataType = String | Number | Date;
+
 export interface DataIndex {
     tableName: string,
-    index: Date,
-    data: DataType[]
+    index: number,
+    data: DataType[][]
 }
+
+export interface DataVerification {
+    index: number,
+    journalEntry: DataType[],
+    firstEntryTablename: string,
+    secondEntryTablename: string,
+    firstEntryData: DataType[],
+    secondEntryData: DataType[],
+}
+
+export interface MissingDataVerification {
+    index: number,
+    entryTablename: string,
+    entryData: DataType[],
+}
+
+export type DataVerificationResult = DataVerification | MissingDataVerification;
