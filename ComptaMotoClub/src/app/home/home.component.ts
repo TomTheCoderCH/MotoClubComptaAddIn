@@ -14,7 +14,7 @@ import { ComptaMetadata, DataIndex, DataVerificationResult, DataVerification, Mi
 export class HomeComponent {
 
   metadata: ComptaMetadata[] = [];
-  index: DataIndex[] = [];
+  index: Map<string,DataIndex[]> = new Map<string,DataIndex[]>();
   verificationResults: DataVerificationResult[] = [];
   private comptaService: ComptaOfficeService = inject(ComptaOfficeService);
 
@@ -27,7 +27,8 @@ export class HomeComponent {
   }
 
   async verifyData(): Promise<void> {
-    this.verificationResults = await this.comptaService.verifyComptaData(this.index);
+    this.verificationResults = await this.comptaService.verifyComptaData(this.metadata, this.index);
+    console.log(this.verificationResults);
   }
 
 }

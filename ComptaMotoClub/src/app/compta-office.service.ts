@@ -1,9 +1,21 @@
 import { Injectable } from '@angular/core';
-import { ComptaMetadata, DataColumn, DataIndex, DataType, DataVerificationResult, DataVerification, MissingDataVerification } from './types/compta-metadata';
+import {
+  ComptaMetadata,
+  DataColumn,
+  DataIndex,
+  DataType,
+  Libelle,
+  DataVerificationEntry,
+  DataVerificationResult,
+  DataVerification,
+  MissingDataVerification,
+
+} from './types/compta-metadata';
 import moment from 'moment';
 import 'moment/locale/fr-ch';
 import 'moment-timezone';
 import 'moment-msdate';
+import * as utils from './utils';
 
 @Injectable({
   providedIn: 'root'
@@ -32,7 +44,7 @@ export class ComptaOfficeService {
     return [];
   }
 
-  async indexComptaData(metadata: ComptaMetadata[]): Promise<DataIndex[]> {
+  async indexComptaData(metadata: ComptaMetadata[]): Promise<Map<string, DataIndex[]>> {
     try {
       let result: DataIndex[] = [];
       await Excel.run(async (context) => {
@@ -66,13 +78,13 @@ export class ComptaOfficeService {
               const libelle: String = v[libelleIndex as number];
               let values: DataType[];
               if (meta.tableName === "Journal") {
-                const montant: number = this.toNumber(v[montantIndex as number]);
-                values = [date.toDate(), libelle, montant];
+                const montant: number = utils.toNumber(v[montantIndex as number]);
+                values = [date.toDate(), new Libelle(libelle), montant];
               }
               else {
-                const doit: number = this.toNumber(v[doitIndex as number]);
-                const avoir: number = this.toNumber(v[avoirIndex as number]);
-                values = [date.toDate(), libelle, doit, avoir];
+                const doit: number = utils.toNumber(v[doitIndex as number]);
+                const avoir: number = utils.toNumber(v[avoirIndex as number]);
+                values = [date.toDate(), new Libelle(libelle), doit, avoir];
               }
 
 
@@ -87,38 +99,141 @@ export class ComptaOfficeService {
           result.push(...index.values());
         }
       });
-      return result;
+      return Map.groupBy(result, ({ tableName }) => tableName);
     } catch (error) {
       console.log(error);
     }
-    return [];
+    return new Map<string, DataIndex[]>();
   }
 
-  async verifyComptaData(index: DataIndex[]): Promise<DataVerificationResult[]> { // DataVerification | MissingDataVerification
+  async verifyComptaData(metadata: ComptaMetadata[], index: Map<string, DataIndex[]>): Promise<DataVerificationResult[]> { // DataVerification | MissingDataVerification
     let result: DataVerificationResult[] = [];
-    let indexCopy = index.slice();
+    let indexCopy: Map<string, DataIndex[]> = new Map(JSON.parse(JSON.stringify(Array.from(index))));
+    let metadataMap: Map<string, ComptaMetadata> = new Map(metadata.map(m => [m.tableName, m]));
     try {
-      
+      // Get and remove the Journal index
+      let journal = indexCopy.get("Journal");
+      const journalMetadata = metadataMap.get("Journal")!;
+      const journalDateIndex = journalMetadata.getColumnIndex("Date")!;
+      const journalLibelleIndex = journalMetadata.getColumnIndex("Libellé")!;
+      const journalMontantIndex = journalMetadata.getColumnIndex("Montant")!;
+      indexCopy.delete("Journal");
+
+      // Parse journal and search for corresponding entries in other tables (same date, same label and same amount)
+      // Reverse the journal and iterate over it in reverse order to be able to remove entries
+      // So we still process element in the right order
+      journal?.sort((a, b) => b.index - a.index);
+      if (journal === undefined) {
+        console.error("Journal not found");
+        return [];
+      }
+      let journalIndex = journal.length;
+      let journalLibelle: Libelle | undefined = undefined;
+      let journalDate: Date | undefined = undefined;
+      let journalMontant: number | undefined = undefined;
+      let sourceMetadata: ComptaMetadata | undefined = undefined;
+      let destinationMetadata: ComptaMetadata | undefined = undefined;
+      let sourceEntry: DataVerificationEntry | undefined = undefined;
+      let destinationEntry: DataVerificationEntry | undefined = undefined;
+      let sourceSearched: boolean = false;
+      let destinationSearched: boolean = false;
+
+      while (--journalIndex >= 0) {
+        const journalEntry = journal[journalIndex];
+        for (const data of journalEntry.data) {
+          journalLibelle = data[journalLibelleIndex as number] as Libelle;
+          journalDate = data[journalDateIndex as number] as Date;
+          journalMontant = data[journalMontantIndex as number] as number;
+          if (journalLibelle !== undefined) {
+            if (journalLibelle.sourceAcronym !== undefined) {
+              sourceMetadata = ComptaMetadata.findMetadataByAcronym(journalLibelle.sourceAcronym, metadata);
+              if (sourceMetadata !== undefined) {
+                sourceSearched = true;
+                sourceEntry = this.findMatchingEntry(sourceMetadata, indexCopy.get(sourceMetadata.tableName)!, journalEntry.index, journalDate, journalLibelle, journalMontant);
+              }
+            }
+            if (journalLibelle.destinationAcronym !== undefined) {
+              destinationMetadata = ComptaMetadata.findMetadataByAcronym(journalLibelle.destinationAcronym, metadata);
+              if (destinationMetadata !== undefined) {
+                destinationSearched = true;
+                destinationEntry = this.findMatchingEntry(destinationMetadata, indexCopy.get(destinationMetadata.tableName)!, journalEntry.index, journalDate, journalLibelle, journalMontant);
+              }
+            }
+
+          }
+          sourceSearched = false;
+          destinationSearched = false;
+          let verificationResult: DataVerification = {
+            index: journalEntry.index,
+            journalEntry: data,
+            foundEntries: []
+          };
+          if (sourceEntry !== undefined) {
+            verificationResult.foundEntries.push(sourceEntry);
+          }
+          if (destinationEntry !== undefined) {
+            verificationResult.foundEntries.push(destinationEntry);
+          }
+          if (verificationResult.foundEntries.length > 0) {
+            result.push(verificationResult);
+          }
+          else {
+            let missingDataVerification: MissingDataVerification = {
+              index: journalEntry.index,
+              entryTablename: journalEntry.tableName,
+              entryData: data
+            };
+            result.push(missingDataVerification);
+          }
+
+        }
+
+      }
+
       return result;
     }
     catch (error) {
       console.error(error);
     }
+
     return [];
   }
 
-  private convertExcelDateToJSDate(excelDate: number) {
-    // Excel dates are based on 1/1/1900
-    var excelEpoch = new Date(1899, 11, 30);
-    var jsDate = new Date(excelEpoch.getTime() + excelDate * 86400000);
-    return jsDate;
+  private findMatchingEntry(metadata: ComptaMetadata, index: DataIndex[], indexValue: number, date: Date, libelle: Libelle, montant: number): DataVerificationEntry | undefined {
+    var entry = index.findIndex((v) => v.index === indexValue);
+    if (entry === -1) {
+      return undefined;
+    }
+    const dateIndex = metadata.getColumnIndex("Date")! as number;
+    const libelleIndex = metadata.getColumnIndex("Libellé")! as number;
+    const doitIndex = metadata.getColumnIndex("Doit")! as number;
+    const avoirIndex = metadata.getColumnIndex("Avoir")! as number;
+    let foundEntry: DataVerificationEntry | undefined = undefined;
+    let foundEntryIndex: number | undefined = undefined;
+    let dataLibelle: Libelle;
+    let indexLibelle: Libelle;
+    for (const [iData, data] of index[entry].data.entries()) {
+      
+      indexLibelle = Object.assign(new Libelle(""), libelle);
+      dataLibelle = Object.assign(new Libelle(""), data[libelleIndex]);
+      if (data[dateIndex as number] === date && dataLibelle.areEquals(libelle) && (data[doitIndex] === montant || data[avoirIndex] === montant)) {
+        foundEntry = { tableName: index[entry].tableName, data: data };
+        foundEntryIndex = iData;
+        break;
+      }
+    }
+    if (foundEntryIndex !== undefined) {
+      index[entry].data.splice(foundEntryIndex, 1);
+      return foundEntry;
+    }
+    // test
+    var test = 1 + 1;
+    return undefined;
   }
 
-  private toNumber(value: string | number): number {
-    if (typeof value === "string" && value.trim() === "") {
-      return 0; // Default value for empty string
-    }
-    return Number(value);
-  }
+//   convertToClass<T>(cls: new (...args: any[]) => T, obj: any): T {
+//     return Object.assign(new cls(), obj);
+// }
+
 
 }
