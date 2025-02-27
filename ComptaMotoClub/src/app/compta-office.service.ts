@@ -211,12 +211,11 @@ export class ComptaOfficeService {
     let foundEntry: DataVerificationEntry | undefined = undefined;
     let foundEntryIndex: number | undefined = undefined;
     let dataLibelle: Libelle;
-    let indexLibelle: Libelle;
+    let indexLibelle: Libelle = Libelle.fromObject(libelle);
     for (const [iData, data] of index[entry].data.entries()) {
       
-      indexLibelle = Object.assign(new Libelle(""), libelle);
-      dataLibelle = Object.assign(new Libelle(""), data[libelleIndex]);
-      if (data[dateIndex as number] === date && dataLibelle.areEquals(libelle) && (data[doitIndex] === montant || data[avoirIndex] === montant)) {
+      dataLibelle = Libelle.fromObject(data[libelleIndex]);
+      if (data[dateIndex as number] === date && dataLibelle.areEquals(indexLibelle) && (data[doitIndex] === montant || data[avoirIndex] === montant)) {
         foundEntry = { tableName: index[entry].tableName, data: data };
         foundEntryIndex = iData;
         break;

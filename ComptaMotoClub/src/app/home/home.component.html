@@ -1,6 +1,6 @@
-<button type="button" (click)="loadMetadata()" id="btn1">Load metadata</button>
-<button type="button" [disabled]="metadata.length == 0" (click)="indexData()" id="btn2">Index data</button>
-<button type="button" [disabled]="index.size === 0" (click)="verifyData()" id="btn3">Verifiy data</button>
+<mat-flat-button type="button" (click)="loadMetadata()" id="btn1">Load metadata</mat-flat-button>
+<mat-button type="button" [disabled]="metadata.length == 0" (click)="indexData()" id="btn2">Index data</mat-button>
+<mat-button type="button" [disabled]="index.size === 0" (click)="verifyData()" id="btn3" >Verifiy data</mat-button>
 <!-- <table>
   <thead>
     <tr>

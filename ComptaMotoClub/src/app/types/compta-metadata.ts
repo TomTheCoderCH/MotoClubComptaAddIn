@@ -67,13 +67,49 @@ export class Libelle {
     sourceAcronym?: string = undefined;
     destinationAcronym?: string = undefined;
     libelle: string = '';
-    public readonly value: String;
-    constructor(value: String) {
+    public value: String;
+    
+    constructor(value?: String){
+        if (value !== undefined) {
+            this.value = value;
+            this.parseLibelle();
+        }
+        else {
+            this.value = '';
+        }
+    }
+
+    static fromString(value: String): Libelle {
+        return new Libelle(value);
+    }
+
+    static fromObject(obj: any): Libelle {
+        const keys = Object.keys(obj);
+        let libelle = new Libelle();
+        if (keys.includes('value')) {
+            libelle.value = obj.value;
+        }
+        if (keys.includes('sourceAcronym')) {
+            libelle.sourceAcronym = obj.sourceAcronym;
+        }
+        if (keys.includes('destinationAcronym')) {
+            libelle.destinationAcronym = obj.destinationAcronym;
+        }
+        if (keys.includes('libelle')) {
+            libelle.libelle = obj.libelle;
+        }
+        return libelle;
+    }
+
+    setValue(value: String): void {
         this.value = value;
-        this.parseLibelle();
+        this.parseLibelle(); 
     }
 
     private parseLibelle() {
+        if (this.value === undefined) {
+            return;
+        }
         const libelleSeparator = ' - ';
         const acronymSeparator = ' à ';
         if (this.value.includes(libelleSeparator)) {
