@@ -1,6 +1,32 @@
-<mat-flat-button type="button" (click)="loadMetadata()" id="btn1">Load metadata</mat-flat-button>
-<mat-button type="button" [disabled]="metadata.length == 0" (click)="indexData()" id="btn2">Index data</mat-button>
-<mat-button type="button" [disabled]="index.size === 0" (click)="verifyData()" id="btn3" >Verifiy data</mat-button>
+<button
+  id="btn1"
+  type="button"
+  (click)="loadMetadata()"
+  mat-flat-button
+  class="mat-small"
+>
+  Load metadata
+</button>
+<button
+  id="btn2"
+  type="button"
+  [disabled]="metadata.length == 0"
+  (click)="indexData()"
+  mat-flat-button
+  class="mat-small"
+>
+  Index data
+</button>
+<button
+  id="btn3"
+  type="button"
+  [disabled]="index.size === 0"
+  (click)="verifyData()"
+  mat-flat-button
+  class="mat-large"
+>
+  Verifiy data
+</button>
 <!-- <table>
   <thead>
     <tr>
@@ -27,3 +53,55 @@
     </tr>
   </tbody>
 </table> -->
+<section *ngIf="verificationResults.length > 0">
+  <h2>Résultat de la vérification des écritures du journal</h2>
+  <div>
+    <div *ngFor="let result of verificationResults; index as indexResults">
+      <!-- <h2>{{ result.}}</h2> -->
+      <div *ngIf="isDataVerification(result)">
+        <span>
+          @if(isLibelle(result.journalEntry[1])){
+            ({{
+              (indexResults + 1).toLocaleString("fr-CH", {
+                minimumIntegerDigits: 2,
+              })
+            }}). {{result.journalEntry[1].libelle}}
+          }
+          
+        </span>
+        <div>
+          
+        </div>
+      </div>
+      <div *ngIf="isMissingDataVerification(result)">
+        <span>
+          @if(isLibelle(result.entryData[1])){
+            ({{
+              (indexResults + 1).toLocaleString("fr-CH", {
+                minimumIntegerDigits: 2,
+              })
+            }}). {{result.entryData[1].libelle}} ({{result.entryTablename}})
+          }
+        </span>
+      </div>
+      <!-- <table>
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Libellé</th>
+            <th>Montant</th>
+            <th>Erreur</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of result.data">
+            <td>{{ item.code }}</td>
+            <td>{{ item.label }}</td>
+            <td>{{ item.amount }}</td>
+            <td>{{ item.error }}</td>
+          </tr>
+        </tbody>
+      </table> -->
+    </div>
+  </div>
+</section>

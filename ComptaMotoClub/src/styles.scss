@@ -1,6 +1,22 @@
 /* You can add global styles to this file, and also import other style files */
-@use '@angular/material' as mat;
+@use "@angular/material" as mat;
 @include mat.core();
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+html,
+body {
+  height: 100%;
+font: var(--mat-sys-body-medium);
+}
+body {
+  margin: 0;
+//   font-family: Roboto, "Helvetica Neue", sans-serif;
+  
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+}
+h1 {
+  font: var(--mat-sys-headline-large);
+}
+h2 {
+  font: var(--mat-sys-headline-medium);
+}

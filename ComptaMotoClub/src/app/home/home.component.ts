@@ -2,7 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButton } from '@angular/material/button';
 import { ComptaOfficeService } from '../compta-office.service';
-import { ComptaMetadata, DataIndex, DataVerificationResult, DataVerification, MissingDataVerification } from '../types/compta-metadata';
+import { ComptaMetadata, DataIndex, DataVerificationResult, Libelle, DataType, DataVerification, MissingDataVerification } from '../types/compta-metadata';
 
 
 
@@ -36,6 +36,18 @@ export class HomeComponent {
     this.verificationResults = [];
     this.verificationResults = await this.comptaService.verifyComptaData(this.metadata, this.index);
     console.log(this.verificationResults);
+  }
+
+  isDataVerification(result: DataVerificationResult): result is DataVerification {
+    return (result as DataVerification).journalEntry !== undefined;
+  }
+
+  isMissingDataVerification(result: DataVerificationResult): result is MissingDataVerification {
+    return (result as MissingDataVerification).entryTablename !== undefined;
+  }
+
+  isLibelle(data: DataType): data is Libelle {
+    return (data as Libelle).sourceAcronym !== undefined;
   }
 
 }
