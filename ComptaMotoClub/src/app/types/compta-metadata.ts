@@ -17,7 +17,7 @@ export class ComptaMetadata {
         }
     }
 
-    getColumnIndex(name: string): number | undefined {
+    getColumnIndex(name: ColumnName): number | undefined {
         return this.columns.find(c => c.name === name)?.index;
     }
 
@@ -30,7 +30,15 @@ export class ComptaMetadata {
     }
 }
 
+export type ColumnName = 'Date' | 'Libellé' | 'Doit' | 'Avoir' | 'Montant';
 
+export const ColumnNames = {
+    Date: 'Date',
+    Libelle: 'Libellé',
+    Doit: 'Doit',
+    Avoir: 'Avoir',
+    Montant: 'Montant'
+} as const ;
 
 export interface DataColumn {
     index: number,

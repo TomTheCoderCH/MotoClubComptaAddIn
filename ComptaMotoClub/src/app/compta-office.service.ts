@@ -8,6 +8,7 @@ import {
   DataVerificationEntry,
   DataVerificationResult,
   DataVerification,
+  ColumnNames,
   MissingDataVerification,
 
 } from './types/compta-metadata';
@@ -53,11 +54,11 @@ export class ComptaOfficeService {
           table.load(["rows", "rows.items", "rows.length"]);
           await context.sync();
           let rows = table.rows.items;
-          const dateIndex = meta.getColumnIndex("Date");
-          const libelleIndex = meta.getColumnIndex("Libellé");
-          const doitIndex = meta.getColumnIndex("Doit");
-          const avoirIndex = meta.getColumnIndex("Avoir");
-          const montantIndex = meta.getColumnIndex("Montant");
+          const dateIndex = meta.getColumnIndex(ColumnNames.Date);
+          const libelleIndex = meta.getColumnIndex(ColumnNames.Libelle);
+          const doitIndex = meta.getColumnIndex(ColumnNames.Doit);
+          const avoirIndex = meta.getColumnIndex(ColumnNames.Avoir);
+          const montantIndex = meta.getColumnIndex(ColumnNames.Montant);
           if (dateIndex === undefined || libelleIndex === undefined || doitIndex === undefined || avoirIndex === undefined || montantIndex === undefined)
             return;
 
@@ -114,9 +115,9 @@ export class ComptaOfficeService {
       // Get and remove the Journal index
       let journal = indexCopy.get("Journal");
       const journalMetadata = metadataMap.get("Journal")!;
-      const journalDateIndex = journalMetadata.getColumnIndex("Date")!;
-      const journalLibelleIndex = journalMetadata.getColumnIndex("Libellé")!;
-      const journalMontantIndex = journalMetadata.getColumnIndex("Montant")!;
+      const journalDateIndex = journalMetadata.getColumnIndex(ColumnNames.Date)!;
+      const journalLibelleIndex = journalMetadata.getColumnIndex(ColumnNames.Libelle)!;
+      const journalMontantIndex = journalMetadata.getColumnIndex(ColumnNames.Montant)!;
       indexCopy.delete("Journal");
 
       // Parse journal and search for corresponding entries in other tables (same date, same label and same amount)
@@ -204,10 +205,10 @@ export class ComptaOfficeService {
     if (entry === -1) {
       return undefined;
     }
-    const dateIndex = metadata.getColumnIndex("Date")! as number;
-    const libelleIndex = metadata.getColumnIndex("Libellé")! as number;
-    const doitIndex = metadata.getColumnIndex("Doit")! as number;
-    const avoirIndex = metadata.getColumnIndex("Avoir")! as number;
+    const dateIndex = metadata.getColumnIndex(ColumnNames.Date)! as number;
+    const libelleIndex = metadata.getColumnIndex(ColumnNames.Libelle)! as number;
+    const doitIndex = metadata.getColumnIndex(ColumnNames.Doit)! as number;
+    const avoirIndex = metadata.getColumnIndex(ColumnNames.Avoir)! as number;
     let foundEntry: DataVerificationEntry | undefined = undefined;
     let foundEntryIndex: number | undefined = undefined;
     let dataLibelle: Libelle;
