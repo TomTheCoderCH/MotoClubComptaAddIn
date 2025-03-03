@@ -17,7 +17,7 @@ export class ComptaMetadata {
         }
     }
 
-    getColumnIndex(name: string): Number | undefined {
+    getColumnIndex(name: string): number | undefined {
         return this.columns.find(c => c.name === name)?.index;
     }
 
@@ -33,11 +33,11 @@ export class ComptaMetadata {
 
 
 export interface DataColumn {
-    index: Number,
+    index: number,
     name: string;
 }
 
-export type DataType = String | Number | Date | Libelle;
+export type DataType = string | number | Date | Libelle;
 
 export interface DataIndex {
     tableName: string,
@@ -67,9 +67,9 @@ export class Libelle {
     sourceAcronym?: string = undefined;
     destinationAcronym?: string = undefined;
     libelle: string = '';
-    public value: String;
+    public value: string;
     
-    constructor(value?: String){
+    constructor(value?: string){
         if (value !== undefined) {
             this.value = value;
             this.parseLibelle();
@@ -79,7 +79,7 @@ export class Libelle {
         }
     }
 
-    static fromString(value: String): Libelle {
+    static fromString(value: string): Libelle {
         return new Libelle(value);
     }
 
@@ -101,7 +101,7 @@ export class Libelle {
         return libelle;
     }
 
-    setValue(value: String): void {
+    setValue(value: string): void {
         this.value = value;
         this.parseLibelle(); 
     }

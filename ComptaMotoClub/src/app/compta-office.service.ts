@@ -58,7 +58,7 @@ export class ComptaOfficeService {
           const doitIndex = meta.getColumnIndex("Doit");
           const avoirIndex = meta.getColumnIndex("Avoir");
           const montantIndex = meta.getColumnIndex("Montant");
-          if (dateIndex === undefined)
+          if (dateIndex === undefined || libelleIndex === undefined || doitIndex === undefined || avoirIndex === undefined || montantIndex === undefined)
             return;
 
           let index = new Map<number, DataIndex>();
@@ -72,18 +72,18 @@ export class ComptaOfficeService {
               if (v[0] === "") {
                 continue;
               }
-              let serialDate = v[dateIndex as number];
+              let serialDate = v[dateIndex];
               const date: moment.Moment = moment.fromOADate(serialDate + 1462);
 
-              const libelle: String = v[libelleIndex as number];
+              const libelle: string = v[libelleIndex];
               let values: DataType[];
               if (meta.tableName === "Journal") {
-                const montant: number = utils.toNumber(v[montantIndex as number]);
+                const montant: number = utils.toNumber(v[montantIndex]);
                 values = [date.toDate(), new Libelle(libelle), montant];
               }
               else {
-                const doit: number = utils.toNumber(v[doitIndex as number]);
-                const avoir: number = utils.toNumber(v[avoirIndex as number]);
+                const doit: number = utils.toNumber(v[doitIndex]);
+                const avoir: number = utils.toNumber(v[avoirIndex]);
                 values = [date.toDate(), new Libelle(libelle), doit, avoir];
               }
 
@@ -141,9 +141,9 @@ export class ComptaOfficeService {
       while (--journalIndex >= 0) {
         const journalEntry = journal[journalIndex];
         for (const data of journalEntry.data) {
-          journalLibelle = data[journalLibelleIndex as number] as Libelle;
-          journalDate = data[journalDateIndex as number] as Date;
-          journalMontant = data[journalMontantIndex as number] as number;
+          journalLibelle = data[journalLibelleIndex] as Libelle;
+          journalDate = data[journalDateIndex] as Date;
+          journalMontant = data[journalMontantIndex] as number;
           if (journalLibelle !== undefined) {
             if (journalLibelle.sourceAcronym !== undefined) {
               sourceMetadata = ComptaMetadata.findMetadataByAcronym(journalLibelle.sourceAcronym, metadata);
@@ -215,7 +215,7 @@ export class ComptaOfficeService {
     for (const [iData, data] of index[entry].data.entries()) {
       
       dataLibelle = Libelle.fromObject(data[libelleIndex]);
-      if (data[dateIndex as number] === date && dataLibelle.areEquals(indexLibelle) && (data[doitIndex] === montant || data[avoirIndex] === montant)) {
+      if (data[dateIndex] === date && dataLibelle.areEquals(indexLibelle) && (data[doitIndex] === montant || data[avoirIndex] === montant)) {
         foundEntry = { tableName: index[entry].tableName, data: data };
         foundEntryIndex = iData;
         break;
