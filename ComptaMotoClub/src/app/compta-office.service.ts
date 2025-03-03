@@ -59,8 +59,10 @@ export class ComptaOfficeService {
           const doitIndex = meta.getColumnIndex(ColumnNames.Doit);
           const avoirIndex = meta.getColumnIndex(ColumnNames.Avoir);
           const montantIndex = meta.getColumnIndex(ColumnNames.Montant);
-          if (dateIndex === undefined || libelleIndex === undefined || doitIndex === undefined || avoirIndex === undefined || montantIndex === undefined)
+          if (dateIndex === undefined || libelleIndex === undefined)
             return;
+
+
 
           let index = new Map<number, DataIndex>();
           let data: DataType[][] = [];
@@ -79,10 +81,14 @@ export class ComptaOfficeService {
               const libelle: string = v[libelleIndex];
               let values: DataType[];
               if (meta.tableName === "Journal") {
+                if (montantIndex === undefined)
+                  return;
                 const montant: number = utils.toNumber(v[montantIndex]);
                 values = [date.toDate(), new Libelle(libelle), montant];
               }
               else {
+                if (doitIndex === undefined || avoirIndex === undefined)
+                  return;
                 const doit: number = utils.toNumber(v[doitIndex]);
                 const avoir: number = utils.toNumber(v[avoirIndex]);
                 values = [date.toDate(), new Libelle(libelle), doit, avoir];
