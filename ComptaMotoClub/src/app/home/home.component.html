@@ -1,32 +1,34 @@
-<button
-  id="btn1"
-  type="button"
-  (click)="loadMetadata()"
-  mat-flat-button
-  class="mat-small"
->
-  Load metadata
-</button>
-<button
-  id="btn2"
-  type="button"
-  [disabled]="metadata.length == 0"
-  (click)="indexData()"
-  mat-flat-button
-  class="mat-small"
->
-  Index data
-</button>
-<button
-  id="btn3"
-  type="button"
-  [disabled]="index.size === 0"
-  (click)="verifyData()"
-  mat-flat-button
-  class="mat-large"
->
-  Verifiy data
-</button>
+<div class="toolbar-button-container">
+  <button
+    id="btn1"
+    type="button"
+    (click)="loadMetadata()"
+    mat-flat-button
+    class="mat-small"
+  >
+    Load metadata
+  </button>
+  <button
+    id="btn2"
+    type="button"
+    [disabled]="metadata.length == 0"
+    (click)="indexData()"
+    mat-flat-button
+    class="mat-small"
+  >
+    Index data
+  </button>
+  <button
+    id="btn3"
+    type="button"
+    [disabled]="index.size === 0"
+    (click)="verifyData()"
+    mat-flat-button
+    class="mat-large"
+  >
+    Verifiy data
+  </button>
+</div>
 <!-- <table>
   <thead>
     <tr>
@@ -60,27 +62,24 @@
       <!-- <h2>{{ result.}}</h2> -->
       <div *ngIf="isDataVerification(result)">
         <span>
-          @if(isLibelle(result.journalEntry[1])){
+          @if (isLibelle(result.journalEntry[1])) {
             ({{
               (indexResults + 1).toLocaleString("fr-CH", {
                 minimumIntegerDigits: 2,
               })
-            }}). {{result.journalEntry[1].libelle}}
+            }}). {{ result.journalEntry[1].libelle }}
           }
-          
         </span>
-        <div>
-          
-        </div>
+        <div></div>
       </div>
       <div *ngIf="isMissingDataVerification(result)">
         <span>
-          @if(isLibelle(result.entryData[1])){
+          @if (isLibelle(result.entryData[1])) {
             ({{
               (indexResults + 1).toLocaleString("fr-CH", {
                 minimumIntegerDigits: 2,
               })
-            }}). {{result.entryData[1].libelle}} ({{result.entryTablename}})
+            }}). {{ result.entryData[1].libelle }} ({{ result.entryTablename }})
           }
         </span>
       </div>
