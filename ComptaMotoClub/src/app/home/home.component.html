@@ -3,8 +3,8 @@
     id="btn1"
     type="button"
     (click)="loadMetadata()"
+    class="my-sm"
     mat-flat-button
-    class="mat-small"
   >
     Load metadata
   </button>
@@ -13,8 +13,8 @@
     type="button"
     [disabled]="metadata.length == 0"
     (click)="indexData()"
+    class="my-sm"
     mat-flat-button
-    class="mat-small"
   >
     Index data
   </button>
@@ -23,10 +23,10 @@
     type="button"
     [disabled]="index.size === 0"
     (click)="verifyData()"
+    class="my-sm"
     mat-flat-button
-    class="mat-large"
   >
-    Verifiy data
+    Verify data
   </button>
 </div>
 <!-- <table>
