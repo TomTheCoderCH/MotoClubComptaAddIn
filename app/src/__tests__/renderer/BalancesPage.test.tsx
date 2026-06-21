@@ -1,0 +1,95 @@
+// @vitest-environment jsdom
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import type { FiscalYear, AccountBalance } from '../../types';
+import BalancesPage from '../../pages/BalancesPage';
+
+const fy2025: FiscalYear = {
+  id: 1, year: 2025,
+  start_date: '2025-01-01', end_date: '2025-12-31',
+  is_closed: false, created_at: '',
+};
+const fy2024: FiscalYear = {
+  id: 2, year: 2024,
+  start_date: '2024-01-01', end_date: '2024-12-31',
+  is_closed: true, created_at: '',
+};
+
+const balancesFixture: AccountBalance[] = [
+  { number: '100', name: 'Caisse',              class: 1, total_debit: 120000, total_credit: 80000, solde: 40000 },
+  { number: '300', name: 'Cotisations membres', class: 3, total_debit: 0,      total_credit: 141000, solde: 141000 },
+];
+
+function mockApi(years: FiscalYear[] = [], balances: AccountBalance[] = []) {
+  vi.stubGlobal('api', {
+    getFiscalYears:     vi.fn().mockResolvedValue(years),
+    getAccountBalances: vi.fn().mockResolvedValue(balances),
+  });
+}
+
+beforeEach(() => mockApi());
+
+describe('BalancesPage — affichage', () => {
+  it('affiche le titre Soldes', () => {
+    render(<BalancesPage />);
+    expect(screen.getByRole('heading', { level: 1, name: 'Soldes' })).toBeInTheDocument();
+  });
+
+  it('affiche le message vide sans exercice', async () => {
+    render(<BalancesPage />);
+    expect(await screen.findByText(/Aucun exercice disponible/)).toBeInTheDocument();
+  });
+
+  it('affiche le message vide sans mouvement', async () => {
+    mockApi([fy2025], []);
+    render(<BalancesPage />);
+    expect(await screen.findByText(/Aucun mouvement pour cet exercice/)).toBeInTheDocument();
+  });
+
+  it('affiche le sélecteur d\'exercice quand des exercices existent', async () => {
+    mockApi([fy2025], []);
+    render(<BalancesPage />);
+    expect(await screen.findByRole('combobox')).toBeInTheDocument();
+  });
+
+  it('affiche les comptes groupés par classe', async () => {
+    mockApi([fy2025], balancesFixture);
+    render(<BalancesPage />);
+    expect(await screen.findByText('Classe 1 — Actifs')).toBeInTheDocument();
+    expect(screen.getByText('Classe 3 — Produits')).toBeInTheDocument();
+    expect(screen.getByText('Caisse')).toBeInTheDocument();
+    expect(screen.getByText('Cotisations membres')).toBeInTheDocument();
+  });
+
+  it('affiche les sous-totaux par classe', async () => {
+    mockApi([fy2025], balancesFixture);
+    render(<BalancesPage />);
+    await screen.findByText('Classe 1 — Actifs');
+    // Sous-total classe 1 : débit 1200.00, solde 400.00
+    // Ces valeurs apparaissent aussi sur la ligne Caisse → getAllByText
+    expect(screen.getAllByText('1200.00')).toHaveLength(2); // ligne + sous-total
+    expect(screen.getAllByText('400.00')).toHaveLength(2);
+  });
+
+  it('sélectionne automatiquement le premier exercice ouvert', async () => {
+    mockApi([fy2024, fy2025], balancesFixture);
+    render(<BalancesPage />);
+    await waitFor(() => {
+      // fy2025 (id=1) est ouvert → doit être sélectionné en priorité
+      expect(window.api.getAccountBalances).toHaveBeenCalledWith(1);
+    });
+  });
+
+  it('recharge les soldes au changement d\'exercice', async () => {
+    const user = userEvent.setup();
+    mockApi([fy2025, fy2024], balancesFixture);
+    render(<BalancesPage />);
+    await screen.findByText('Caisse');
+
+    await user.selectOptions(screen.getByRole('combobox'), '2'); // value = id de fy2024
+    await waitFor(() => {
+      expect(window.api.getAccountBalances).toHaveBeenCalledWith(2);
+    });
+  });
+});
