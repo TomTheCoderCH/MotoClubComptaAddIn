@@ -4,7 +4,7 @@ import { app } from 'electron';
 import { initSchema } from './schema';
 import { seedAccountsIfEmpty } from './seed';
 import { validateEntryBalance } from '../lib/accounting';
-import type { Account, FiscalYear, JournalEntry, JournalEntryLine, AccountBalance, CreateJournalEntryPayload } from '../types';
+import type { Account, FiscalYear, JournalEntry, JournalEntryLine, AccountBalance, CreateJournalEntryPayload, UpdateJournalEntryPayload } from '../types';
 
 let db: Database.Database;
 
@@ -130,4 +130,71 @@ export function getAccountBalances(fiscalYearId: number): AccountBalance[] {
     GROUP BY a.id
     ORDER BY a.number
   `).all(fiscalYearId) as AccountBalance[];
+}
+
+// ─── Modification / suppression d'écritures ──────────────────────────────────
+
+export function updateJournalEntry(
+  payload: UpdateJournalEntryPayload,
+): JournalEntry & { lines: JournalEntryLine[] } {
+  const { id, date, description, piece, lines } = payload;
+
+  const existing = getDb()
+    .prepare('SELECT fiscal_year_id FROM journal_entries WHERE id = ?')
+    .get(id) as { fiscal_year_id: number } | undefined;
+  if (!existing) throw new Error('Écriture introuvable');
+
+  const fy = getDb()
+    .prepare('SELECT is_closed FROM fiscal_years WHERE id = ?')
+    .get(existing.fiscal_year_id) as { is_closed: number };
+  if (fy.is_closed) throw new Error('Cet exercice est clôturé — aucune modification possible');
+
+  validateEntryBalance(lines);
+
+  return getDb().transaction(() => {
+    getDb()
+      .prepare('DELETE FROM journal_entry_lines WHERE journal_entry_id = ?')
+      .run(id);
+
+    getDb().prepare(`
+      UPDATE journal_entries
+      SET date = @date, description = @description, piece = @piece, updated_at = datetime('now')
+      WHERE id = @id
+    `).run({ id, date, description, piece: piece ?? null });
+
+    const lineStmt = getDb().prepare(`
+      INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit, credit)
+      VALUES (@journal_entry_id, @account_id, @debit, @credit)
+    `);
+    for (const l of lines) {
+      lineStmt.run({
+        journal_entry_id: id,
+        account_id: l.account_id,
+        debit:  l.debit  ?? null,
+        credit: l.credit ?? null,
+      });
+    }
+
+    const updated = getDb()
+      .prepare('SELECT * FROM journal_entries WHERE id = ?')
+      .get(id) as JournalEntry;
+    const updatedLines = getDb()
+      .prepare('SELECT * FROM journal_entry_lines WHERE journal_entry_id = ?')
+      .all(id) as JournalEntryLine[];
+    return { ...updated, lines: updatedLines };
+  })();
+}
+
+export function deleteJournalEntry(id: number): void {
+  const existing = getDb()
+    .prepare('SELECT fiscal_year_id FROM journal_entries WHERE id = ?')
+    .get(id) as { fiscal_year_id: number } | undefined;
+  if (!existing) throw new Error('Écriture introuvable');
+
+  const fy = getDb()
+    .prepare('SELECT is_closed FROM fiscal_years WHERE id = ?')
+    .get(existing.fiscal_year_id) as { is_closed: number };
+  if (fy.is_closed) throw new Error('Cet exercice est clôturé — aucune modification possible');
+
+  getDb().prepare('DELETE FROM journal_entries WHERE id = ?').run(id);
 }

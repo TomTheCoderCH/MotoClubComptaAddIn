@@ -7,6 +7,7 @@ vi.mock('electron', () => ({
 
 import {
   openDatabase,
+  getDb,
   getAllAccounts,
   getActiveAccounts,
   getAllFiscalYears,
@@ -14,6 +15,8 @@ import {
   getJournalEntries,
   createJournalEntry,
   getAccountBalances,
+  updateJournalEntry,
+  deleteJournalEntry,
 } from '../db';
 
 // Chaque describe repart d'une base SQLite en mémoire fraîche
@@ -240,5 +243,128 @@ describe('Soldes par compte', () => {
     expect(caisse!.class).toBe(1); // Caisse est en classe 1 (Actifs)
     const cotis = balances.find(b => b.number === '300');
     expect(cotis!.class).toBe(3); // Cotisations membres est en classe 3 (Produits)
+  });
+});
+
+describe('updateJournalEntry', () => {
+  let fiscalYearId: number;
+  let caisseId: number;
+  let cotisationsId: number;
+  let entryId: number;
+
+  beforeEach(() => {
+    freshDb();
+    const fy = createFiscalYear(2025);
+    fiscalYearId = fy.id;
+    const accounts = getAllAccounts();
+    caisseId      = accounts.find(a => a.number === '100')!.id;
+    cotisationsId = accounts.find(a => a.number === '300')!.id;
+    const entry = createJournalEntry({
+      fiscal_year_id: fiscalYearId,
+      date: '2025-03-08',
+      description: 'Cotisation initiale',
+      lines: [
+        { account_id: caisseId,      debit:  3000 },
+        { account_id: cotisationsId, credit: 3000 },
+      ],
+    });
+    entryId = entry.id;
+  });
+
+  it('modifie le libellé, la date et la pièce', () => {
+    const updated = updateJournalEntry({
+      id: entryId,
+      date: '2025-04-01',
+      description: 'Cotisation corrigée',
+      piece: 'P-001',
+      lines: [
+        { account_id: caisseId,      debit:  3000 },
+        { account_id: cotisationsId, credit: 3000 },
+      ],
+    });
+    expect(updated.description).toBe('Cotisation corrigée');
+    expect(updated.date).toBe('2025-04-01');
+    expect(updated.piece).toBe('P-001');
+  });
+
+  it('remplace les lignes avec un nombre différent de lignes', () => {
+    const raiffeisenId = getAllAccounts().find(a => a.number === '101')!.id;
+    const updated = updateJournalEntry({
+      id: entryId,
+      date: '2025-03-08',
+      description: 'Écriture complexe',
+      lines: [
+        { account_id: caisseId,      debit:  1000 },
+        { account_id: raiffeisenId,  debit:  2000 },
+        { account_id: cotisationsId, credit: 3000 },
+      ],
+    });
+    expect(updated.lines).toHaveLength(3);
+    expect(updated.lines.reduce((s, l) => s + (l.debit ?? 0), 0)).toBe(3000);
+  });
+
+  it('rejette la modification sur un exercice clôturé', () => {
+    getDb().prepare('UPDATE fiscal_years SET is_closed = 1 WHERE id = ?').run(fiscalYearId);
+    expect(() => updateJournalEntry({
+      id: entryId,
+      date: '2025-03-08',
+      description: 'Test',
+      lines: [
+        { account_id: caisseId,      debit:  3000 },
+        { account_id: cotisationsId, credit: 3000 },
+      ],
+    })).toThrow('clôturé');
+  });
+
+  it('rejette une écriture introuvable', () => {
+    expect(() => updateJournalEntry({
+      id: 9999,
+      date: '2025-03-08',
+      description: 'Test',
+      lines: [
+        { account_id: caisseId,      debit:  3000 },
+        { account_id: cotisationsId, credit: 3000 },
+      ],
+    })).toThrow('introuvable');
+  });
+});
+
+describe('deleteJournalEntry', () => {
+  let fiscalYearId: number;
+  let caisseId: number;
+  let cotisationsId: number;
+  let entryId: number;
+
+  beforeEach(() => {
+    freshDb();
+    const fy = createFiscalYear(2025);
+    fiscalYearId = fy.id;
+    const accounts = getAllAccounts();
+    caisseId      = accounts.find(a => a.number === '100')!.id;
+    cotisationsId = accounts.find(a => a.number === '300')!.id;
+    const entry = createJournalEntry({
+      fiscal_year_id: fiscalYearId,
+      date: '2025-03-08',
+      description: 'Écriture à supprimer',
+      lines: [
+        { account_id: caisseId,      debit:  3000 },
+        { account_id: cotisationsId, credit: 3000 },
+      ],
+    });
+    entryId = entry.id;
+  });
+
+  it('supprime l\'écriture et ses lignes en cascade', () => {
+    deleteJournalEntry(entryId);
+    expect(getJournalEntries(fiscalYearId)).toHaveLength(0);
+  });
+
+  it('rejette la suppression sur un exercice clôturé', () => {
+    getDb().prepare('UPDATE fiscal_years SET is_closed = 1 WHERE id = ?').run(fiscalYearId);
+    expect(() => deleteJournalEntry(entryId)).toThrow('clôturé');
+  });
+
+  it('rejette la suppression d\'une écriture introuvable', () => {
+    expect(() => deleteJournalEntry(9999)).toThrow('introuvable');
   });
 });
