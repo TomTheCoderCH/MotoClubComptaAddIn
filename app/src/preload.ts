@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { Account, FiscalYear, JournalEntry, JournalEntryLine, AccountBalance, CreateJournalEntryPayload } from './types';
+import type { Account, FiscalYear, JournalEntry, JournalEntryLine, AccountBalance, CreateJournalEntryPayload, UpdateJournalEntryPayload } from './types';
 
 // API exposée au renderer via window.api
 contextBridge.exposeInMainWorld('api', {
@@ -14,6 +14,8 @@ contextBridge.exposeInMainWorld('api', {
   // Journal
   getJournalEntries: (fiscalYearId: number)          => ipcRenderer.invoke('db:getJournalEntries', fiscalYearId),
   createJournalEntry: (payload: CreateJournalEntryPayload) => ipcRenderer.invoke('db:createJournalEntry', payload),
+  updateJournalEntry: (payload: UpdateJournalEntryPayload) => ipcRenderer.invoke('db:updateJournalEntry', payload),
+  deleteJournalEntry: (id: number)                   => ipcRenderer.invoke('db:deleteJournalEntry', id),
 
   // Soldes
   getAccountBalances: (fiscalYearId: number)         => ipcRenderer.invoke('db:getAccountBalances', fiscalYearId),
@@ -27,5 +29,7 @@ export type ElectronAPI = {
   createFiscalYear:  (year: number) => Promise<FiscalYear>;
   getJournalEntries: (fiscalYearId: number) => Promise<(JournalEntry & { lines: JournalEntryLine[] })[]>;
   createJournalEntry: (payload: CreateJournalEntryPayload) => Promise<JournalEntry>;
+  updateJournalEntry: (payload: UpdateJournalEntryPayload) => Promise<JournalEntry & { lines: JournalEntryLine[] }>;
+  deleteJournalEntry: (id: number) => Promise<void>;
   getAccountBalances: (fiscalYearId: number) => Promise<AccountBalance[]>;
 };

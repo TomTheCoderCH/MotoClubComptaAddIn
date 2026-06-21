@@ -10,8 +10,10 @@ import {
   getJournalEntries,
   createJournalEntry,
   getAccountBalances,
+  updateJournalEntry,
+  deleteJournalEntry,
 } from './db';
-import type { CreateJournalEntryPayload } from './types';
+import type { CreateJournalEntryPayload, UpdateJournalEntryPayload } from './types';
 
 if (started) app.quit();
 
@@ -24,6 +26,8 @@ function registerIpcHandlers(): void {
 
   ipcMain.handle('db:getJournalEntries',  (_e, fiscalYearId: number) => getJournalEntries(fiscalYearId));
   ipcMain.handle('db:createJournalEntry', (_e, payload: CreateJournalEntryPayload) => createJournalEntry(payload));
+  ipcMain.handle('db:updateJournalEntry', (_e, payload: UpdateJournalEntryPayload) => updateJournalEntry(payload));
+  ipcMain.handle('db:deleteJournalEntry', (_e, id: number) => deleteJournalEntry(id));
 
   ipcMain.handle('db:getAccountBalances', (_e, fiscalYearId: number) => getAccountBalances(fiscalYearId));
 }

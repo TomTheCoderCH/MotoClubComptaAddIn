@@ -5,6 +5,7 @@ import type {
   JournalEntryLine,
   AccountBalance,
   CreateJournalEntryPayload,
+  UpdateJournalEntryPayload,
 } from './types';
 
 declare global {
@@ -16,6 +17,8 @@ declare global {
       createFiscalYear:   (year: number) => Promise<FiscalYear>;
       getJournalEntries:  (fiscalYearId: number) => Promise<(JournalEntry & { lines: JournalEntryLine[] })[]>;
       createJournalEntry: (payload: CreateJournalEntryPayload) => Promise<JournalEntry>;
+      updateJournalEntry: (payload: UpdateJournalEntryPayload) => Promise<JournalEntry & { lines: JournalEntryLine[] }>;
+      deleteJournalEntry: (id: number) => Promise<void>;
       getAccountBalances: (fiscalYearId: number) => Promise<AccountBalance[]>;
     };
   }
