@@ -1,0 +1,126 @@
+import Database from 'better-sqlite3';
+import path from 'node:path';
+import { app } from 'electron';
+import { initSchema } from './schema';
+import { seedAccountsIfEmpty } from './seed';
+import type { Account, FiscalYear, JournalEntry, JournalEntryLine, AccountBalance, CreateJournalEntryPayload } from '../types';
+
+let db: Database.Database;
+
+export function getDb(): Database.Database {
+  if (!db) throw new Error('Base de données non initialisée');
+  return db;
+}
+
+export function openDatabase(dataPath?: string): Database.Database {
+  const dir = dataPath ?? path.join(app.getPath('userData'), 'data');
+  const dbPath = path.join(dir, 'mcy-compta.db');
+
+  // Créer le dossier si nécessaire
+  const fs = require('node:fs');
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+  db = new Database(dbPath);
+  initSchema(db);
+  seedAccountsIfEmpty(db);
+  return db;
+}
+
+// ─── Comptes ─────────────────────────────────────────────────────────────────
+
+export function getAllAccounts(): Account[] {
+  return getDb().prepare('SELECT * FROM accounts ORDER BY number').all() as Account[];
+}
+
+export function getActiveAccounts(): Account[] {
+  return getDb().prepare('SELECT * FROM accounts WHERE is_active = 1 ORDER BY number').all() as Account[];
+}
+
+// ─── Exercices ────────────────────────────────────────────────────────────────
+
+export function getAllFiscalYears(): FiscalYear[] {
+  return getDb().prepare('SELECT * FROM fiscal_years ORDER BY year DESC').all() as FiscalYear[];
+}
+
+export function createFiscalYear(year: number): FiscalYear {
+  const stmt = getDb().prepare(`
+    INSERT INTO fiscal_years (year, start_date, end_date)
+    VALUES (@year, @start_date, @end_date)
+  `);
+  const info = stmt.run({
+    year,
+    start_date: `${year}-01-01`,
+    end_date:   `${year}-12-31`,
+  });
+  return getDb().prepare('SELECT * FROM fiscal_years WHERE id = ?').get(info.lastInsertRowid) as FiscalYear;
+}
+
+// ─── Écritures ────────────────────────────────────────────────────────────────
+
+export function getJournalEntries(fiscalYearId: number): (JournalEntry & { lines: JournalEntryLine[] })[] {
+  const entries = getDb()
+    .prepare('SELECT * FROM journal_entries WHERE fiscal_year_id = ? ORDER BY date, id')
+    .all(fiscalYearId) as JournalEntry[];
+
+  const getLines = getDb().prepare('SELECT * FROM journal_entry_lines WHERE journal_entry_id = ?');
+  return entries.map(e => ({ ...e, lines: getLines.all(e.id) as JournalEntryLine[] }));
+}
+
+export function createJournalEntry(payload: CreateJournalEntryPayload): JournalEntry {
+  const { fiscal_year_id, date, description, piece, lines } = payload;
+
+  // Vérification exercice ouvert
+  const fy = getDb().prepare('SELECT is_closed FROM fiscal_years WHERE id = ?').get(fiscal_year_id) as { is_closed: number } | undefined;
+  if (!fy) throw new Error('Exercice introuvable');
+  if (fy.is_closed) throw new Error('Cet exercice est clôturé — aucune modification possible');
+
+  // Vérification équilibre débit/crédit
+  if (lines.length < 2) throw new Error('Une écriture doit comporter au moins 2 lignes');
+  const totalDebit  = lines.reduce((s, l) => s + (l.debit  ?? 0), 0);
+  const totalCredit = lines.reduce((s, l) => s + (l.credit ?? 0), 0);
+  if (totalDebit !== totalCredit) throw new Error(`Écriture déséquilibrée : débit ${totalDebit} ≠ crédit ${totalCredit}`);
+
+  return getDb().transaction(() => {
+    const entryInfo = getDb().prepare(`
+      INSERT INTO journal_entries (fiscal_year_id, date, description, piece)
+      VALUES (@fiscal_year_id, @date, @description, @piece)
+    `).run({ fiscal_year_id, date, description, piece: piece ?? null });
+
+    const lineStmt = getDb().prepare(`
+      INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit, credit)
+      VALUES (@journal_entry_id, @account_id, @debit, @credit)
+    `);
+    for (const l of lines) {
+      lineStmt.run({
+        journal_entry_id: entryInfo.lastInsertRowid,
+        account_id: l.account_id,
+        debit:  l.debit  ?? null,
+        credit: l.credit ?? null,
+      });
+    }
+
+    return getDb().prepare('SELECT * FROM journal_entries WHERE id = ?').get(entryInfo.lastInsertRowid) as JournalEntry;
+  })();
+}
+
+// ─── Soldes ───────────────────────────────────────────────────────────────────
+
+export function getAccountBalances(fiscalYearId: number): AccountBalance[] {
+  return getDb().prepare(`
+    SELECT
+      a.number,
+      a.name,
+      SUM(COALESCE(l.debit, 0))  AS total_debit,
+      SUM(COALESCE(l.credit, 0)) AS total_credit,
+      CASE a.normal_balance
+        WHEN 'DEBIT'  THEN SUM(COALESCE(l.debit,0)) - SUM(COALESCE(l.credit,0))
+        WHEN 'CREDIT' THEN SUM(COALESCE(l.credit,0)) - SUM(COALESCE(l.debit,0))
+      END AS solde
+    FROM accounts a
+    JOIN journal_entry_lines l ON l.account_id = a.id
+    JOIN journal_entries e     ON e.id = l.journal_entry_id
+    WHERE e.fiscal_year_id = ?
+    GROUP BY a.id
+    ORDER BY a.number
+  `).all(fiscalYearId) as AccountBalance[];
+}
