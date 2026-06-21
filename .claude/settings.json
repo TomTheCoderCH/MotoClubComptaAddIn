@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(fnm env --shell powershell | Invoke-Expression; Set-Location \"d:\\\\Dev\\\\Git\\\\MotoClubComptaAddIn\\\\app\"; node -e \"const pkg = require\\('./package.json'\\); console.log\\(JSON.stringify\\({react: pkg.dependencies?.react, 'better-sqlite3': pkg.dependencies?.['better-sqlite3'], 'vitejs-plugin-react': pkg.devDependencies?.['@vitejs/plugin-react']}, null, 2\\)\\)\")"
+    ]
+  }
+}
