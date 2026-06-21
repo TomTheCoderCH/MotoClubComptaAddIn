@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { FiscalYear, Account } from '../types';
+import type { FiscalYear, Account, JournalEntry, JournalEntryLine } from '../types';
 import { parseAmount, formatAmount, validateEntryBalance } from '../lib/accounting';
 
 interface Line {
@@ -11,17 +11,29 @@ interface Line {
 interface EntryFormProps {
   fiscalYear: FiscalYear;
   accounts:   Account[];
+  editEntry?: JournalEntry & { lines: JournalEntryLine[] };
+  hideTitle?: boolean;
   onCreated:  () => void;
   onCancel:   () => void;
 }
 
+function entryLinesToFormLines(lines: JournalEntryLine[]): Line[] {
+  return lines.map(l => ({
+    account_id: String(l.account_id),
+    debit:  l.debit  != null ? formatAmount(l.debit)  : '',
+    credit: l.credit != null ? formatAmount(l.credit) : '',
+  }));
+}
+
 const emptyLine = (): Line => ({ account_id: '', debit: '', credit: '' });
 
-export default function EntryForm({ fiscalYear, accounts, onCreated, onCancel }: EntryFormProps) {
-  const [date,        setDate]        = useState(today());
-  const [description, setDescription] = useState('');
-  const [piece,       setPiece]       = useState('');
-  const [lines,       setLines]       = useState<Line[]>([emptyLine(), emptyLine()]);
+export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, onCreated, onCancel }: EntryFormProps) {
+  const [date,        setDate]        = useState(editEntry?.date ?? today());
+  const [description, setDescription] = useState(editEntry?.description ?? '');
+  const [piece,       setPiece]       = useState(editEntry?.piece ?? '');
+  const [lines,       setLines]       = useState<Line[]>(
+    editEntry ? entryLinesToFormLines(editEntry.lines) : [emptyLine(), emptyLine()],
+  );
   const [submitting,  setSubmitting]  = useState(false);
   const [apiError,    setApiError]    = useState<string | null>(null);
 
@@ -87,13 +99,23 @@ export default function EntryForm({ fiscalYear, accounts, onCreated, onCancel }:
 
     setSubmitting(true);
     try {
-      await window.api.createJournalEntry({
-        fiscal_year_id: fiscalYear.id,
-        date,
-        description:    description.trim(),
-        piece:          piece.trim() || undefined,
-        lines:          payload,
-      });
+      if (editEntry) {
+        await window.api.updateJournalEntry({
+          id:          editEntry.id,
+          date,
+          description: description.trim(),
+          piece:       piece.trim() || undefined,
+          lines:       payload,
+        });
+      } else {
+        await window.api.createJournalEntry({
+          fiscal_year_id: fiscalYear.id,
+          date,
+          description:    description.trim(),
+          piece:          piece.trim() || undefined,
+          lines:          payload,
+        });
+      }
       onCreated();
     } catch (e: unknown) {
       setApiError((e as Error).message);
@@ -104,7 +126,11 @@ export default function EntryForm({ fiscalYear, accounts, onCreated, onCancel }:
 
   return (
     <form onSubmit={handleSubmit} aria-label="Formulaire de saisie d'écriture" noValidate style={s.card}>
-      <h2 style={s.h2}>Nouvelle écriture — exercice {fiscalYear.year}</h2>
+      {!hideTitle && (
+        <h2 style={s.h2}>
+          {editEntry ? 'Modifier l\'écriture' : 'Nouvelle écriture'} — exercice {fiscalYear.year}
+        </h2>
+      )}
 
       {/* ── En-tête de l'écriture ── */}
       <div style={s.row}>

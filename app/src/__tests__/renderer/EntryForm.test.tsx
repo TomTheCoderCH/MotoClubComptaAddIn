@@ -164,3 +164,65 @@ describe('EntryForm — soumission', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Exercice clôturé');
   });
 });
+
+const editEntry = {
+  id: 42,
+  fiscal_year_id: 1,
+  date: '2025-04-10',
+  description: 'Cotisation à corriger',
+  piece: 'P-099',
+  is_opening_balance: false,
+  is_closing_entry: false,
+  created_at: '',
+  updated_at: '',
+  lines: [
+    { id: 1, journal_entry_id: 42, account_id: 1, debit: 3000, credit: null, created_at: '' },
+    { id: 2, journal_entry_id: 42, account_id: 2, debit: null, credit: 3000, created_at: '' },
+  ],
+};
+
+describe('EntryForm — mode édition', () => {
+  beforeEach(() => {
+    vi.stubGlobal('api', {
+      createJournalEntry: vi.fn().mockResolvedValue({ id: 1 }),
+      updateJournalEntry: vi.fn().mockResolvedValue({ id: 42 }),
+    });
+  });
+
+  it('pré-remplit la date depuis editEntry', () => {
+    render(<EntryForm {...defaultProps} editEntry={editEntry} />);
+    expect(screen.getByLabelText('Date *')).toHaveValue('2025-04-10');
+  });
+
+  it('pré-remplit le libellé depuis editEntry', () => {
+    render(<EntryForm {...defaultProps} editEntry={editEntry} />);
+    expect(screen.getByLabelText('Libellé *')).toHaveValue('Cotisation à corriger');
+  });
+
+  it('pré-remplit la pièce depuis editEntry', () => {
+    render(<EntryForm {...defaultProps} editEntry={editEntry} />);
+    expect(screen.getByLabelText('Pièce')).toHaveValue('P-099');
+  });
+
+  it('pré-remplit les lignes depuis editEntry', () => {
+    render(<EntryForm {...defaultProps} editEntry={editEntry} />);
+    // 2 lignes pré-remplies
+    expect(screen.getAllByRole('combobox')).toHaveLength(2);
+    expect(screen.getByRole('spinbutton', { name: 'Débit ligne 1' })).toHaveValue(30);
+    expect(screen.getByRole('spinbutton', { name: 'Crédit ligne 2' })).toHaveValue(30);
+  });
+
+  it('appelle updateJournalEntry (et non createJournalEntry) à la soumission', async () => {
+    render(<EntryForm {...defaultProps} editEntry={editEntry} />);
+    await userEvent.click(screen.getByRole('button', { name: /Enregistrer/ }));
+    expect(window.api.updateJournalEntry).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 42 }),
+    );
+    expect(window.api.createJournalEntry).not.toHaveBeenCalled();
+  });
+
+  it('masque le titre quand hideTitle est true', () => {
+    render(<EntryForm {...defaultProps} hideTitle />);
+    expect(screen.queryByRole('heading', { level: 2 })).not.toBeInTheDocument();
+  });
+});
