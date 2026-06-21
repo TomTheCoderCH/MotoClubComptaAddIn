@@ -459,9 +459,9 @@ app/
 
 #### Fonctionnalités
 - [x] Layout principal avec navigation sidebar : Plan comptable / Journal / Exercices / Soldes — 60 tests passent
-- [ ] Gestion des exercices : créer l'exercice 2025 via l'UI
-- [ ] Formulaire de saisie d'écritures (≥ 2 lignes, validation D/C en temps réel)
-- [ ] Tests composants React des futures vues (formulaire, liste écritures, soldes)
+- [x] Gestion des exercices : créer l'exercice 2025 via l'UI (FiscalYearsPage)
+- [x] Formulaire de saisie d'écritures (EntryForm : ≥ 2 lignes, validation D/C en temps réel, noValidate)
+- [x] Tests composants React (FiscalYearsPage 11 tests, EntryForm 14 tests) — 85 tests au total
 - [ ] Vue des soldes par compte sur un exercice donné
 - [ ] Sauvegarde automatique à la fermeture (`backup()` de better-sqlite3) + bouton export manuel
 - [ ] Sélecteur du dossier de données au premier lancement (`%APPDATA%\MCYCompta\settings.json`)
