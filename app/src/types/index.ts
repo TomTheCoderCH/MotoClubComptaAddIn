@@ -57,6 +57,7 @@ export interface JournalEntryLine {
 export interface AccountBalance {
   number: string;
   name: string;
+  class: number;
   total_debit: number;
   total_credit: number;
   solde: number;

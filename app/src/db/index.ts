@@ -116,6 +116,7 @@ export function getAccountBalances(fiscalYearId: number): AccountBalance[] {
     SELECT
       a.number,
       a.name,
+      a.class,
       SUM(COALESCE(l.debit, 0))  AS total_debit,
       SUM(COALESCE(l.credit, 0)) AS total_credit,
       CASE a.normal_balance

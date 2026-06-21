@@ -232,4 +232,13 @@ describe('Soldes par compte', () => {
     const raiffeisen = balances.find(b => b.number === '101');
     expect(raiffeisen).toBeUndefined();
   });
+
+  it('retourne le champ class pour chaque compte', () => {
+    const balances = getAccountBalances(fiscalYearId);
+    const caisse = balances.find(b => b.number === '100');
+    expect(caisse).toBeDefined();
+    expect(caisse!.class).toBe(1); // Caisse est en classe 1 (Actifs)
+    const cotis = balances.find(b => b.number === '300');
+    expect(cotis!.class).toBe(3); // Cotisations membres est en classe 3 (Produits)
+  });
 });
