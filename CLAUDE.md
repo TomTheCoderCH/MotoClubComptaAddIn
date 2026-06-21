@@ -375,6 +375,62 @@ GROUP BY a.id;
 
 ---
 
+## Stratégie de tests
+
+### Objectif double
+
+1. **Fiabilité** — garantir les invariants comptables (équilibre D/C, soldes, clôture)
+2. **Apprentissage** — couvrir tous les niveaux de test pour se former aux frameworks de test de l'écosystème Electron/React/TypeScript
+
+### Outils retenus
+
+| Niveau | Outil | Rôle |
+|---|---|---|
+| Unitaire & intégration | **Vitest** | Naturel avec Vite, très rapide, compatible TypeScript |
+| Composants React | **React Testing Library** + `@testing-library/user-event` | Tester le comportement utilisateur, pas l'implémentation |
+| IPC Electron | **Vitest** + mocks manuels du `contextBridge` | Tester les contrats main ↔ renderer sans lancer Electron |
+| E2E (flux complets) | **Playwright** avec support Electron (`@playwright/test`) | Lancer l'app réelle et simuler des scénarios complets |
+
+### Structure des tests
+
+```
+app/
+├── src/
+│   ├── main/
+│   │   └── __tests__/
+│   │       ├── db.test.ts           ← SQLite en mémoire, CRUD, contraintes
+│   │       ├── ipc-handlers.test.ts ← handlers IPC (validation, réponses)
+│   │       └── accounting.test.ts   ← logique métier pure (soldes, clôture)
+│   └── renderer/
+│       └── __tests__/
+│           ├── AccountList.test.tsx ← rendu composant plan comptable
+│           ├── EntryForm.test.tsx   ← formulaire saisie, validation D/C live
+│           └── LedgerView.test.tsx  ← vue journal et soldes
+└── e2e/
+    ├── fiscal-year.spec.ts          ← créer un exercice, le clôturer
+    ├── journal-entry.spec.ts        ← saisir une écriture complète
+    └── balance.spec.ts              ← vérifier les soldes après écritures
+```
+
+### Conventions
+
+- Base de données de test : SQLite **en mémoire** (`:memory:`) — isolation totale, pas de fichier résiduel
+- Les mocks IPC simulent `window.api` via `vi.mock()` dans les tests renderer
+- Tests unitaires : **sans side-effects** (pas de DB, pas d'Electron)
+- Tests E2E : lancent l'application réelle avec une DB temporaire dans `%TEMP%`
+- Seuil de couverture visé : **80%** sur la logique métier (main/accounting), pas de seuil imposé sur le renderer
+
+### Ordre d'implémentation recommandé
+
+1. Setup Vitest (`vitest.config.ts` partagé main + renderer)
+2. Tests unitaires de la logique comptable (`accounting.test.ts`)
+3. Tests d'intégration SQLite (`db.test.ts`)
+4. Tests IPC handlers (`ipc-handlers.test.ts`)
+5. Tests composants React (`*.test.tsx` avec React Testing Library)
+6. Setup Playwright + tests E2E (`e2e/`)
+
+---
+
 ## État d'avancement
 
 > Mis à jour au fil des sessions. Toujours refléter la réalité du code committé.
@@ -393,15 +449,26 @@ GROUP BY a.id;
 
 ### À faire — prochaines étapes
 
+#### Infrastructure de tests
+- [x] Setup Vitest (config main + renderer, jsdom pour le renderer)
+- [x] Tests unitaires logique comptable (`accounting.test.ts`) — 16 tests
+- [x] Tests d'intégration SQLite en mémoire (`db.test.ts`) — 19 tests
+- [x] Tests composants React (`renderer/App.test.tsx`) — 10 tests
+- [x] Setup Playwright E2E pour Electron (`e2e/electron-fixture.ts` + `app.spec.ts`)
+- [ ] Tests handlers IPC (`ipc-handlers.test.ts`)
+
+#### Fonctionnalités
 - [ ] Layout principal avec navigation (sidebar ou onglets) : Plan comptable / Journal / Exercices / Soldes
 - [ ] Gestion des exercices : créer l'exercice 2025 via l'UI
 - [ ] Formulaire de saisie d'écritures (≥ 2 lignes, validation D/C en temps réel)
+- [ ] Tests composants React des futures vues (formulaire, liste écritures, soldes)
 - [ ] Vue des soldes par compte sur un exercice donné
 - [ ] Sauvegarde automatique à la fermeture (`backup()` de better-sqlite3) + bouton export manuel
 - [ ] Sélecteur du dossier de données au premier lancement (`%APPDATA%\MCYCompta\settings.json`)
 - [ ] Vue journal — liste des écritures avec filtres (date, compte, description)
 - [ ] Saisie des soldes à nouveau (report d'exercice)
 - [ ] Écritures de clôture automatiques (soldage 3xx/4xx → 900 → 290)
+- [ ] Tests E2E Playwright (flux exercice, saisie écriture, soldes)
 - [ ] Export Excel de clôture (`exceljs`) reproduisant la structure actuelle
 
 ### Notes techniques actives
@@ -409,3 +476,5 @@ GROUP BY a.id;
 - `@vitejs/plugin-react` doit rester en **v4.x** — les v5+ sont ESM-only, incompatibles avec electron-forge/esbuild en CJS
 - `better-sqlite3` est externalisé du bundle Vite (main) et reconstruit via `rebuildConfig` dans `forge.config.ts`
 - Les montants sont stockés en **centimes** (INTEGER) — jamais de float pour les montants CHF
+- `better-sqlite3` compilé pour Electron (NODE_MODULE_VERSION 146) ne tourne pas dans le Node système (v127). Le script `pretest` exécute `npm rebuild better-sqlite3` pour le recompiler pour Node avant les tests. `npm start` le recompile automatiquement pour Electron via Electron Forge.
+- Les tests Vitest n'incluent que `src/**` (`include: ['src/**/*.{test,spec}.{ts,tsx}']`) pour éviter de ramasser les specs Playwright du dossier `e2e/`.

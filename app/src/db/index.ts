@@ -3,6 +3,7 @@ import path from 'node:path';
 import { app } from 'electron';
 import { initSchema } from './schema';
 import { seedAccountsIfEmpty } from './seed';
+import { validateEntryBalance } from '../lib/accounting';
 import type { Account, FiscalYear, JournalEntry, JournalEntryLine, AccountBalance, CreateJournalEntryPayload } from '../types';
 
 let db: Database.Database;
@@ -13,6 +14,14 @@ export function getDb(): Database.Database {
 }
 
 export function openDatabase(dataPath?: string): Database.Database {
+  // Mode test : base SQLite en mémoire (isolation totale, pas de fichier résiduel)
+  if (dataPath === ':memory:') {
+    db = new Database(':memory:');
+    initSchema(db);
+    seedAccountsIfEmpty(db);
+    return db;
+  }
+
   const dir = dataPath ?? path.join(app.getPath('userData'), 'data');
   const dbPath = path.join(dir, 'mcy-compta.db');
 
@@ -75,10 +84,7 @@ export function createJournalEntry(payload: CreateJournalEntryPayload): JournalE
   if (fy.is_closed) throw new Error('Cet exercice est clôturé — aucune modification possible');
 
   // Vérification équilibre débit/crédit
-  if (lines.length < 2) throw new Error('Une écriture doit comporter au moins 2 lignes');
-  const totalDebit  = lines.reduce((s, l) => s + (l.debit  ?? 0), 0);
-  const totalCredit = lines.reduce((s, l) => s + (l.credit ?? 0), 0);
-  if (totalDebit !== totalCredit) throw new Error(`Écriture déséquilibrée : débit ${totalDebit} ≠ crédit ${totalCredit}`);
+  validateEntryBalance(lines);
 
   return getDb().transaction(() => {
     const entryInfo = getDb().prepare(`
