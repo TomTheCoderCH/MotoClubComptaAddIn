@@ -37,11 +37,10 @@ describe('JournalFilters', () => {
     expect(screen.getByLabelText('Date de fin')).toBeInTheDocument();
   });
 
-  it('appelle onChange avec le texte mis à jour', async () => {
-    const onChange = vi.fn();
-    render(<JournalFilters filters={DEFAULT_FILTERS} accounts={accounts} onChange={onChange} />);
+  it('met à jour le texte de recherche après saisie', async () => {
+    render(<JournalFiltersWrapper />);
     await userEvent.type(screen.getByRole('textbox', { name: /libellé/i }), 'AXA');
-    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'A' }));
+    expect(screen.getByRole('textbox', { name: /libellé/i })).toHaveValue('AXA');
   });
 
   it('appelle onChange avec accountId mis à jour', async () => {

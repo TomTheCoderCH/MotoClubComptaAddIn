@@ -7,8 +7,8 @@ interface ConfirmDialogProps {
 export default function ConfirmDialog({ message, onConfirm, onCancel }: ConfirmDialogProps) {
   return (
     <div style={s.overlay} data-testid="confirm-overlay">
-      <div style={s.card} role="alertdialog" aria-modal="true">
-        <p style={s.message}>{message}</p>
+      <div style={s.card} role="alertdialog" aria-modal="true" aria-describedby="confirm-message">
+        <p id="confirm-message" style={s.message}>{message}</p>
         <div style={s.actions}>
           <button onClick={onCancel}  style={s.cancelBtn}>Annuler</button>
           <button onClick={onConfirm} style={s.confirmBtn}>Confirmer</button>

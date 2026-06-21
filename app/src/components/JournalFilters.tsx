@@ -36,7 +36,6 @@ export default function JournalFilters({ filters, accounts, onChange }: JournalF
           value={filters.dateFrom}
           onChange={e => onChange({ ...filters, dateFrom: e.target.value })}
           style={s.dateInput}
-          aria-label="Date de début"
         />
       </label>
       <label style={s.label}>
@@ -46,7 +45,6 @@ export default function JournalFilters({ filters, accounts, onChange }: JournalF
           value={filters.dateTo}
           onChange={e => onChange({ ...filters, dateTo: e.target.value })}
           style={s.dateInput}
-          aria-label="Date de fin"
         />
       </label>
       <button onClick={() => onChange(DEFAULT_FILTERS)} style={s.resetBtn}>

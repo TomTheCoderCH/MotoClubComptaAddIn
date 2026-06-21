@@ -45,7 +45,11 @@ export default function JournalPage() {
   async function reloadEntries() {
     const fy = years.find(y => y.year === selectedYear);
     if (!fy) return;
-    setEntries(await window.api.getJournalEntries(fy.id));
+    try {
+      setEntries(await window.api.getJournalEntries(fy.id));
+    } catch (e: unknown) {
+      setError((e as Error).message);
+    }
   }
 
   async function handleDeleteConfirmed() {
