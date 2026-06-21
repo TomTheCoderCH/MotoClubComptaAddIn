@@ -458,7 +458,7 @@ app/
 - [ ] Tests handlers IPC (`ipc-handlers.test.ts`)
 
 #### Fonctionnalités
-- [ ] Layout principal avec navigation (sidebar ou onglets) : Plan comptable / Journal / Exercices / Soldes
+- [x] Layout principal avec navigation sidebar : Plan comptable / Journal / Exercices / Soldes — 60 tests passent
 - [ ] Gestion des exercices : créer l'exercice 2025 via l'UI
 - [ ] Formulaire de saisie d'écritures (≥ 2 lignes, validation D/C en temps réel)
 - [ ] Tests composants React des futures vues (formulaire, liste écritures, soldes)
