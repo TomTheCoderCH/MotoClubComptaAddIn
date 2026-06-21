@@ -473,7 +473,7 @@ app/
 
 ### Notes techniques actives
 
-- `@vitejs/plugin-react` doit rester en **v4.x** — les v5+ sont ESM-only, incompatibles avec electron-forge/esbuild en CJS
+- `@vitejs/plugin-react` est en **v5.x** — ESM-only, compatible grâce au renommage de `vite.renderer.config.ts` → **`vite.renderer.config.mts`** (force le mode ESM dans esbuild). Sans le `.mts`, Vite 5 échoue avec `"ESM file cannot be loaded by require"`. Le `vitest.config.ts` n'est pas affecté car Vitest 4.x utilise son propre Vite 8.x en interne.
 - `better-sqlite3` est externalisé du bundle Vite (main) et reconstruit via `rebuildConfig` dans `forge.config.ts`
 - Les montants sont stockés en **centimes** (INTEGER) — jamais de float pour les montants CHF
 - `better-sqlite3` compilé pour Electron (NODE_MODULE_VERSION 146) ne tourne pas dans le Node système (v127). Le script `pretest` exécute `npm rebuild better-sqlite3` pour le recompiler pour Node avant les tests. `npm start` le recompile automatiquement pour Electron via Electron Forge.
