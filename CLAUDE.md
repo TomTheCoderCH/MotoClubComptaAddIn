@@ -372,3 +372,40 @@ JOIN journal_entries e     ON e.id = l.journal_entry_id
 WHERE e.fiscal_year_id = ?
 GROUP BY a.id;
 ```
+
+---
+
+## État d'avancement
+
+> Mis à jour au fil des sessions. Toujours refléter la réalité du code committé.
+
+### Fait
+
+- [x] Analyse de la comptabilité de référence (`MCY comptes 25.xlsx`)
+- [x] Définition du plan comptable MCY (29 comptes, classes 1/2/3/4/9)
+- [x] Choix et documentation de l'architecture (CLAUDE.md complet)
+- [x] Bootstrap Electron Forge + React + TypeScript + Vite (`app/`) — commit `52cbf4a`
+- [x] Schéma SQLite complet (`fiscal_years`, `accounts`, `journal_entries`, `journal_entry_lines`)
+- [x] Seed automatique du plan comptable au premier lancement
+- [x] Pont IPC sécurisé (`contextBridge` → `window.api`) pour toutes les opérations DB
+- [x] Validation débit/crédit et contrôle exercice ouvert côté main process
+- [x] Affichage du plan comptable dans le renderer (React)
+
+### À faire — prochaines étapes
+
+- [ ] Layout principal avec navigation (sidebar ou onglets) : Plan comptable / Journal / Exercices / Soldes
+- [ ] Gestion des exercices : créer l'exercice 2025 via l'UI
+- [ ] Formulaire de saisie d'écritures (≥ 2 lignes, validation D/C en temps réel)
+- [ ] Vue des soldes par compte sur un exercice donné
+- [ ] Sauvegarde automatique à la fermeture (`backup()` de better-sqlite3) + bouton export manuel
+- [ ] Sélecteur du dossier de données au premier lancement (`%APPDATA%\MCYCompta\settings.json`)
+- [ ] Vue journal — liste des écritures avec filtres (date, compte, description)
+- [ ] Saisie des soldes à nouveau (report d'exercice)
+- [ ] Écritures de clôture automatiques (soldage 3xx/4xx → 900 → 290)
+- [ ] Export Excel de clôture (`exceljs`) reproduisant la structure actuelle
+
+### Notes techniques actives
+
+- `@vitejs/plugin-react` doit rester en **v4.x** — les v5+ sont ESM-only, incompatibles avec electron-forge/esbuild en CJS
+- `better-sqlite3` est externalisé du bundle Vite (main) et reconstruit via `rebuildConfig` dans `forge.config.ts`
+- Les montants sont stockés en **centimes** (INTEGER) — jamais de float pour les montants CHF
