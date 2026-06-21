@@ -75,3 +75,25 @@ export interface CreateJournalEntryPayload {
     credit?: number;
   }>;
 }
+
+export interface JournalFilters {
+  text: string;
+  accountId: number | null;
+  dateFrom: string;
+  dateTo: string;
+}
+
+export const DEFAULT_FILTERS: JournalFilters = {
+  text: '',
+  accountId: null,
+  dateFrom: '',
+  dateTo: '',
+};
+
+export interface UpdateJournalEntryPayload {
+  id: number;
+  date: string;
+  description: string;
+  piece?: string;
+  lines: Array<{ account_id: number; debit?: number; credit?: number }>;
+}
