@@ -465,7 +465,7 @@ app/
 - [x] Vue des soldes par compte sur un exercice donné (BalancesPage, groupés par classe)
 - [x] Vue journal avec filtres (libellé, compte/grand-livre, plage de dates) + modification et suppression d'écritures via modale — 143 tests au total
 - [x] Sauvegarde automatique à la fermeture (`backup()` de better-sqlite3) + bouton export manuel + page Paramètres — 190 tests au total
-- [ ] Sélecteur du dossier de données au premier lancement (`%APPDATA%\MCYCompta\settings.json`)
+- [x] Sélecteur du dossier de données au premier lancement (`%APPDATA%\MCYCompta\settings.json`) + migration + WelcomePage — 219 tests au total
 - [ ] Saisie des soldes à nouveau (report d'exercice)
 - [ ] Écritures de clôture automatiques (soldage 3xx/4xx → 900 → 290)
 - [ ] Tests E2E Playwright (flux exercice, saisie écriture, soldes)
