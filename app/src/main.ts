@@ -1,8 +1,9 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, dialog } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
-import { openDatabase } from './db';
+import { openDatabase, getDb, getDbDir } from './db';
 import { registerIpcHandlers } from './ipc-handlers';
+import { performBackup, pruneBackups } from './backup';
 
 if (started) app.quit();
 
@@ -34,6 +35,22 @@ app.on('ready', () => {
   openDatabase();
   registerIpcHandlers();
   createWindow();
+});
+
+app.on('before-quit', async (e) => {
+  e.preventDefault();
+  try {
+    const backupDir = path.join(getDbDir(), 'backups');
+    await performBackup(getDb(), backupDir);
+    pruneBackups(backupDir);
+  } catch (err) {
+    dialog.showErrorBox(
+      'Erreur de sauvegarde',
+      `La sauvegarde automatique a échoué :\n${String(err)}\n\nL'application va quand même se fermer.`,
+    );
+  } finally {
+    app.exit(0);
+  }
 });
 
 app.on('window-all-closed', () => {
