@@ -4,6 +4,8 @@ import started from 'electron-squirrel-startup';
 import { openDatabase } from './db';
 import { registerIpcHandlers } from './ipc-handlers';
 
+if (started) app.quit();
+
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
     width: 1280,
