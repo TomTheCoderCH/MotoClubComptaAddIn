@@ -500,4 +500,15 @@ describe('getOpeningBalanceSuggestions + createOpeningBalanceEntry', () => {
       { accountId: capitalId, amountCents: 100000 },
     ])).toThrow('clôturé');
   });
+
+  it('createOpeningBalanceEntry rejette si des soldes à nouveau existent déjà', () => {
+    createOpeningBalanceEntry(fy2026Id, [
+      { accountId: caisseId,  amountCents: 100000 },
+      { accountId: capitalId, amountCents: 100000 },
+    ]);
+    expect(() => createOpeningBalanceEntry(fy2026Id, [
+      { accountId: caisseId,  amountCents: 100000 },
+      { accountId: capitalId, amountCents: 100000 },
+    ])).toThrow('existent déjà');
+  });
 });

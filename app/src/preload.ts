@@ -23,7 +23,7 @@ contextBridge.exposeInMainWorld('api', {
   // Soldes à nouveau
   getOpeningBalanceSuggestions: (fiscalYearId: number) =>
     ipcRenderer.invoke('openingBalance:getSuggested', fiscalYearId),
-  createOpeningBalance: (fiscalYearId: number, lines: import('./types').OpeningBalanceLine[]) =>
+  createOpeningBalance: (fiscalYearId: number, lines: OpeningBalanceLine[]) =>
     ipcRenderer.invoke('openingBalance:create', fiscalYearId, lines),
 
   // Sauvegarde

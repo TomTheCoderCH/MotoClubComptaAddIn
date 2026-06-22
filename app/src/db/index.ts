@@ -86,7 +86,11 @@ export function createFiscalYear(year: number): FiscalYear {
     start_date: `${year}-01-01`,
     end_date:   `${year}-12-31`,
   });
-  return getDb().prepare('SELECT * FROM fiscal_years WHERE id = ?').get(info.lastInsertRowid) as FiscalYear;
+  return getDb().prepare(`
+    SELECT fy.*, 0 AS hasOpeningBalance
+    FROM fiscal_years fy
+    WHERE fy.id = ?
+  `).get(info.lastInsertRowid) as FiscalYear;
 }
 
 // ─── Écritures ────────────────────────────────────────────────────────────────
@@ -210,6 +214,11 @@ export function createOpeningBalanceEntry(
     .get(fiscalYearId) as { year: number; is_closed: number } | undefined;
   if (!fy) throw new Error('Exercice introuvable');
   if (fy.is_closed) throw new Error('Cet exercice est clôturé — aucune modification possible');
+
+  const existing = getDb()
+    .prepare('SELECT id FROM journal_entries WHERE fiscal_year_id = ? AND is_opening_balance = 1')
+    .get(fiscalYearId);
+  if (existing) throw new Error('Des soldes à nouveau existent déjà pour cet exercice');
 
   const nonZero = lines.filter(l => l.amountCents > 0);
 
