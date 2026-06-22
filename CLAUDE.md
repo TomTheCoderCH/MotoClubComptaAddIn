@@ -455,7 +455,7 @@ app/
 - [x] Tests d'intégration SQLite en mémoire (`db.test.ts`) — 19 tests
 - [x] Tests composants React (`renderer/App.test.tsx`) — 10 tests
 - [x] Setup Playwright E2E pour Electron (`e2e/electron-fixture.ts` + `app.spec.ts`)
-- [ ] Tests handlers IPC (`ipc-handlers.test.ts`)
+- [x] Tests handlers IPC (`ipc-handlers.test.ts` + `ipc-backup-handlers.test.ts`) — 26 tests
 
 #### Fonctionnalités
 - [x] Layout principal avec navigation sidebar : Plan comptable / Journal / Exercices / Soldes — 60 tests passent
@@ -464,7 +464,7 @@ app/
 - [x] Tests composants React (FiscalYearsPage 11 tests, EntryForm 20 tests) — 94 tests au total
 - [x] Vue des soldes par compte sur un exercice donné (BalancesPage, groupés par classe)
 - [x] Vue journal avec filtres (libellé, compte/grand-livre, plage de dates) + modification et suppression d'écritures via modale — 143 tests au total
-- [ ] Sauvegarde automatique à la fermeture (`backup()` de better-sqlite3) + bouton export manuel
+- [x] Sauvegarde automatique à la fermeture (`backup()` de better-sqlite3) + bouton export manuel + page Paramètres — 190 tests au total
 - [ ] Sélecteur du dossier de données au premier lancement (`%APPDATA%\MCYCompta\settings.json`)
 - [ ] Saisie des soldes à nouveau (report d'exercice)
 - [ ] Écritures de clôture automatiques (soldage 3xx/4xx → 900 → 290)
