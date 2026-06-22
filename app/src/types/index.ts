@@ -97,3 +97,9 @@ export interface UpdateJournalEntryPayload {
   piece?: string;
   lines: Array<{ account_id: number; debit?: number; credit?: number }>;
 }
+
+export interface BackupInfo {
+  filename: string;
+  date: string;  // ISO 8601 extrait du nom de fichier
+  sizeBytes: number;
+}

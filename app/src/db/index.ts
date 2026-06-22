@@ -7,10 +7,16 @@ import { validateEntryBalance } from '../lib/accounting';
 import type { Account, FiscalYear, JournalEntry, JournalEntryLine, AccountBalance, CreateJournalEntryPayload, UpdateJournalEntryPayload } from '../types';
 
 let db: Database.Database;
+let dbDir: string;
 
 export function getDb(): Database.Database {
   if (!db) throw new Error('Base de données non initialisée');
   return db;
+}
+
+export function getDbDir(): string {
+  if (!dbDir) throw new Error('Base de données non initialisée');
+  return dbDir;
 }
 
 export function openDatabase(dataPath?: string): Database.Database {
@@ -23,6 +29,7 @@ export function openDatabase(dataPath?: string): Database.Database {
   }
 
   const dir = dataPath ?? path.join(app.getPath('userData'), 'data');
+  dbDir = dir;
   const dbPath = path.join(dir, 'mcy-compta.db');
 
   // Créer le dossier si nécessaire
