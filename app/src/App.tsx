@@ -4,8 +4,9 @@ import AccountsPage    from './pages/AccountsPage';
 import JournalPage     from './pages/JournalPage';
 import FiscalYearsPage from './pages/FiscalYearsPage';
 import BalancesPage    from './pages/BalancesPage';
+import SettingsPage    from './pages/SettingsPage';
 
-export type Page = 'accounts' | 'journal' | 'fiscal-years' | 'balances';
+export type Page = 'accounts' | 'journal' | 'fiscal-years' | 'balances' | 'settings';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('accounts');
@@ -16,6 +17,7 @@ export default function App() {
       case 'journal':      return <JournalPage />;
       case 'fiscal-years': return <FiscalYearsPage />;
       case 'balances':     return <BalancesPage />;
+      case 'settings':     return <SettingsPage />;
     }
   };
 

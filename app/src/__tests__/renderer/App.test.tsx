@@ -31,6 +31,9 @@ beforeEach(() => {
     getJournalEntries:  vi.fn().mockResolvedValue([]),
     createJournalEntry: vi.fn(),
     getAccountBalances: vi.fn().mockResolvedValue([]),
+    listBackups:        vi.fn().mockResolvedValue([]),
+    exportBackup:       vi.fn().mockResolvedValue(null),
+    getDbPath:          vi.fn().mockResolvedValue(''),
   });
 });
 
@@ -40,12 +43,13 @@ describe('App — layout', () => {
     expect(screen.getByText('MCY Compta')).toBeInTheDocument();
   });
 
-  it('affiche les 4 items de navigation', () => {
+  it('affiche les 5 items de navigation', () => {
     render(<App />);
     expect(screen.getByRole('button', { name: 'Plan comptable' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Journal' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Exercices' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Soldes' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Paramètres' })).toBeInTheDocument();
   });
 
   it('démarre sur la page Plan comptable', () => {
