@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { BackupInfo } from '../types';
 
 type ExportStatus = 'idle' | 'loading' | 'success' | 'error' | 'cancelled';
+type ChangeStatus = 'idle' | 'loading' | 'cancelled';
 
 function formatSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} Ko`;
@@ -20,6 +21,7 @@ export default function SettingsPage() {
   const [exportStatus, setExportStatus] = useState<ExportStatus>('idle');
   const [exportPath,   setExportPath]   = useState<string | null>(null);
   const [error,        setError]        = useState<string | null>(null);
+  const [changeStatus, setChangeStatus] = useState<ChangeStatus>('idle');
 
   useEffect(() => {
     window.api.getDbPath()
@@ -47,6 +49,18 @@ export default function SettingsPage() {
     }
   }
 
+  async function handleChangePath() {
+    setChangeStatus('loading');
+    try {
+      const result = await window.api.changeDataDir();
+      if (result === null) setChangeStatus('cancelled');
+      // Si non annulé : app.relaunch() a été appelé, on n'arrive jamais ici
+    } catch (e) {
+      setChangeStatus('idle');
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
   return (
     <div>
       <h1 style={s.h1}>Paramètres</h1>
@@ -62,7 +76,16 @@ export default function SettingsPage() {
           aria-label="Chemin de la base de données"
           style={s.dbPathInput}
         />
-        <p style={s.hint}>Configurable dans une prochaine version.</p>
+        <button
+          onClick={handleChangePath}
+          disabled={changeStatus === 'loading'}
+          style={s.btnSecondary}
+        >
+          {changeStatus === 'loading' ? 'Migration en cours…' : 'Changer le dossier de données…'}
+        </button>
+        {changeStatus === 'cancelled' && (
+          <p style={s.hint} role="status">Opération annulée.</p>
+        )}
       </section>
 
       <section style={s.section}>
@@ -130,6 +153,7 @@ const s = {
   dbPathInput: { width: '100%', padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.875rem', color: '#475569', background: '#f8fafc', boxSizing: 'border-box' as const },
   hint:        { margin: '0.4rem 0 0', fontSize: '0.8rem', color: '#94a3b8' },
   btn:         { padding: '0.5rem 1rem', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.875rem', cursor: 'pointer', fontWeight: 500 },
+  btnSecondary: { marginTop: '0.5rem', padding: '0.4rem 0.9rem', background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.875rem', cursor: 'pointer' },
   success:     { margin: '0.5rem 0 0', fontSize: '0.875rem', color: '#16a34a' },
   errorText:   { margin: '0.5rem 0 0', fontSize: '0.875rem', color: '#dc2626' },
   alertError:  { background: '#fee2e2', border: '1px solid #fca5a5', padding: '0.75rem', borderRadius: '6px', marginBottom: '1.25rem', color: '#dc2626', fontSize: '0.875rem' },

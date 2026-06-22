@@ -20,9 +20,10 @@ const mockBackups: BackupInfo[] = [
 
 function mockApi(overrides: Partial<Window['api']> = {}) {
   vi.stubGlobal('api', {
-    getDbPath:    vi.fn().mockResolvedValue('C:/Users/tm/AppData/data/mcy-compta.db'),
-    listBackups:  vi.fn().mockResolvedValue(mockBackups),
-    exportBackup: vi.fn().mockResolvedValue(null),
+    getDbPath:     vi.fn().mockResolvedValue('C:/Users/tm/AppData/data/mcy-compta.db'),
+    listBackups:   vi.fn().mockResolvedValue(mockBackups),
+    exportBackup:  vi.fn().mockResolvedValue(null),
+    changeDataDir: vi.fn().mockResolvedValue(null),
     ...overrides,
   });
 }
@@ -92,6 +93,26 @@ describe('SettingsPage — export', () => {
     mockApi({ exportBackup: vi.fn().mockRejectedValue(new Error('Disk full')) });
     render(<SettingsPage />);
     await userEvent.click(screen.getByRole('button', { name: /Exporter/ }));
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+  });
+});
+
+describe('SettingsPage — changer le dossier', () => {
+  it('affiche le bouton "Changer le dossier de données…"', async () => {
+    render(<SettingsPage />);
+    expect(await screen.findByRole('button', { name: /Changer le dossier de données/ })).toBeInTheDocument();
+  });
+
+  it('appelle window.api.changeDataDir() au clic', async () => {
+    render(<SettingsPage />);
+    await userEvent.click(await screen.findByRole('button', { name: /Changer le dossier de données/ }));
+    expect(window.api.changeDataDir).toHaveBeenCalledOnce();
+  });
+
+  it('affiche le bandeau d\'erreur si changeDataDir() rejette', async () => {
+    mockApi({ changeDataDir: vi.fn().mockRejectedValue(new Error('Migration failed')) });
+    render(<SettingsPage />);
+    await userEvent.click(await screen.findByRole('button', { name: /Changer le dossier de données/ }));
     expect(await screen.findByRole('alert')).toBeInTheDocument();
   });
 });
