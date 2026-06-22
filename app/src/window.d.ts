@@ -24,6 +24,9 @@ declare global {
       listBackups:        () => Promise<BackupInfo[]>;
       exportBackup:       () => Promise<{ path: string } | null>;
       getDbPath:          () => Promise<string>;
+      getSettings:        () => Promise<{ dataDir: string } | null>;
+      chooseDataDir:      () => Promise<null>;
+      changeDataDir:      () => Promise<null>;
     };
   }
 }

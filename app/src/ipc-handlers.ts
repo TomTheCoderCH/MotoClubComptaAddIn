@@ -1,4 +1,4 @@
-import { ipcMain, dialog } from 'electron';
+import { ipcMain, dialog, app } from 'electron';
 import path from 'node:path';
 import {
   getAllAccounts,
@@ -15,6 +15,8 @@ import {
 } from './db';
 import { listBackups, formatBackupFilename } from './backup';
 import type { CreateJournalEntryPayload, UpdateJournalEntryPayload } from './types';
+import { readSettings, writeSettings } from './settings';
+import { migrateDataDir } from './migrate';
 
 export function registerIpcHandlers(): void {
   // ─── Comptes ────────────────────────────────────────────────────────────────
@@ -54,5 +56,32 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('backup:getDbPath', () => {
     return path.join(getDbDir(), 'mcy-compta.db');
+  });
+
+  // ─── Paramètres ──────────────────────────────────────────────────────────────
+  ipcMain.handle('settings:get', () => readSettings());
+
+  ipcMain.handle('settings:choose', async () => {
+    const result = await dialog.showOpenDialog({
+      title: 'Choisir le dossier de données',
+      properties: ['openDirectory', 'createDirectory'],
+    });
+    if (result.canceled || !result.filePaths[0]) return null;
+    writeSettings({ dataDir: result.filePaths[0] });
+    app.relaunch();
+    app.exit(0);
+  });
+
+  ipcMain.handle('settings:changeDataDir', async () => {
+    const result = await dialog.showOpenDialog({
+      title: 'Choisir le nouveau dossier de données',
+      properties: ['openDirectory', 'createDirectory'],
+    });
+    if (result.canceled || !result.filePaths[0]) return null;
+    const newDir = result.filePaths[0];
+    await migrateDataDir(getDbDir(), newDir);
+    writeSettings({ dataDir: newDir });
+    app.relaunch();
+    app.exit(0);
   });
 }

@@ -24,6 +24,11 @@ contextBridge.exposeInMainWorld('api', {
   listBackups:   ()  => ipcRenderer.invoke('backup:list'),
   exportBackup:  ()  => ipcRenderer.invoke('backup:export'),
   getDbPath:     ()  => ipcRenderer.invoke('backup:getDbPath'),
+
+  // Paramètres
+  getSettings:    () => ipcRenderer.invoke('settings:get'),
+  chooseDataDir:  () => ipcRenderer.invoke('settings:choose'),
+  changeDataDir:  () => ipcRenderer.invoke('settings:changeDataDir'),
 });
 
 // Déclaration TypeScript pour window.api dans le renderer
@@ -40,4 +45,7 @@ export type ElectronAPI = {
   listBackups:   () => Promise<BackupInfo[]>;
   exportBackup:  () => Promise<{ path: string } | null>;
   getDbPath:     () => Promise<string>;
+  getSettings:    () => Promise<{ dataDir: string } | null>;
+  chooseDataDir:  () => Promise<null>;
+  changeDataDir:  () => Promise<null>;
 };
