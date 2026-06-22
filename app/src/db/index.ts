@@ -19,6 +19,10 @@ export function getDbDir(): string {
   return dbDir;
 }
 
+export function isDbOpen(): boolean {
+  return !!db;
+}
+
 export function openDatabase(dataPath?: string): Database.Database {
   // Mode test : base SQLite en mémoire (isolation totale, pas de fichier résiduel)
   if (dataPath === ':memory:') {
