@@ -41,8 +41,9 @@ export default function SettingsPage() {
         setExportStatus('success');
         setExportPath(result.path);
       }
-    } catch {
+    } catch (e) {
       setExportStatus('error');
+      setError(e instanceof Error ? e.message : String(e));
     }
   }
 
@@ -86,7 +87,7 @@ export default function SettingsPage() {
           <p style={s.hint} role="status">Export annulé.</p>
         )}
         {exportStatus === 'error' && (
-          <p style={s.errorText} role="alert">Erreur lors de l&apos;export.</p>
+          <p style={s.errorText}>Erreur lors de l&apos;export.</p>
         )}
 
         <h3 style={s.h3}>

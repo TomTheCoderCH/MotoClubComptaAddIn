@@ -7,6 +7,8 @@ import { performBackup, pruneBackups } from './backup';
 
 if (started) app.quit();
 
+let isQuitting = false;
+
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
     width: 1280,
@@ -38,6 +40,8 @@ app.on('ready', () => {
 });
 
 app.on('before-quit', async (e) => {
+  if (isQuitting) return;
+  isQuitting = true;
   e.preventDefault();
   try {
     const backupDir = path.join(getDbDir(), 'backups');
