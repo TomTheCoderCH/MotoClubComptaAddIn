@@ -24,6 +24,7 @@ const mockAccounts: Account[] = [
 
 beforeEach(() => {
   vi.stubGlobal('api', {
+    getSettings:        vi.fn().mockResolvedValue({ dataDir: '/data' }),
     getAccounts:        vi.fn().mockResolvedValue(mockAccounts),
     getActiveAccounts:  vi.fn().mockResolvedValue(mockAccounts),
     getFiscalYears:     vi.fn().mockResolvedValue([]),
@@ -34,27 +35,29 @@ beforeEach(() => {
     listBackups:        vi.fn().mockResolvedValue([]),
     exportBackup:       vi.fn().mockResolvedValue(null),
     getDbPath:          vi.fn().mockResolvedValue(''),
+    chooseDataDir:      vi.fn().mockResolvedValue(null),
+    changeDataDir:      vi.fn().mockResolvedValue(null),
   });
 });
 
 describe('App — layout', () => {
-  it('affiche la sidebar avec le nom de l\'application', () => {
+  it('affiche la sidebar avec le nom de l\'application', async () => {
     render(<App />);
-    expect(screen.getByText('MCY Compta')).toBeInTheDocument();
+    expect(await screen.findByText('MCY Compta')).toBeInTheDocument();
   });
 
-  it('affiche les 5 items de navigation', () => {
+  it('affiche les 5 items de navigation', async () => {
     render(<App />);
-    expect(screen.getByRole('button', { name: 'Plan comptable' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Plan comptable' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Journal' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Exercices' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Soldes' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Paramètres' })).toBeInTheDocument();
   });
 
-  it('démarre sur la page Plan comptable', () => {
+  it('démarre sur la page Plan comptable', async () => {
     render(<App />);
-    expect(screen.getByRole('button', { name: 'Plan comptable' }))
+    expect(await screen.findByRole('button', { name: 'Plan comptable' }))
       .toHaveAttribute('aria-current', 'page');
   });
 });
@@ -67,19 +70,22 @@ describe('App — navigation', () => {
 
   it('navigue vers Journal au clic', async () => {
     render(<App />);
-    await userEvent.click(screen.getByRole('button', { name: 'Journal' }));
+    const btn = await screen.findByRole('button', { name: 'Journal' });
+    await userEvent.click(btn);
     expect(screen.getByRole('heading', { name: 'Journal' })).toBeInTheDocument();
   });
 
   it('navigue vers Exercices au clic', async () => {
     render(<App />);
-    await userEvent.click(screen.getByRole('button', { name: 'Exercices' }));
+    const btn = await screen.findByRole('button', { name: 'Exercices' });
+    await userEvent.click(btn);
     expect(screen.getByRole('heading', { name: 'Exercices' })).toBeInTheDocument();
   });
 
   it('navigue vers Soldes au clic', async () => {
     render(<App />);
-    await userEvent.click(screen.getByRole('button', { name: 'Soldes' }));
+    const btn = await screen.findByRole('button', { name: 'Soldes' });
+    await userEvent.click(btn);
     expect(screen.getByRole('heading', { name: 'Soldes' })).toBeInTheDocument();
   });
 });
@@ -103,5 +109,26 @@ describe('App — AccountsPage', () => {
     });
     render(<App />);
     expect(await screen.findByText(/DB non disponible/)).toBeInTheDocument();
+  });
+});
+
+describe('App — premier lancement', () => {
+  it('affiche WelcomePage si getSettings() retourne null', async () => {
+    vi.stubGlobal('api', {
+      ...window.api,
+      getSettings: vi.fn().mockResolvedValue(null),
+    });
+    render(<App />);
+    expect(await screen.findByRole('heading', { name: 'Bienvenue dans MCY Compta' })).toBeInTheDocument();
+  });
+
+  it("n'affiche pas la sidebar sur WelcomePage", async () => {
+    vi.stubGlobal('api', {
+      ...window.api,
+      getSettings: vi.fn().mockResolvedValue(null),
+    });
+    render(<App />);
+    await screen.findByRole('heading', { name: 'Bienvenue dans MCY Compta' });
+    expect(screen.queryByRole('button', { name: 'Plan comptable' })).not.toBeInTheDocument();
   });
 });
