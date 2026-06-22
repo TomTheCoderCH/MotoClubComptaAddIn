@@ -6,6 +6,7 @@ import type {
   AccountBalance,
   CreateJournalEntryPayload,
   UpdateJournalEntryPayload,
+  BackupInfo,
 } from './types';
 
 declare global {
@@ -20,6 +21,9 @@ declare global {
       updateJournalEntry: (payload: UpdateJournalEntryPayload) => Promise<JournalEntry & { lines: JournalEntryLine[] }>;
       deleteJournalEntry: (id: number) => Promise<void>;
       getAccountBalances: (fiscalYearId: number) => Promise<AccountBalance[]>;
+      listBackups:        () => Promise<BackupInfo[]>;
+      exportBackup:       () => Promise<{ path: string } | null>;
+      getDbPath:          () => Promise<string>;
     };
   }
 }

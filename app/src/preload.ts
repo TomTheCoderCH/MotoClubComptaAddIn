@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { Account, FiscalYear, JournalEntry, JournalEntryLine, AccountBalance, CreateJournalEntryPayload, UpdateJournalEntryPayload } from './types';
+import type { Account, FiscalYear, JournalEntry, JournalEntryLine, AccountBalance, CreateJournalEntryPayload, UpdateJournalEntryPayload, BackupInfo } from './types';
 
 // API exposée au renderer via window.api
 contextBridge.exposeInMainWorld('api', {
@@ -19,6 +19,11 @@ contextBridge.exposeInMainWorld('api', {
 
   // Soldes
   getAccountBalances: (fiscalYearId: number)         => ipcRenderer.invoke('db:getAccountBalances', fiscalYearId),
+
+  // Sauvegarde
+  listBackups:   ()  => ipcRenderer.invoke('backup:list'),
+  exportBackup:  ()  => ipcRenderer.invoke('backup:export'),
+  getDbPath:     ()  => ipcRenderer.invoke('backup:getDbPath'),
 });
 
 // Déclaration TypeScript pour window.api dans le renderer
@@ -32,4 +37,7 @@ export type ElectronAPI = {
   updateJournalEntry: (payload: UpdateJournalEntryPayload) => Promise<JournalEntry & { lines: JournalEntryLine[] }>;
   deleteJournalEntry: (id: number) => Promise<void>;
   getAccountBalances: (fiscalYearId: number) => Promise<AccountBalance[]>;
+  listBackups:   () => Promise<BackupInfo[]>;
+  exportBackup:  () => Promise<{ path: string } | null>;
+  getDbPath:     () => Promise<string>;
 };
