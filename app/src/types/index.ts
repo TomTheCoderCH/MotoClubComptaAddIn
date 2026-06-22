@@ -31,6 +31,7 @@ export interface FiscalYear {
   end_date: string;
   is_closed: boolean;
   created_at: string;
+  hasOpeningBalance: boolean;
 }
 
 export interface JournalEntry {
@@ -102,4 +103,18 @@ export interface BackupInfo {
   filename: string;
   date: string;  // ISO 8601 extrait du nom de fichier
   sizeBytes: number;
+}
+
+export interface OpeningBalanceSuggestion {
+  accountId: number;
+  accountNumber: string;
+  accountName: string;
+  type: AccountType;
+  normalBalance: NormalBalance;
+  suggestedAmountCents: number;
+}
+
+export interface OpeningBalanceLine {
+  accountId: number;
+  amountCents: number;
 }

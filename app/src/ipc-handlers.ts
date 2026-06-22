@@ -10,11 +10,13 @@ import {
   updateJournalEntry,
   deleteJournalEntry,
   getAccountBalances,
+  getOpeningBalanceSuggestions,
+  createOpeningBalanceEntry,
   getDb,
   getDbDir,
 } from './db';
 import { listBackups, formatBackupFilename } from './backup';
-import type { CreateJournalEntryPayload, UpdateJournalEntryPayload } from './types';
+import type { CreateJournalEntryPayload, UpdateJournalEntryPayload, OpeningBalanceLine } from './types';
 import { readSettings, writeSettings } from './settings';
 import { migrateDataDir } from './migrate';
 
@@ -84,4 +86,11 @@ export function registerIpcHandlers(): void {
     app.relaunch();
     app.exit(0);
   });
+
+  // ─── Soldes à nouveau ────────────────────────────────────────────────────────
+  ipcMain.handle('openingBalance:getSuggested', (_e, fiscalYearId: number) =>
+    getOpeningBalanceSuggestions(fiscalYearId));
+
+  ipcMain.handle('openingBalance:create', (_e, fiscalYearId: number, lines: OpeningBalanceLine[]) =>
+    createOpeningBalanceEntry(fiscalYearId, lines));
 }
