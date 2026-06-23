@@ -12,6 +12,9 @@ import {
   getAccountBalances,
   getOpeningBalanceSuggestions,
   createOpeningBalanceEntry,
+  getClosingPreview,
+  closeFiscalYear,
+  reopenFiscalYear,
   getDb,
   getDbDir,
 } from './db';
@@ -93,4 +96,14 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('openingBalance:create', (_e, fiscalYearId: number, lines: OpeningBalanceLine[]) =>
     createOpeningBalanceEntry(fiscalYearId, lines));
+
+  // ─── Clôture ─────────────────────────────────────────────────────────────────
+  ipcMain.handle('closing:getPreview', (_e, fiscalYearId: number) =>
+    getClosingPreview(fiscalYearId));
+
+  ipcMain.handle('closing:close', (_e, fiscalYearId: number) =>
+    closeFiscalYear(fiscalYearId));
+
+  ipcMain.handle('closing:reopen', (_e, fiscalYearId: number) =>
+    reopenFiscalYear(fiscalYearId));
 }

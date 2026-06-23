@@ -9,6 +9,7 @@ import type {
   BackupInfo,
   OpeningBalanceSuggestion,
   OpeningBalanceLine,
+  ClosingPreview,
 } from './types';
 
 declare global {
@@ -25,6 +26,9 @@ declare global {
       getAccountBalances: (fiscalYearId: number) => Promise<AccountBalance[]>;
       getOpeningBalanceSuggestions: (fiscalYearId: number) => Promise<OpeningBalanceSuggestion[]>;
       createOpeningBalance: (fiscalYearId: number, lines: OpeningBalanceLine[]) => Promise<void>;
+      getClosingPreview: (fiscalYearId: number) => Promise<ClosingPreview>;
+      closeFiscalYear:   (fiscalYearId: number) => Promise<void>;
+      reopenFiscalYear:  (fiscalYearId: number) => Promise<void>;
       listBackups:        () => Promise<BackupInfo[]>;
       exportBackup:       () => Promise<{ path: string } | null>;
       getDbPath:          () => Promise<string>;

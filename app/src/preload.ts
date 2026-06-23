@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { Account, FiscalYear, JournalEntry, JournalEntryLine, AccountBalance, CreateJournalEntryPayload, UpdateJournalEntryPayload, BackupInfo, OpeningBalanceSuggestion, OpeningBalanceLine } from './types';
+import type { Account, FiscalYear, JournalEntry, JournalEntryLine, AccountBalance, CreateJournalEntryPayload, UpdateJournalEntryPayload, BackupInfo, OpeningBalanceSuggestion, OpeningBalanceLine, ClosingPreview } from './types';
 
 // API exposée au renderer via window.api
 contextBridge.exposeInMainWorld('api', {
@@ -26,6 +26,14 @@ contextBridge.exposeInMainWorld('api', {
   createOpeningBalance: (fiscalYearId: number, lines: OpeningBalanceLine[]) =>
     ipcRenderer.invoke('openingBalance:create', fiscalYearId, lines),
 
+  // Clôture
+  getClosingPreview: (fiscalYearId: number) =>
+    ipcRenderer.invoke('closing:getPreview', fiscalYearId),
+  closeFiscalYear:   (fiscalYearId: number) =>
+    ipcRenderer.invoke('closing:close', fiscalYearId),
+  reopenFiscalYear:  (fiscalYearId: number) =>
+    ipcRenderer.invoke('closing:reopen', fiscalYearId),
+
   // Sauvegarde
   listBackups:   ()  => ipcRenderer.invoke('backup:list'),
   exportBackup:  ()  => ipcRenderer.invoke('backup:export'),
@@ -50,6 +58,9 @@ export type ElectronAPI = {
   getAccountBalances: (fiscalYearId: number) => Promise<AccountBalance[]>;
   getOpeningBalanceSuggestions: (fiscalYearId: number) => Promise<OpeningBalanceSuggestion[]>;
   createOpeningBalance: (fiscalYearId: number, lines: OpeningBalanceLine[]) => Promise<void>;
+  getClosingPreview: (fiscalYearId: number) => Promise<ClosingPreview>;
+  closeFiscalYear:   (fiscalYearId: number) => Promise<void>;
+  reopenFiscalYear:  (fiscalYearId: number) => Promise<void>;
   listBackups:   () => Promise<BackupInfo[]>;
   exportBackup:  () => Promise<{ path: string } | null>;
   getDbPath:     () => Promise<string>;
