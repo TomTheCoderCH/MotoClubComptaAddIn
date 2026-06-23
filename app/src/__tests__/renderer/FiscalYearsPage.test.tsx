@@ -29,6 +29,9 @@ function mockApi(years: FiscalYear[] = []) {
     })),
     getOpeningBalanceSuggestions: vi.fn().mockResolvedValue([]),
     createOpeningBalance:         vi.fn().mockResolvedValue(undefined),
+    getClosingPreview:  vi.fn().mockResolvedValue({ blockers: [], accounts: [], netResultCents: 0 }),
+    closeFiscalYear:    vi.fn().mockResolvedValue(undefined),
+    reopenFiscalYear:   vi.fn().mockResolvedValue(undefined),
   });
 }
 
@@ -205,5 +208,53 @@ describe('FiscalYearsPage — soldes à nouveau', () => {
 
     await screen.findByText('2023');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+});
+
+describe('FiscalYearsPage — clôture', () => {
+  it('affiche la colonne "Actions"', async () => {
+    mockApi([fy2025]);
+    render(<FiscalYearsPage />);
+    expect(await screen.findByRole('columnheader', { name: 'Actions' })).toBeInTheDocument();
+  });
+
+  it('affiche le bouton "Clôturer l\'exercice" sur un exercice ouvert', async () => {
+    mockApi([fy2025]);
+    render(<FiscalYearsPage />);
+    expect(await screen.findByRole('button', { name: 'Clôturer l\'exercice' })).toBeInTheDocument();
+  });
+
+  it('affiche le bouton "Rouvrir" sur un exercice clôturé', async () => {
+    mockApi([fy2024closed]);
+    render(<FiscalYearsPage />);
+    expect(await screen.findByRole('button', { name: 'Rouvrir' })).toBeInTheDocument();
+  });
+
+  it('ClosingModal s\'ouvre après clic "Clôturer l\'exercice"', async () => {
+    mockApi([fy2025]);
+    render(<FiscalYearsPage />);
+    await screen.findByText('2025');
+    await userEvent.click(screen.getByRole('button', { name: 'Clôturer l\'exercice' }));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('ConfirmDialog s\'affiche après clic "Rouvrir"', async () => {
+    mockApi([fy2024closed]);
+    render(<FiscalYearsPage />);
+    await screen.findByText('2024');
+    await userEvent.click(screen.getByRole('button', { name: 'Rouvrir' }));
+    expect(await screen.findByRole('alertdialog')).toBeInTheDocument();
+  });
+
+  it('la liste se rafraîchit après une réouverture confirmée', async () => {
+    const getFiscalYears = vi.fn()
+      .mockResolvedValueOnce([fy2024closed])
+      .mockResolvedValueOnce([{ ...fy2024closed, is_closed: false }]);
+    vi.stubGlobal('api', { ...window.api, getFiscalYears });
+    render(<FiscalYearsPage />);
+    await screen.findByText('2024');
+    await userEvent.click(screen.getByRole('button', { name: 'Rouvrir' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Confirmer' }));
+    expect(getFiscalYears).toHaveBeenCalledTimes(2);
   });
 });
