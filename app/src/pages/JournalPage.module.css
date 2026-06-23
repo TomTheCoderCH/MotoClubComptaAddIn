@@ -1,0 +1,141 @@
+.header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #0f172a;
+}
+
+.yearSelector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.label {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: #475569;
+}
+
+.select {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.875rem;
+  color: #0f172a;
+  background: #fff;
+}
+
+.error {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 1.25rem;
+  color: #dc2626;
+  font-size: 0.875rem;
+}
+
+.empty {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.newEntryBar {
+  margin-bottom: 1rem;
+}
+
+.btn {
+  padding: 0.45rem 1rem;
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.btn:hover {
+  background: #2563eb;
+}
+
+.table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.875rem;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.theadRow {
+  background: #f1f5f9;
+}
+
+.th {
+  text-align: left;
+  padding: 0.6rem 1rem;
+  font-weight: 600;
+  color: #475569;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.thRight {
+  text-align: right;
+}
+
+.row {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.td {
+  padding: 0.4rem 1rem;
+  color: #334155;
+}
+
+.tdRight {
+  text-align: right;
+  font-family: monospace;
+}
+
+.acctLabel {
+  color: #94a3b8;
+  font-size: 0.75rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.actionBtn {
+  padding: 0.2rem 0.5rem;
+  background: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: #475569;
+}
+
+.actionBtn:hover {
+  background: #f1f5f9;
+}
+
+.actionBtnDelete {
+  color: #dc2626;
+}
+
+.actionBtnDelete:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}

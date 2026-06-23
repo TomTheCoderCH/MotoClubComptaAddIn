@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { FiscalYear, AccountBalance } from '../types';
+import styles from './BalancesPage.module.css';
 
 const CLASS_LABELS: Record<number, string> = {
   1: 'Classe 1 — Actifs',
@@ -72,16 +73,16 @@ export default function BalancesPage() {
 
   return (
     <div>
-      <div style={s.header}>
-        <h1 style={s.h1}>Soldes</h1>
+      <div className={styles.header}>
+        <h1 className={styles.h1}>Soldes</h1>
         {years.length > 0 && (
-          <div style={s.yearSelector}>
-            <label htmlFor="year-select" style={s.label}>Exercice</label>
+          <div className={styles.yearSelector}>
+            <label htmlFor="year-select" className={styles.label}>Exercice</label>
             <select
               id="year-select"
               value={selectedYearId ?? ''}
               onChange={e => setSelectedYearId(Number(e.target.value))}
-              style={s.select}
+              className={styles.select}
             >
               {years.map(y => (
                 <option key={y.id} value={y.id}>
@@ -93,23 +94,23 @@ export default function BalancesPage() {
         )}
       </div>
 
-      {error && <div role="alert" style={s.error}>Erreur : {error}</div>}
+      {error && <div role="alert" className={styles.error}>Erreur : {error}</div>}
 
       {years.length === 0 ? (
-        <p style={s.empty}>Aucun exercice disponible. Créez-en un dans la section <strong>Exercices</strong>.</p>
+        <p className={styles.empty}>Aucun exercice disponible. Créez-en un dans la section <strong>Exercices</strong>.</p>
       ) : loading ? (
-        <p style={s.empty}>Chargement…</p>
+        <p className={styles.empty}>Chargement…</p>
       ) : balances.length === 0 ? (
-        <p style={s.empty}>Aucun mouvement pour cet exercice.</p>
+        <p className={styles.empty}>Aucun mouvement pour cet exercice.</p>
       ) : (
-        <table style={s.table}>
+        <table className={styles.table}>
           <thead>
-            <tr style={s.theadRow}>
-              <th style={s.th}>N°</th>
-              <th style={s.th}>Compte</th>
-              <th style={{ ...s.th, textAlign: 'right' }}>Débit CHF</th>
-              <th style={{ ...s.th, textAlign: 'right' }}>Crédit CHF</th>
-              <th style={{ ...s.th, textAlign: 'right' }}>Solde CHF</th>
+            <tr className={styles.theadRow}>
+              <th className={styles.th}>N°</th>
+              <th className={styles.th}>Compte</th>
+              <th className={`${styles.th} ${styles.thRight}`}>Débit CHF</th>
+              <th className={`${styles.th} ${styles.thRight}`}>Crédit CHF</th>
+              <th className={`${styles.th} ${styles.thRight}`}>Solde CHF</th>
             </tr>
           </thead>
           <tbody>
@@ -126,49 +127,30 @@ export default function BalancesPage() {
 function GroupRows({ group }: { group: BalanceGroup }) {
   return (
     <>
-      <tr style={s.groupRow}>
-        <td colSpan={5} style={s.groupCell}>{group.label}</td>
+      <tr>
+        <td colSpan={5} className={styles.groupCell}>{group.label}</td>
       </tr>
       {group.rows.map(row => (
-        <tr key={row.number} style={s.dataRow}>
-          <td style={{ ...s.td, fontFamily: 'monospace' }}>{row.number}</td>
-          <td style={s.td}>{row.name}</td>
-          <td style={{ ...s.td, textAlign: 'right', fontFamily: 'monospace' }}>{fmt(row.total_debit)}</td>
-          <td style={{ ...s.td, textAlign: 'right', fontFamily: 'monospace' }}>{fmt(row.total_credit)}</td>
-          <td style={{ ...s.td, textAlign: 'right', fontFamily: 'monospace', color: row.solde < 0 ? '#dc2626' : 'inherit' }}>
+        <tr key={row.number} className={styles.dataRow}>
+          <td className={`${styles.td} ${styles.tdMono}`}>{row.number}</td>
+          <td className={styles.td}>{row.name}</td>
+          <td className={`${styles.td} ${styles.tdRight}`}>{fmt(row.total_debit)}</td>
+          <td className={`${styles.td} ${styles.tdRight}`}>{fmt(row.total_credit)}</td>
+          <td className={`${styles.td} ${styles.tdRight}`} data-negative={row.solde < 0 || undefined}>
             {fmt(row.solde)}
           </td>
         </tr>
       ))}
-      <tr style={s.subtotalRow}>
-        <td colSpan={2} style={{ ...s.subtotalCell, fontStyle: 'italic' }}>
+      <tr>
+        <td colSpan={2} className={`${styles.subtotalCell} ${styles.subtotalCellItalic}`}>
           Sous-total {group.label}
         </td>
-        <td style={{ ...s.subtotalCell, textAlign: 'right', fontFamily: 'monospace' }}>{fmt(group.totalDebit)}</td>
-        <td style={{ ...s.subtotalCell, textAlign: 'right', fontFamily: 'monospace' }}>{fmt(group.totalCredit)}</td>
-        <td style={{ ...s.subtotalCell, textAlign: 'right', fontFamily: 'monospace', color: group.totalSolde < 0 ? '#dc2626' : 'inherit' }}>
+        <td className={`${styles.subtotalCell} ${styles.subtotalCellRight}`}>{fmt(group.totalDebit)}</td>
+        <td className={`${styles.subtotalCell} ${styles.subtotalCellRight}`}>{fmt(group.totalCredit)}</td>
+        <td className={`${styles.subtotalCell} ${styles.subtotalCellRight}`} data-negative={group.totalSolde < 0 || undefined}>
           {fmt(group.totalSolde)}
         </td>
       </tr>
     </>
   );
 }
-
-const s = {
-  header:      { display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' as const },
-  h1:          { margin: 0, fontSize: '1.5rem', color: '#0f172a' },
-  yearSelector:{ display: 'flex', alignItems: 'center', gap: '0.5rem' },
-  label:       { fontWeight: 500, fontSize: '0.875rem', color: '#475569' },
-  select:      { border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.35rem 0.6rem', fontSize: '0.875rem', color: '#0f172a', background: '#fff' },
-  error:       { background: '#fee2e2', border: '1px solid #fca5a5', padding: '0.75rem', borderRadius: '6px', marginBottom: '1.25rem', color: '#dc2626', fontSize: '0.875rem' },
-  empty:       { color: '#64748b', fontSize: '0.875rem' },
-  table:       { borderCollapse: 'collapse' as const, width: '100%', fontSize: '0.875rem', background: '#fff', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.08)' },
-  theadRow:    { background: '#f1f5f9' },
-  th:          { textAlign: 'left' as const, padding: '0.6rem 1rem', fontWeight: 600, color: '#475569', borderBottom: '1px solid #e2e8f0' },
-  groupRow:    {},
-  groupCell:   { padding: '0.5rem 1rem', fontWeight: 600, color: '#334155', background: '#f1f5f9', fontSize: '0.8rem', letterSpacing: '0.02em' },
-  dataRow:     { borderBottom: '1px solid #f1f5f9' },
-  td:          { padding: '0.4rem 1rem', color: '#334155' },
-  subtotalRow: {},
-  subtotalCell:{ padding: '0.45rem 1rem', color: '#334155', background: '#e2e8f0', borderTop: '1px solid #cbd5e1' },
-} as const;

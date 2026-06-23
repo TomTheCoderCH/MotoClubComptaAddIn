@@ -1,0 +1,124 @@
+.header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #0f172a;
+}
+
+.yearSelector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.label {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: #475569;
+}
+
+.select {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.875rem;
+  color: #0f172a;
+  background: #fff;
+}
+
+.error {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 1.25rem;
+  color: #dc2626;
+  font-size: 0.875rem;
+}
+
+.empty {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.875rem;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.theadRow {
+  background: #f1f5f9;
+}
+
+.th {
+  text-align: left;
+  padding: 0.6rem 1rem;
+  font-weight: 600;
+  color: #475569;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.thRight {
+  text-align: right;
+}
+
+.groupCell {
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  color: #334155;
+  background: #f1f5f9;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+}
+
+.dataRow {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.td {
+  padding: 0.4rem 1rem;
+  color: #334155;
+}
+
+.tdMono {
+  font-family: monospace;
+}
+
+.tdRight {
+  text-align: right;
+  font-family: monospace;
+}
+
+.subtotalCell {
+  padding: 0.45rem 1rem;
+  color: #334155;
+  background: #e2e8f0;
+  border-top: 1px solid #cbd5e1;
+}
+
+.subtotalCellRight {
+  text-align: right;
+  font-family: monospace;
+}
+
+.subtotalCellItalic {
+  font-style: italic;
+}
+
+/* Couleur négative : présence de l'attribut = valeur < 0 */
+.tdRight[data-negative],
+.subtotalCellRight[data-negative] {
+  color: #dc2626;
+}
