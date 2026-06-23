@@ -77,8 +77,8 @@ describe('exportFiscalYearToExcel — structure', () => {
     await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
-    expect(wb.worksheets[2].name).toBe('Raiffeisen');
-    expect(wb.worksheets[3].name).toBe('Cotisations membres');
+    expect(wb.worksheets[2].name).toBe('101 Raiffeisen');
+    expect(wb.worksheets[3].name).toBe('300 Cotisations membres');
   });
 
   it('lève une erreur si l\'exercice n\'existe pas', async () => {
@@ -91,7 +91,7 @@ describe('exportFiscalYearToExcel — feuille de compte (Raiffeisen)', () => {
     await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
-    const ws = wb.getWorksheet('Raiffeisen')!;
+    const ws = wb.getWorksheet('101 Raiffeisen')!;
     expect(ws.getCell('A2').value).toBe('Raiffeisen');
   });
 
@@ -99,7 +99,7 @@ describe('exportFiscalYearToExcel — feuille de compte (Raiffeisen)', () => {
     await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
-    const ws = wb.getWorksheet('Raiffeisen')!;
+    const ws = wb.getWorksheet('101 Raiffeisen')!;
     expect(ws.getCell('C2').value).toBe('Total');
   });
 
@@ -107,7 +107,7 @@ describe('exportFiscalYearToExcel — feuille de compte (Raiffeisen)', () => {
     await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
-    const ws = wb.getWorksheet('Raiffeisen')!;
+    const ws = wb.getWorksheet('101 Raiffeisen')!;
     expect(ws.getCell('A5').value).toBe('Date');
     expect(ws.getCell('B5').value).toBe('Libellé');
     expect(ws.getCell('C5').value).toBe('Doit');
@@ -118,7 +118,7 @@ describe('exportFiscalYearToExcel — feuille de compte (Raiffeisen)', () => {
     await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
-    const ws = wb.getWorksheet('Raiffeisen')!;
+    const ws = wb.getWorksheet('101 Raiffeisen')!;
     expect(ws.getCell('A6').value).toBe('2025-03-01');
     expect(ws.getCell('B6').value).toBe('Cotisations annuelles');
   });
@@ -127,7 +127,7 @@ describe('exportFiscalYearToExcel — feuille de compte (Raiffeisen)', () => {
     await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
-    const ws = wb.getWorksheet('Raiffeisen')!;
+    const ws = wb.getWorksheet('101 Raiffeisen')!;
     // 141000 centimes = 1410.00 CHF
     expect(ws.getCell('C6').value).toBe(1410);
   });
@@ -136,7 +136,7 @@ describe('exportFiscalYearToExcel — feuille de compte (Raiffeisen)', () => {
     await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
-    const ws = wb.getWorksheet('Raiffeisen')!;
+    const ws = wb.getWorksheet('101 Raiffeisen')!;
     // 1 data row → total is at row 7
     const cell = ws.getCell('C7');
     const v = cell.value as { formula: string };
@@ -147,7 +147,7 @@ describe('exportFiscalYearToExcel — feuille de compte (Raiffeisen)', () => {
     await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
-    const ws = wb.getWorksheet('Cotisations membres')!;
+    const ws = wb.getWorksheet('300 Cotisations membres')!;
     expect(ws.getCell('E5').value).toBeNull();
   });
 });
@@ -170,7 +170,7 @@ describe('exportFiscalYearToExcel — colonne Courant (Caisse)', () => {
     await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
-    const ws = wb.getWorksheet('Caisse')!;
+    const ws = wb.getWorksheet('100 Caisse')!;
     expect(ws.getCell('E5').value).toBe('Courant');
   });
 
@@ -190,7 +190,7 @@ describe('exportFiscalYearToExcel — colonne Courant (Caisse)', () => {
     await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
-    const ws = wb.getWorksheet('Caisse')!;
+    const ws = wb.getWorksheet('100 Caisse')!;
     const cell = ws.getCell('E6');
     const v = cell.value as { formula: string };
     expect(v?.formula).toMatch(/SUM\(\$C\$6/);
@@ -279,5 +279,48 @@ describe('exportFiscalYearToExcel — feuille Bilan & Résultat', () => {
       }
     });
     expect(found).toBe(true);
+  });
+});
+
+describe('exportFiscalYearToExcel — collision noms feuilles (330 et 430)', () => {
+  it('ne plante pas quand 330 et 430 ont le même nom et crée deux feuilles distinctes', async () => {
+    // Accounts 330 (Événement — Marché Villageois, PRODUIT) and 430 (same name, CHARGE)
+    const acct330 = db.prepare("SELECT id FROM accounts WHERE number = '330'").get() as { id: number };
+    const acct430 = db.prepare("SELECT id FROM accounts WHERE number = '430'").get() as { id: number };
+    const acct101 = db.prepare("SELECT id FROM accounts WHERE number = '101'").get() as { id: number };
+
+    createJournalEntry({
+      fiscal_year_id: fiscalYearId,
+      date: '2025-05-15',
+      description: 'Recette Marché Villageois',
+      lines: [
+        { account_id: acct101.id, debit: 50000 },
+        { account_id: acct330.id, credit: 50000 },
+      ],
+    });
+
+    createJournalEntry({
+      fiscal_year_id: fiscalYearId,
+      date: '2025-05-16',
+      description: 'Achat Marché Villageois',
+      lines: [
+        { account_id: acct430.id, debit: 20000 },
+        { account_id: acct101.id, credit: 20000 },
+      ],
+    });
+
+    // Must not throw "Worksheet name already exists"
+    await expect(exportFiscalYearToExcel(db, fiscalYearId, tmpFile)).resolves.toBeUndefined();
+
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.readFile(tmpFile);
+    const sheetNames = wb.worksheets.map(ws => ws.name);
+
+    // Both 330 and 430 sheets must exist and be distinct
+    const sheet330 = sheetNames.find(n => n.startsWith('330'));
+    const sheet430 = sheetNames.find(n => n.startsWith('430'));
+    expect(sheet330).toBeDefined();
+    expect(sheet430).toBeDefined();
+    expect(sheet330).not.toBe(sheet430);
   });
 });

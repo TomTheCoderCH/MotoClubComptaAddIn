@@ -1,6 +1,28 @@
 import ExcelJS from 'exceljs';
 import type Database from 'better-sqlite3';
 
+const EXCEL_FORBIDDEN = /[*?:\\/\[\]]/g;
+
+function sanitizeSheetName(
+  accountNumber: string,
+  accountName: string,
+  used: Set<string>,
+): string {
+  const base = `${accountNumber} ${accountName}`.replace(EXCEL_FORBIDDEN, '_').slice(0, 31);
+  if (!used.has(base)) {
+    used.add(base);
+    return base;
+  }
+  // De-duplicate with counter (shouldn't happen once prefixed with unique number)
+  for (let i = 2; ; i++) {
+    const candidate = base.slice(0, 28) + `_${i}`;
+    if (!used.has(candidate)) {
+      used.add(candidate);
+      return candidate;
+    }
+  }
+}
+
 interface ExportRow {
   accountNumber: string;
   accountName: string;
@@ -82,10 +104,11 @@ export async function exportFiscalYearToExcel(
   const wb = new ExcelJS.Workbook();
   wb.creator = 'MCY Compta';
 
-  addBilanSheet(wb, accountMap, fy.year);
-  addJournalSheet(wb, journalRows);
+  const usedSheetNames = new Set<string>();
+  addBilanSheet(wb, accountMap, fy.year, usedSheetNames);
+  addJournalSheet(wb, journalRows, usedSheetNames);
   for (const account of accountMap.values()) {
-    addAccountSheet(wb, account);
+    addAccountSheet(wb, account, usedSheetNames);
   }
 
   await wb.xlsx.writeFile(outputPath);
@@ -95,8 +118,11 @@ function addBilanSheet(
   wb: ExcelJS.Workbook,
   accountMap: Map<string, AccountData>,
   year: number,
+  used: Set<string>,
 ): void {
-  const ws = wb.addWorksheet('Bilan & Résultat');
+  const bilanName = 'Bilan & Résultat';
+  used.add(bilanName);
+  const ws = wb.addWorksheet(bilanName);
   let row = 1;
 
   ws.getCell(`A${row}`).value = `Bilan & Résultat — Exercice ${year}`;
@@ -158,8 +184,10 @@ function addBilanSheet(
   netCell.numFmt = '#,##0.00';
 }
 
-function addJournalSheet(wb: ExcelJS.Workbook, rows: JournalRow[]): void {
-  const ws = wb.addWorksheet('Journal');
+function addJournalSheet(wb: ExcelJS.Workbook, rows: JournalRow[], used: Set<string>): void {
+  const journalName = 'Journal';
+  used.add(journalName);
+  const ws = wb.addWorksheet(journalName);
 
   // Header row
   ws.getCell('A1').value = 'Date';
@@ -183,8 +211,9 @@ function centsToCHF(cents: number | null): number {
   return cents !== null ? Math.round(cents) / 100 : 0;
 }
 
-function addAccountSheet(wb: ExcelJS.Workbook, account: AccountData): void {
-  const ws = wb.addWorksheet(account.name);
+function addAccountSheet(wb: ExcelJS.Workbook, account: AccountData, used: Set<string>): void {
+  const sheetName = sanitizeSheetName(account.number, account.name, used);
+  const ws = wb.addWorksheet(sheetName);
   const n = account.rows.length;
   const firstRow = 6;
   const lastDataRow = firstRow + n - 1;
