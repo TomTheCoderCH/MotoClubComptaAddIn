@@ -196,3 +196,88 @@ describe('exportFiscalYearToExcel — colonne Courant (Caisse)', () => {
     expect(v?.formula).toMatch(/SUM\(\$C\$6/);
   });
 });
+
+describe('exportFiscalYearToExcel — feuille Journal', () => {
+  it('la ligne 1 contient les en-têtes Date / Libellé / Montant / Pièce', async () => {
+    await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.readFile(tmpFile);
+    const ws = wb.getWorksheet('Journal')!;
+    expect(ws.getCell('A1').value).toBe('Date');
+    expect(ws.getCell('B1').value).toBe('Libellé');
+    expect(ws.getCell('C1').value).toBe('Montant');
+    expect(ws.getCell('D1').value).toBe('Pièce');
+  });
+
+  it('contient autant de lignes que de journal_entry_lines', async () => {
+    await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.readFile(tmpFile);
+    const ws = wb.getWorksheet('Journal')!;
+    // Setup creates 1 entry with 2 lines → 2 data rows + 1 header = 3
+    expect(ws.rowCount).toBe(3);
+  });
+
+  it('le libellé est "{Compte} — {Description}"', async () => {
+    await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.readFile(tmpFile);
+    const ws = wb.getWorksheet('Journal')!;
+    const label = ws.getCell('B2').value as string;
+    expect(label).toContain('Raiffeisen');
+    expect(label).toContain('Cotisations annuelles');
+  });
+
+  it('le montant est en CHF (pas en centimes)', async () => {
+    await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.readFile(tmpFile);
+    const ws = wb.getWorksheet('Journal')!;
+    expect(ws.getCell('C2').value).toBe(1410);
+  });
+});
+
+describe('exportFiscalYearToExcel — feuille Bilan & Résultat', () => {
+  it('contient une section Actifs', async () => {
+    await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.readFile(tmpFile);
+    const ws = wb.getWorksheet('Bilan & Résultat')!;
+    const values = ws.getColumn(1).values as string[];
+    expect(values).toContain('Actifs');
+  });
+
+  it('contient une section Produits', async () => {
+    await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.readFile(tmpFile);
+    const ws = wb.getWorksheet('Bilan & Résultat')!;
+    const values = ws.getColumn(1).values as string[];
+    expect(values).toContain('Produits');
+  });
+
+  it('contient une ligne Résultat net', async () => {
+    await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.readFile(tmpFile);
+    const ws = wb.getWorksheet('Bilan & Résultat')!;
+    const values = ws.getColumn(1).values as string[];
+    expect(values.some(v => typeof v === 'string' && v.toLowerCase().includes('résultat net'))).toBe(true);
+  });
+
+  it('le solde de Cotisations membres (300) est 1410.00 CHF', async () => {
+    await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.readFile(tmpFile);
+    const ws = wb.getWorksheet('Bilan & Résultat')!;
+    // Find the row for Cotisations membres
+    let found = false;
+    ws.eachRow((row) => {
+      if (row.getCell(2).value === 'Cotisations membres') {
+        expect(row.getCell(3).value).toBe(1410);
+        found = true;
+      }
+    });
+    expect(found).toBe(true);
+  });
+});

@@ -93,16 +93,90 @@ export async function exportFiscalYearToExcel(
 
 function addBilanSheet(
   wb: ExcelJS.Workbook,
-  _accountMap: Map<string, AccountData>,
-  _year: number,
+  accountMap: Map<string, AccountData>,
+  year: number,
 ): void {
-  // TODO in Task 3
-  wb.addWorksheet('Bilan & Résultat');
+  const ws = wb.addWorksheet('Bilan & Résultat');
+  let row = 1;
+
+  ws.getCell(`A${row}`).value = `Bilan & Résultat — Exercice ${year}`;
+  row += 2;
+
+  function computeSolde(data: AccountData): number {
+    const totalDebit = data.rows.reduce((s, r) => s + (r.debit ?? 0), 0);
+    const totalCredit = data.rows.reduce((s, r) => s + (r.credit ?? 0), 0);
+    return data.normalBalance === 'DEBIT'
+      ? centsToCHF(totalDebit - totalCredit)
+      : centsToCHF(totalCredit - totalDebit);
+  }
+
+  const sections: Array<{
+    title: string;
+    types: string[];
+    label: string;
+  }> = [
+    { title: 'Actifs', types: ['ACTIF'], label: 'Solde' },
+    { title: 'Passifs & Fonds propres', types: ['PASSIF', 'FONDS_PROPRES'], label: 'Solde' },
+    { title: 'Produits', types: ['PRODUIT'], label: 'Total' },
+    { title: 'Charges', types: ['CHARGE'], label: 'Total' },
+  ];
+
+  let totalProduits = 0;
+  let totalCharges = 0;
+
+  for (const section of sections) {
+    const accounts = [...accountMap.values()].filter(a =>
+      section.types.includes(a.type),
+    );
+    if (accounts.length === 0) continue;
+
+    ws.getCell(`A${row}`).value = section.title;
+    row++;
+
+    ws.getCell(`A${row}`).value = 'N°';
+    ws.getCell(`B${row}`).value = 'Compte';
+    ws.getCell(`C${row}`).value = section.label;
+    row++;
+
+    for (const acc of accounts) {
+      const solde = computeSolde(acc);
+      ws.getCell(`A${row}`).value = acc.number;
+      ws.getCell(`B${row}`).value = acc.name;
+      const soldeCell = ws.getCell(`C${row}`);
+      soldeCell.value = solde;
+      soldeCell.numFmt = '#,##0.00';
+      row++;
+      if (acc.type === 'PRODUIT') totalProduits += solde;
+      if (acc.type === 'CHARGE') totalCharges += solde;
+    }
+    row++;
+  }
+
+  ws.getCell(`A${row}`).value = 'Résultat net (Produits − Charges)';
+  const netCell = ws.getCell(`C${row}`);
+  netCell.value = Math.round((totalProduits - totalCharges) * 100) / 100;
+  netCell.numFmt = '#,##0.00';
 }
 
-function addJournalSheet(wb: ExcelJS.Workbook, _rows: JournalRow[]): void {
-  // TODO in Task 3
-  wb.addWorksheet('Journal');
+function addJournalSheet(wb: ExcelJS.Workbook, rows: JournalRow[]): void {
+  const ws = wb.addWorksheet('Journal');
+
+  // Header row
+  ws.getCell('A1').value = 'Date';
+  ws.getCell('B1').value = 'Libellé';
+  ws.getCell('C1').value = 'Montant';
+  ws.getCell('D1').value = 'Pièce';
+
+  rows.forEach((r, idx) => {
+    const rowNum = idx + 2;
+    ws.getCell(`A${rowNum}`).value = r.date;
+    ws.getCell(`B${rowNum}`).value = `${r.accountName} — ${r.description}`;
+    const amount = r.debit !== null ? centsToCHF(r.debit) : centsToCHF(r.credit);
+    const amountCell = ws.getCell(`C${rowNum}`);
+    amountCell.value = amount;
+    amountCell.numFmt = '#,##0.00';
+    if (r.piece) ws.getCell(`D${rowNum}`).value = r.piece;
+  });
 }
 
 function centsToCHF(cents: number | null): number {
