@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { BackupInfo, FiscalYear } from '../types';
+import styles from './SettingsPage.module.css';
 
 type ExportStatus = 'idle' | 'loading' | 'success' | 'error' | 'cancelled';
 type ChangeStatus = 'idle' | 'loading' | 'success' | 'cancelled';
@@ -99,41 +100,41 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <h1 style={s.h1}>Paramètres</h1>
+      <h1 className={styles.h1}>Paramètres</h1>
 
-      {error && <div role="alert" style={s.alertError}>Erreur : {error}</div>}
+      {error && <div role="alert" className={styles.alertError}>Erreur : {error}</div>}
 
-      <section style={s.section}>
-        <h2 style={s.h2}>Base de données</h2>
+      <section className={styles.section}>
+        <h2 className={styles.h2}>Base de données</h2>
         <input
           type="text"
           readOnly
           value={dbPath}
           aria-label="Chemin de la base de données"
-          style={s.dbPathInput}
+          className={styles.dbPathInput}
         />
         <button
           onClick={handleChangePath}
           disabled={changeStatus === 'loading'}
-          style={s.btnSecondary}
+          className={styles.btnSecondary}
         >
           {changeStatus === 'loading' ? 'Migration en cours…' : 'Changer le dossier de données…'}
         </button>
         {changeStatus === 'cancelled' && (
-          <p style={s.hint} role="status">Opération annulée.</p>
+          <p className={styles.hint} role="status">Opération annulée.</p>
         )}
         {changeStatus === 'success' && (
-          <p style={s.success} role="status">Dossier de données mis à jour.</p>
+          <p className={styles.success} role="status">Dossier de données mis à jour.</p>
         )}
       </section>
 
-      <section style={s.section}>
-        <h2 style={s.h2}>Sauvegardes</h2>
+      <section className={styles.section}>
+        <h2 className={styles.h2}>Sauvegardes</h2>
 
         <button
           onClick={handleExport}
           disabled={exportStatus === 'loading'}
-          style={s.btn}
+          className={styles.btn}
         >
           {exportStatus === 'loading'
             ? 'Export en cours…'
@@ -141,37 +142,37 @@ export default function SettingsPage() {
         </button>
 
         {exportStatus === 'success' && exportPath && (
-          <p style={s.success} role="status">
+          <p className={styles.success} role="status">
             Sauvegarde exportée vers : {exportPath}
           </p>
         )}
         {exportStatus === 'cancelled' && (
-          <p style={s.hint} role="status">Export annulé.</p>
+          <p className={styles.hint} role="status">Export annulé.</p>
         )}
         {exportStatus === 'error' && (
-          <p style={s.errorText}>Erreur lors de l&apos;export.</p>
+          <p className={styles.errorText}>Erreur lors de l&apos;export.</p>
         )}
 
-        <h3 style={s.h3}>
+        <h3 className={styles.h3}>
           Sauvegardes automatiques
           {backups.length > 0 && ` (${backups.length})`}
         </h3>
 
         {backups.length === 0 ? (
-          <p style={s.empty}>Aucune sauvegarde automatique pour l&apos;instant.</p>
+          <p className={styles.empty}>Aucune sauvegarde automatique pour l&apos;instant.</p>
         ) : (
-          <table style={s.table}>
+          <table className={styles.table}>
             <thead>
-              <tr style={s.theadRow}>
-                <th style={s.th}>Date</th>
-                <th style={{ ...s.th, textAlign: 'right' }}>Taille</th>
+              <tr className={styles.theadRow}>
+                <th className={styles.th}>Date</th>
+                <th className={`${styles.th} ${styles.thRight}`}>Taille</th>
               </tr>
             </thead>
             <tbody>
               {backups.map(b => (
-                <tr key={b.filename} style={s.dataRow}>
-                  <td style={s.td}>{formatDate(b.date)}</td>
-                  <td style={{ ...s.td, textAlign: 'right', fontFamily: 'monospace' }}>
+                <tr key={b.filename} className={styles.dataRow}>
+                  <td className={styles.td}>{formatDate(b.date)}</td>
+                  <td className={`${styles.td} ${styles.tdRight}`}>
                     {formatSize(b.sizeBytes)}
                   </td>
                 </tr>
@@ -181,10 +182,10 @@ export default function SettingsPage() {
         )}
       </section>
 
-      <section style={s.section}>
-        <h2 style={s.h2}>Export Excel</h2>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <label htmlFor="excel-fy-select" style={{ fontWeight: 500, fontSize: '0.875rem', color: '#475569' }}>
+      <section className={styles.section}>
+        <h2 className={styles.h2}>Export Excel</h2>
+        <div className={styles.excelBar}>
+          <label htmlFor="excel-fy-select" className={styles.excelLabel}>
             Exercice
           </label>
           <select
@@ -192,7 +193,7 @@ export default function SettingsPage() {
             aria-label="Exercice"
             value={selectedFyId ?? ''}
             onChange={e => setSelectedFyId(Number(e.target.value))}
-            style={{ border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.35rem 0.6rem', fontSize: '0.875rem' }}
+            className={styles.excelSelect}
           >
             {fiscalYears.map(fy => (
               <option key={fy.id} value={fy.id}>{fy.year}</option>
@@ -201,40 +202,20 @@ export default function SettingsPage() {
           <button
             onClick={handleExcelExport}
             disabled={excelStatus === 'loading' || selectedFyId === null}
-            style={s.btn}
+            className={styles.btn}
           >
             {excelStatus === 'loading' ? 'Export en cours…' : 'Exporter en Excel'}
           </button>
         </div>
         {excelStatus === 'success' && excelPath && (
-          <p style={s.success} role="status">
+          <p className={styles.success} role="status">
             Fichier exporté : {excelPath}
           </p>
         )}
         {excelStatus === 'cancelled' && (
-          <p style={s.hint} role="status">Export annulé.</p>
+          <p className={styles.hint} role="status">Export annulé.</p>
         )}
       </section>
     </div>
   );
 }
-
-const s = {
-  h1:          { margin: '0 0 1.5rem', fontSize: '1.5rem', color: '#0f172a' },
-  h2:          { margin: '0 0 0.75rem', fontSize: '1rem', fontWeight: 600, color: '#334155' },
-  h3:          { margin: '1.25rem 0 0.5rem', fontSize: '0.9rem', fontWeight: 600, color: '#475569' },
-  section:     { marginBottom: '2rem', maxWidth: '640px' },
-  dbPathInput: { width: '100%', padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.875rem', color: '#475569', background: '#f8fafc', boxSizing: 'border-box' as const },
-  hint:        { margin: '0.4rem 0 0', fontSize: '0.8rem', color: '#94a3b8' },
-  btn:         { padding: '0.5rem 1rem', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.875rem', cursor: 'pointer', fontWeight: 500 },
-  btnSecondary: { marginTop: '0.5rem', padding: '0.4rem 0.9rem', background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.875rem', cursor: 'pointer' },
-  success:     { margin: '0.5rem 0 0', fontSize: '0.875rem', color: '#16a34a' },
-  errorText:   { margin: '0.5rem 0 0', fontSize: '0.875rem', color: '#dc2626' },
-  alertError:  { background: '#fee2e2', border: '1px solid #fca5a5', padding: '0.75rem', borderRadius: '6px', marginBottom: '1.25rem', color: '#dc2626', fontSize: '0.875rem' },
-  empty:       { color: '#64748b', fontSize: '0.875rem' },
-  table:       { borderCollapse: 'collapse' as const, width: '100%', fontSize: '0.875rem', background: '#fff', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.08)' },
-  theadRow:    { background: '#f1f5f9' },
-  th:          { textAlign: 'left' as const, padding: '0.6rem 1rem', fontWeight: 600, color: '#475569', borderBottom: '1px solid #e2e8f0' },
-  dataRow:     { borderBottom: '1px solid #f1f5f9' },
-  td:          { padding: '0.4rem 1rem', color: '#334155' },
-} as const;

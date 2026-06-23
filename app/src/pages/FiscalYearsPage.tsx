@@ -3,6 +3,7 @@ import type { FiscalYear, OpeningBalanceSuggestion, ClosingPreview } from '../ty
 import OpeningBalanceModal from '../components/OpeningBalanceModal';
 import ClosingModal from '../components/ClosingModal';
 import ConfirmDialog from '../components/ConfirmDialog';
+import styles from './FiscalYearsPage.module.css';
 
 export default function FiscalYearsPage() {
   const [years,    setYears]    = useState<FiscalYear[]>([]);
@@ -120,14 +121,14 @@ export default function FiscalYearsPage() {
 
   return (
     <div>
-      <h1 style={s.h1}>Exercices</h1>
+      <h1 className={styles.h1}>Exercices</h1>
 
-      {error && <div role="alert" style={s.error}>Erreur : {error}</div>}
+      {error && <div role="alert" className={styles.error}>Erreur : {error}</div>}
 
-      <section style={s.section}>
-        <h2 style={s.h2}>Créer un exercice</h2>
-        <form onSubmit={handleCreate} style={s.form}>
-          <label htmlFor="year-input" style={s.label}>Année</label>
+      <section className={styles.section}>
+        <h2 className={styles.h2}>Créer un exercice</h2>
+        <form onSubmit={handleCreate} className={styles.form}>
+          <label htmlFor="year-input" className={styles.label}>Année</label>
           <input
             id="year-input"
             type="number"
@@ -135,72 +136,72 @@ export default function FiscalYearsPage() {
             onChange={e => setNewYear(Number(e.target.value))}
             min={2000}
             max={2100}
-            style={s.input}
+            className={styles.input}
           />
           {yearAlreadyExists && (
-            <span style={s.warn}>L'exercice {newYear} existe déjà</span>
+            <span className={styles.warn}>L'exercice {newYear} existe déjà</span>
           )}
           <button
             type="submit"
             disabled={creating || yearAlreadyExists}
-            style={{ ...s.btn, ...(creating || yearAlreadyExists ? s.btnDisabled : {}) }}
+            className={styles.btn}
           >
             {creating ? 'Création…' : `Créer l'exercice ${newYear}`}
           </button>
         </form>
       </section>
 
-      <section style={s.section}>
-        <h2 style={s.h2}>Exercices enregistrés</h2>
+      <section className={styles.section}>
+        <h2 className={styles.h2}>Exercices enregistrés</h2>
         {years.length === 0 ? (
-          <p style={s.empty}>Aucun exercice créé pour l'instant.</p>
+          <p className={styles.empty}>Aucun exercice créé pour l'instant.</p>
         ) : (
-          <table style={s.table}>
+          <table className={styles.table}>
             <thead>
-              <tr style={s.theadRow}>
-                <th style={s.th}>Année</th>
-                <th style={s.th}>Début</th>
-                <th style={s.th}>Fin</th>
-                <th style={s.th}>Statut</th>
-                <th style={s.th}>Soldes à nouveau</th>
-                <th style={s.th}>Actions</th>
+              <tr className={styles.theadRow}>
+                <th className={styles.th}>Année</th>
+                <th className={styles.th}>Début</th>
+                <th className={styles.th}>Fin</th>
+                <th className={styles.th}>Statut</th>
+                <th className={styles.th}>Soldes à nouveau</th>
+                <th className={styles.th}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {years.map(y => (
-                <tr key={y.id} style={s.row}>
-                  <td style={{ ...s.td, fontWeight: 600 }}>{y.year}</td>
-                  <td style={s.td}>{formatDate(y.start_date)}</td>
-                  <td style={s.td}>{formatDate(y.end_date)}</td>
-                  <td style={s.td}>
-                    <span style={y.is_closed ? s.badgeClosed : s.badgeOpen}>
+                <tr key={y.id} className={styles.row}>
+                  <td className={`${styles.td} ${styles.tdBold}`}>{y.year}</td>
+                  <td className={styles.td}>{formatDate(y.start_date)}</td>
+                  <td className={styles.td}>{formatDate(y.end_date)}</td>
+                  <td className={styles.td}>
+                    <span className={y.is_closed ? styles.badgeClosed : styles.badgeOpen}>
                       {y.is_closed ? 'Clôturé' : 'Ouvert'}
                     </span>
                   </td>
-                  <td style={s.td}>
+                  <td className={styles.td}>
                     {y.hasOpeningBalance ? (
-                      <span style={s.badgeOb}>Saisis</span>
+                      <span className={styles.badgeOb}>Saisis</span>
                     ) : !y.is_closed ? (
                       <button
                         onClick={() => handleOpenModal(y)}
-                        style={s.btnSmall}
+                        className={styles.btnSmall}
                       >
                         Saisir les soldes à nouveau
                       </button>
                     ) : null}
                   </td>
-                  <td style={s.td}>
+                  <td className={styles.td}>
                     {!y.is_closed ? (
                       <button
                         onClick={() => handleCloseExercise(y)}
-                        style={s.btnSmall}
+                        className={styles.btnSmall}
                       >
                         Clôturer l&apos;exercice
                       </button>
                     ) : (
                       <button
                         onClick={() => handleReopenClick(y)}
-                        style={s.btnReopen}
+                        className={styles.btnReopen}
                       >
                         Rouvrir
                       </button>
@@ -208,12 +209,12 @@ export default function FiscalYearsPage() {
                     {' '}
                     <button
                       onClick={() => handleExportExcel(y)}
-                      style={s.btnExport}
+                      className={styles.btnExport}
                     >
                       Exporter Excel
                     </button>
                     {exportStatus?.id === y.id && (
-                      <p role="status" style={s.exportSuccess}>{exportStatus.msg}</p>
+                      <p role="status" className={styles.exportSuccess}>{exportStatus.msg}</p>
                     )}
                   </td>
                 </tr>
@@ -256,29 +257,3 @@ function formatDate(iso: string): string {
   const [y, m, d] = iso.split('-');
   return `${d}.${m}.${y}`;
 }
-
-const s = {
-  h1:          { margin: '0 0 1.5rem', fontSize: '1.5rem', color: '#0f172a' },
-  h2:          { margin: '0 0 0.75rem', fontSize: '1rem', fontWeight: 600, color: '#334155' },
-  section:     { marginBottom: '2rem' },
-  error:       { background: '#fee2e2', border: '1px solid #fca5a5', padding: '0.75rem', borderRadius: '6px', marginBottom: '1.25rem', color: '#dc2626', fontSize: '0.875rem' },
-  form:        { display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' as const },
-  label:       { fontWeight: 500, fontSize: '0.875rem', color: '#475569' },
-  input:       { border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.4rem 0.6rem', fontSize: '0.875rem', width: '90px', color: '#0f172a' },
-  warn:        { fontSize: '0.8rem', color: '#d97706' },
-  btn:         { padding: '0.45rem 1rem', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 500 },
-  btnDisabled: { background: '#94a3b8', cursor: 'not-allowed' },
-  btnSmall:    { padding: '0.25rem 0.6rem', background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '5px', fontSize: '0.78rem', cursor: 'pointer' },
-  btnReopen:   { padding: '0.25rem 0.6rem', background: '#fff7ed', color: '#c2410c', border: '1px solid #fed7aa', borderRadius: '5px', fontSize: '0.78rem', cursor: 'pointer' },
-  btnExport:     { padding: '0.25rem 0.6rem', background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: '5px', fontSize: '0.78rem', cursor: 'pointer' },
-  exportSuccess: { margin: '0.25rem 0 0', fontSize: '0.75rem', color: '#15803d' },
-  empty:       { color: '#64748b', fontSize: '0.875rem' },
-  table:       { borderCollapse: 'collapse' as const, width: '100%', maxWidth: '760px', fontSize: '0.875rem', background: '#fff', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.08)' },
-  theadRow:    { background: '#f1f5f9' },
-  th:          { textAlign: 'left' as const, padding: '0.6rem 1rem', fontWeight: 600, color: '#475569', borderBottom: '1px solid #e2e8f0' },
-  row:         { borderBottom: '1px solid #f1f5f9' },
-  td:          { padding: '0.5rem 1rem', color: '#334155' },
-  badgeOpen:   { display: 'inline-block', padding: '0.2rem 0.5rem', borderRadius: '4px', background: '#dcfce7', color: '#15803d', fontSize: '0.75rem', fontWeight: 500 },
-  badgeClosed: { display: 'inline-block', padding: '0.2rem 0.5rem', borderRadius: '4px', background: '#f1f5f9', color: '#64748b', fontSize: '0.75rem', fontWeight: 500 },
-  badgeOb:     { display: 'inline-block', padding: '0.2rem 0.5rem', borderRadius: '4px', background: '#dcfce7', color: '#15803d', fontSize: '0.75rem', fontWeight: 500 },
-} as const;

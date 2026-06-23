@@ -1,0 +1,192 @@
+.h1 {
+  margin: 0 0 1.5rem;
+  font-size: 1.5rem;
+  color: #0f172a;
+}
+
+.h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.section {
+  margin-bottom: 2rem;
+}
+
+.error {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 1.25rem;
+  color: #dc2626;
+  font-size: 0.875rem;
+}
+
+.form {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.label {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: #475569;
+}
+
+.input {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.875rem;
+  width: 90px;
+  color: #0f172a;
+}
+
+.warn {
+  font-size: 0.8rem;
+  color: #d97706;
+}
+
+.btn {
+  padding: 0.45rem 1rem;
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.btn:hover {
+  background: #2563eb;
+}
+
+.btn:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+.btnSmall {
+  padding: 0.25rem 0.6rem;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  border-radius: 5px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.btnSmall:hover {
+  background: #dbeafe;
+}
+
+.btnReopen {
+  padding: 0.25rem 0.6rem;
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+  border-radius: 5px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.btnReopen:hover {
+  background: #ffedd5;
+}
+
+.btnExport {
+  padding: 0.25rem 0.6rem;
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+  border-radius: 5px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.btnExport:hover {
+  background: #dcfce7;
+}
+
+.exportSuccess {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  color: #15803d;
+}
+
+.empty {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.table {
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 760px;
+  font-size: 0.875rem;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.theadRow {
+  background: #f1f5f9;
+}
+
+.th {
+  text-align: left;
+  padding: 0.6rem 1rem;
+  font-weight: 600;
+  color: #475569;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.row {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.td {
+  padding: 0.5rem 1rem;
+  color: #334155;
+}
+
+.tdBold {
+  font-weight: 600;
+}
+
+.badgeOpen {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.badgeClosed {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.badgeOb {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 0.75rem;
+  font-weight: 500;
+}

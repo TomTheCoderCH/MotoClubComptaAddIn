@@ -1,0 +1,168 @@
+.h1 {
+  margin: 0 0 1.5rem;
+  font-size: 1.5rem;
+  color: #0f172a;
+}
+
+.h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.h3 {
+  margin: 1.25rem 0 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.section {
+  margin-bottom: 2rem;
+  max-width: 640px;
+}
+
+.alertError {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 1.25rem;
+  color: #dc2626;
+  font-size: 0.875rem;
+}
+
+.dbPathInput {
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: #475569;
+  background: #f8fafc;
+  box-sizing: border-box;
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.btn:hover {
+  background: #2563eb;
+}
+
+.btn:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+.btnSecondary {
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.9rem;
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.btnSecondary:hover {
+  background: #e2e8f0;
+}
+
+.btnSecondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.success {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  color: #16a34a;
+}
+
+.errorText {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  color: #dc2626;
+}
+
+.hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.empty {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.875rem;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.theadRow {
+  background: #f1f5f9;
+}
+
+.th {
+  text-align: left;
+  padding: 0.6rem 1rem;
+  font-weight: 600;
+  color: #475569;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.thRight {
+  text-align: right;
+}
+
+.dataRow {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.td {
+  padding: 0.4rem 1rem;
+  color: #334155;
+}
+
+.tdRight {
+  text-align: right;
+  font-family: monospace;
+}
+
+.excelBar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.excelLabel {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: #475569;
+}
+
+.excelSelect {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.875rem;
+}
