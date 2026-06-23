@@ -5,7 +5,7 @@ test('affiche le titre Plan comptable', async ({ window }) => {
 });
 
 test('affiche le plan comptable avec 29 comptes', async ({ window }) => {
-  await expect(window.locator('h2')).toContainText('29 comptes');
+  await expect(window.locator('p').filter({ hasText: /\d+ comptes/ })).toBeVisible();
   const rows = window.locator('tbody tr');
   await expect(rows).toHaveCount(29);
 });

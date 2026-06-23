@@ -5,7 +5,7 @@ async function setupYear(window: import('@playwright/test').Page) {
   const input = window.getByLabel('Année');
   await input.fill('2025');
   await window.getByRole('button', { name: /Créer l'exercice 2025/ }).click();
-  await expect(window.getByRole('cell', { name: '2025' })).toBeVisible();
+  await expect(window.getByRole('cell', { name: '2025', exact: true })).toBeVisible();
 }
 
 async function goToJournal(window: import('@playwright/test').Page) {
@@ -26,19 +26,18 @@ test('crée une écriture simple et la voit dans le journal', async ({ window })
   await window.getByLabel('Libellé').fill('Cotisations annuelles');
 
   // Ligne 1 : Débit Raiffeisen (101) 1410.00
-  const accountSelects = window.locator('select[id^="account-"]');
-  await accountSelects.nth(0).selectOption({ label: /Raiffeisen/ });
-  await window.getByPlaceholder('Débit').nth(0).fill('1410.00');
+  await window.getByLabel('Compte ligne 1').selectOption({ label: '101 — Raiffeisen' });
+  await window.getByLabel('Débit ligne 1').fill('1410.00');
 
   // Ligne 2 : Crédit Cotisations membres (300) 1410.00
-  await accountSelects.nth(1).selectOption({ label: /Cotisations membres/ });
-  await window.getByPlaceholder('Crédit').nth(1).fill('1410.00');
+  await window.getByLabel('Compte ligne 2').selectOption({ label: '300 — Cotisations membres' });
+  await window.getByLabel('Crédit ligne 2').fill('1410.00');
 
   // Vérifie l'équilibre avant soumission
   await expect(window.getByText('Ecriture équilibrée')).toBeVisible();
 
   // Soumet
-  await window.getByRole('button', { name: 'Créer l\'écriture' }).click();
+  await window.getByRole('button', { name: 'Enregistrer l\'écriture' }).click();
   await expect(window.getByRole('dialog')).not.toBeVisible();
 
   // L'écriture apparaît dans le journal

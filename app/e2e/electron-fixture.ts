@@ -29,14 +29,19 @@ export const test = base.extend<Fixtures>({
       args: [mainPath],
       env: { ...process.env, APPDATA: tempAppData, NODE_ENV: 'test' },
     });
+
     await use(app);
     await app.close();
-    fs.rmSync(tempAppData, { recursive: true, force: true });
+    // Small delay to let Electron release file locks (SQLite, backup) before cleanup
+    await new Promise(r => setTimeout(r, 500));
+    try { fs.rmSync(tempAppData, { recursive: true, force: true }); } catch { /* ignore EPERM */ }
   },
 
   window: async ({ electronApp }, use) => {
     const page = await electronApp.firstWindow();
     await page.waitForLoadState('domcontentloaded');
+    // Wait for React to finish the initial async render (getSettings IPC + state update)
+    await page.locator('h1').waitFor({ state: 'visible', timeout: 15000 });
     await use(page);
   },
 });

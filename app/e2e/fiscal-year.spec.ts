@@ -9,7 +9,7 @@ async function createYear(window: import('@playwright/test').Page, year: number)
   const input = window.getByLabel('Année');
   await input.fill(String(year));
   await window.getByRole('button', { name: new RegExp(`Créer l'exercice ${year}`) }).click();
-  await expect(window.getByRole('cell', { name: String(year) })).toBeVisible();
+  await expect(window.getByRole('cell', { name: String(year), exact: true })).toBeVisible();
 }
 
 test('crée un exercice et vérifie son statut ouvert', async ({ window }) => {

@@ -4,6 +4,7 @@ export default defineConfig({
   testDir: './e2e',
   timeout: 60_000,
   reporter: 'list',
-  // Les tests E2E Electron nécessitent un build préalable : npm run package
-  // ou lancer via electron-forge start dans un process séparé
+  // Electron tests must run sequentially — concurrent Electron processes conflict
+  workers: 1,
+  fullyParallel: false,
 });

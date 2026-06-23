@@ -467,8 +467,8 @@ app/
 - [x] Sauvegarde automatique à la fermeture (`backup()` de better-sqlite3) + bouton export manuel + page Paramètres — 190 tests au total
 - [x] Sélecteur du dossier de données au premier lancement (`%APPDATA%\MCYCompta\settings.json`) + migration + WelcomePage — 219 tests au total
 - [x] Saisie des soldes à nouveau (report d'exercice) — 249 tests au total
-- [ ] Écritures de clôture automatiques (soldage 3xx/4xx → 900 → 290)
-- [ ] Tests E2E Playwright (flux exercice, saisie écriture, soldes)
+- [x] Écritures de clôture automatiques (soldage 3xx/4xx → 900 → 290) — 283 tests unitaires
+- [x] Tests E2E Playwright — 12 tests (app, fiscal-year, journal-entry, balance)
 - [ ] Export Excel de clôture (`exceljs`) reproduisant la structure actuelle
 
 ### Notes techniques actives
@@ -478,3 +478,4 @@ app/
 - Les montants sont stockés en **centimes** (INTEGER) — jamais de float pour les montants CHF
 - `better-sqlite3` compilé pour Electron (NODE_MODULE_VERSION 146) ne tourne pas dans le Node système (v127). Le script `pretest` exécute `npm rebuild better-sqlite3` pour le recompiler pour Node avant les tests. `npm start` le recompile automatiquement pour Electron via Electron Forge.
 - Les tests Vitest n'incluent que `src/**` (`include: ['src/**/*.{test,spec}.{ts,tsx}']`) pour éviter de ramasser les specs Playwright du dossier `e2e/`.
+- **Tests E2E** : `npm run test:e2e` → `pretest:e2e` rebuild better-sqlite3 pour Electron → `build:e2e` via `scripts/build-for-e2e.mjs` (produit `.vite/build/main.js` + `.vite/renderer/main_window/` avec `base: './'` pour les chemins relatifs en `file://`) → Playwright lance l'app avec un APPDATA temporaire isolé. `app.getPath('appData')` ignore l'override env (registry Windows) → `settings.ts` utilise `process.env.APPDATA` à la place. Playwright workers = 1 (séquentiel, les instances Electron concurrentes interfèrent). Après `test:e2e`, relancer `npm test` recompile automatiquement pour Node via `pretest`.

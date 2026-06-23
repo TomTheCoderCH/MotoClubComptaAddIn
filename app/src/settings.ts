@@ -7,7 +7,10 @@ export interface Settings {
 }
 
 export function getSettingsPath(): string {
-  return path.join(app.getPath('appData'), 'MCYCompta', 'settings.json');
+  // process.env.APPDATA respects env overrides (E2E test isolation);
+  // app.getPath('appData') reads from the Windows registry and ignores them.
+  const appDataDir = process.env['APPDATA'] ?? app.getPath('appData');
+  return path.join(appDataDir, 'MCYCompta', 'settings.json');
 }
 
 export function readSettings(): Settings | null {

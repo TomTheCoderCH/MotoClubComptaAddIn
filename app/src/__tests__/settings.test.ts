@@ -6,6 +6,7 @@ import fs from 'node:fs';
 // vi.mock is hoisted; factory runs lazily when 'electron' is first imported.
 // mockAppDataDir is set in beforeEach before any test calls getSettingsPath().
 let mockAppDataDir: string;
+let savedAppData: string | undefined;
 
 vi.mock('electron', () => ({
   app: { getPath: vi.fn().mockImplementation(() => mockAppDataDir) },
@@ -15,9 +16,17 @@ import { readSettings, writeSettings, getSettingsPath } from '../settings';
 
 beforeEach(() => {
   mockAppDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mcy-settings-test-'));
+  // Override process.env.APPDATA so getSettingsPath() uses the temp dir
+  savedAppData = process.env['APPDATA'];
+  process.env['APPDATA'] = mockAppDataDir;
 });
 
 afterEach(() => {
+  if (savedAppData !== undefined) {
+    process.env['APPDATA'] = savedAppData;
+  } else {
+    delete process.env['APPDATA'];
+  }
   fs.rmSync(mockAppDataDir, { recursive: true, force: true });
 });
 
