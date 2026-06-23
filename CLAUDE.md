@@ -119,7 +119,7 @@ Le classeur contient 11 feuilles correspondant aux comptes suivants :
   - N'est PAS l'outil de travail quotidien — c'est un export de clôture
 - **Export Excel :** bibliothèque `exceljs` (supporte styles, formules, tableaux formatés)
 
-- **Styles React :** **CSS Modules** (`.module.css` par composant, colocalisé) — séparation code/design, accès à toutes les features CSS (`:hover`, `:disabled`, media queries, variables CSS). Vite supporte nativement, zéro configuration. Les styles dynamiques calculés à runtime (ex. couleur selon valeur) restent en `style={{}}` inline.
+- **Styles React :** **CSS Modules** (`.module.css` par composant, colocalisé) — séparation code/design, accès à toutes les features CSS (`:hover`, `:disabled`, media queries, variables CSS). Vite supporte nativement, zéro configuration. Les couleurs conditionnelles (valeurs négatives) utilisent `data-negative={val < 0 || undefined}` + sélecteur CSS `[data-negative]` — zéro `style={{}}` dans les composants.
 
 - **Framework UI :** React (renderer Electron) — premier projet React, occasion de se former
 - **Plan comptable :** libre, adapté au club, plus détaillé que l'Excel actuel (voir section dédiée)
@@ -335,7 +335,7 @@ L'utilisateur choisit librement le dossier de données au premier lancement (mod
 
 Placer ce dossier dans OneDrive (ou tout autre dossier synchronisé) suffit à obtenir une protection cloud sans aucune intégration supplémentaire dans l'app.
 
-La configuration du chemin est stockée séparément dans `%APPDATA%\MCYCompta\settings.json` (géré par Electron, indépendant des données).
+La configuration du chemin est stockée séparément dans `%APPDATA%\MCY Compta\settings.json` (= `app.getPath('userData')`, géré par Electron, indépendant des données).
 
 ### Backup automatique
 
@@ -474,8 +474,7 @@ app/
 - [x] Export Excel de clôture (`exceljs`) — Journal, Bilan & Résultat, une feuille par compte (SUBTOTAL, Courant), déclencheurs FiscalYearsPage + SettingsPage — 318 tests au total
 - [x] Refactoring settings : `app.getPath('userData')` à la place du chemin `APPDATA` manuel ; `app.setPath('userData')` dans `main.ts` pour l'isolation E2E — 318 tests
 
-#### En cours
-- [ ] Migration styles inline → CSS Modules (plan : `docs/superpowers/plans/2026-06-23-css-modules-migration.md`)
+- [x] Migration styles inline → CSS Modules — 14 composants/pages migrés, 318 tests — plan : `docs/superpowers/plans/2026-06-23-css-modules-migration.md`
 
 ### Notes techniques actives
 
