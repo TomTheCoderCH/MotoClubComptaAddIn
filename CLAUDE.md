@@ -469,7 +469,7 @@ app/
 - [x] Saisie des soldes à nouveau (report d'exercice) — 249 tests au total
 - [x] Écritures de clôture automatiques (soldage 3xx/4xx → 900 → 290) — 283 tests unitaires
 - [x] Tests E2E Playwright — 12 tests (app, fiscal-year, journal-entry, balance)
-- [ ] Export Excel de clôture (`exceljs`) reproduisant la structure actuelle
+- [x] Export Excel de clôture (`exceljs`) — Journal, Bilan & Résultat, une feuille par compte (SUBTOTAL, Courant), déclencheurs FiscalYearsPage + SettingsPage — 318 tests au total
 
 ### Notes techniques actives
 
