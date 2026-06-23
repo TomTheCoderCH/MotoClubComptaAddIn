@@ -1,0 +1,48 @@
+.nav {
+  width: 210px;
+  flex-shrink: 0;
+  background: #1e293b;
+  color: #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.brand {
+  padding: 1.25rem 1rem;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  border-bottom: 1px solid #334155;
+  color: #f1f5f9;
+}
+
+.list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+}
+
+.btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.65rem 1rem;
+  background: transparent;
+  color: #94a3b8;
+  border: none;
+  border-left: 3px solid transparent;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.btn:hover {
+  background: #253347;
+  color: #cbd5e1;
+}
+
+.btn[aria-current="page"] {
+  background: #334155;
+  color: #93c5fd;
+  border-left-color: #3b82f6;
+}

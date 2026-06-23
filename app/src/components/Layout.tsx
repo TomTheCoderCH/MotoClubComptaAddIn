@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { Page } from '../App';
 import Sidebar from './Sidebar';
+import styles from './Layout.module.css';
 
 interface LayoutProps {
   currentPage: Page;
@@ -10,9 +11,9 @@ interface LayoutProps {
 
 export default function Layout({ currentPage, onNavigate, children }: LayoutProps) {
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+    <div className={styles.shell}>
       <Sidebar currentPage={currentPage} onNavigate={onNavigate} />
-      <main style={{ flex: 1, overflow: 'auto', padding: '2rem', background: '#f8fafc' }}>
+      <main className={styles.main}>
         {children}
       </main>
     </div>
