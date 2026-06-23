@@ -43,6 +43,9 @@ contextBridge.exposeInMainWorld('api', {
   getSettings:    () => ipcRenderer.invoke('settings:get'),
   chooseDataDir:  (): Promise<boolean | null> => ipcRenderer.invoke('settings:choose'),
   changeDataDir:  (): Promise<boolean | null> => ipcRenderer.invoke('settings:changeDataDir'),
+
+  // Export Excel
+  exportExcel: (fiscalYearId: number) => ipcRenderer.invoke('excel:export', fiscalYearId),
 });
 
 // Déclaration TypeScript pour window.api dans le renderer
@@ -67,4 +70,5 @@ export type ElectronAPI = {
   getSettings:    () => Promise<{ dataDir: string } | null>;
   chooseDataDir:  () => Promise<boolean | null>;
   changeDataDir:  () => Promise<boolean | null>;
+  exportExcel: (fiscalYearId: number) => Promise<{ path: string } | { error: string } | null>;
 };

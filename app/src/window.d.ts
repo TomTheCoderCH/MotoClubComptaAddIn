@@ -35,6 +35,7 @@ declare global {
       getSettings:        () => Promise<{ dataDir: string } | null>;
       chooseDataDir:      () => Promise<boolean | null>;
       changeDataDir:      () => Promise<boolean | null>;
+      exportExcel:        (fiscalYearId: number) => Promise<{ path: string } | { error: string } | null>;
     };
   }
 }

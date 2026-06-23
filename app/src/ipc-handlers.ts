@@ -1,5 +1,6 @@
 import { ipcMain, dialog } from 'electron';
 import path from 'node:path';
+import { exportFiscalYearToExcel } from './excel/export';
 import {
   getAllAccounts,
   getActiveAccounts,
@@ -108,4 +109,26 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('closing:reopen', (_e, fiscalYearId: number) =>
     reopenFiscalYear(fiscalYearId));
+
+  // ─── Export Excel ────────────────────────────────────────────────────────────
+  ipcMain.handle('excel:export', async (_e, fiscalYearId: number) => {
+    const fy = getDb()
+      .prepare('SELECT year FROM fiscal_years WHERE id = ?')
+      .get(fiscalYearId) as { year: number } | undefined;
+    if (!fy) throw new Error(`Exercice ${fiscalYearId} introuvable`);
+
+    const result = await dialog.showSaveDialog({
+      title: 'Exporter les comptes en Excel',
+      defaultPath: `mcy-compta-${fy.year}.xlsx`,
+      filters: [{ name: 'Classeur Excel', extensions: ['xlsx'] }],
+    });
+    if (result.canceled || !result.filePath) return null;
+
+    try {
+      await exportFiscalYearToExcel(getDb(), fiscalYearId, result.filePath);
+      return { path: result.filePath };
+    } catch (e) {
+      return { error: (e as Error).message };
+    }
+  });
 }
