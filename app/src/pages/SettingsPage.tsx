@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { BackupInfo } from '../types';
+import type { BackupInfo, FiscalYear } from '../types';
 
 type ExportStatus = 'idle' | 'loading' | 'success' | 'error' | 'cancelled';
 type ChangeStatus = 'idle' | 'loading' | 'success' | 'cancelled';
@@ -22,6 +22,10 @@ export default function SettingsPage() {
   const [exportPath,   setExportPath]   = useState<string | null>(null);
   const [error,        setError]        = useState<string | null>(null);
   const [changeStatus, setChangeStatus] = useState<ChangeStatus>('idle');
+  const [fiscalYears,  setFiscalYears]  = useState<FiscalYear[]>([]);
+  const [selectedFyId, setSelectedFyId] = useState<number | null>(null);
+  const [excelStatus,  setExcelStatus]  = useState<'idle' | 'loading' | 'success' | 'error' | 'cancelled'>('idle');
+  const [excelPath,    setExcelPath]    = useState<string | null>(null);
 
   useEffect(() => {
     window.api.getDbPath()
@@ -29,6 +33,12 @@ export default function SettingsPage() {
       .catch((e: Error) => setError(e.message));
     window.api.listBackups()
       .then(setBackups)
+      .catch((e: Error) => setError(e.message));
+    window.api.getFiscalYears()
+      .then(years => {
+        setFiscalYears(years);
+        if (years.length > 0) setSelectedFyId(years[0].id);
+      })
       .catch((e: Error) => setError(e.message));
   }, []);
 
@@ -62,6 +72,27 @@ export default function SettingsPage() {
       }
     } catch (e) {
       setChangeStatus('idle');
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  async function handleExcelExport() {
+    if (selectedFyId === null) return;
+    setExcelStatus('loading');
+    setExcelPath(null);
+    try {
+      const result = await window.api.exportExcel(selectedFyId);
+      if (result === null) {
+        setExcelStatus('cancelled');
+      } else if ('error' in result) {
+        setExcelStatus('error');
+        setError(result.error);
+      } else {
+        setExcelStatus('success');
+        setExcelPath(result.path);
+      }
+    } catch (e) {
+      setExcelStatus('error');
       setError(e instanceof Error ? e.message : String(e));
     }
   }
@@ -147,6 +178,41 @@ export default function SettingsPage() {
               ))}
             </tbody>
           </table>
+        )}
+      </section>
+
+      <section style={s.section}>
+        <h2 style={s.h2}>Export Excel</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <label htmlFor="excel-fy-select" style={{ fontWeight: 500, fontSize: '0.875rem', color: '#475569' }}>
+            Exercice
+          </label>
+          <select
+            id="excel-fy-select"
+            aria-label="Exercice"
+            value={selectedFyId ?? ''}
+            onChange={e => setSelectedFyId(Number(e.target.value))}
+            style={{ border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.35rem 0.6rem', fontSize: '0.875rem' }}
+          >
+            {fiscalYears.map(fy => (
+              <option key={fy.id} value={fy.id}>{fy.year}</option>
+            ))}
+          </select>
+          <button
+            onClick={handleExcelExport}
+            disabled={excelStatus === 'loading' || selectedFyId === null}
+            style={s.btn}
+          >
+            {excelStatus === 'loading' ? 'Export en cours…' : 'Exporter en Excel'}
+          </button>
+        </div>
+        {excelStatus === 'success' && excelPath && (
+          <p style={s.success} role="status">
+            Fichier exporté : {excelPath}
+          </p>
+        )}
+        {excelStatus === 'cancelled' && (
+          <p style={s.hint} role="status">Export annulé.</p>
         )}
       </section>
     </div>

@@ -20,10 +20,14 @@ const mockBackups: BackupInfo[] = [
 
 function mockApi(overrides: Partial<Window['api']> = {}) {
   vi.stubGlobal('api', {
-    getDbPath:     vi.fn().mockResolvedValue('C:/Users/tm/AppData/data/mcy-compta.db'),
-    listBackups:   vi.fn().mockResolvedValue(mockBackups),
-    exportBackup:  vi.fn().mockResolvedValue(null),
-    changeDataDir: vi.fn().mockResolvedValue(null),
+    getDbPath:      vi.fn().mockResolvedValue('C:/Users/tm/AppData/data/mcy-compta.db'),
+    listBackups:    vi.fn().mockResolvedValue(mockBackups),
+    exportBackup:   vi.fn().mockResolvedValue(null),
+    changeDataDir:  vi.fn().mockResolvedValue(null),
+    getFiscalYears: vi.fn().mockResolvedValue([
+      { id: 1, year: 2025, start_date: '2025-01-01', end_date: '2025-12-31', is_closed: false, created_at: '', hasOpeningBalance: false },
+    ]),
+    exportExcel:    vi.fn().mockResolvedValue(null),
     ...overrides,
   });
 }
@@ -69,7 +73,7 @@ describe('SettingsPage — affichage', () => {
 describe('SettingsPage — export', () => {
   it('le bouton export appelle window.api.exportBackup', async () => {
     render(<SettingsPage />);
-    await userEvent.click(screen.getByRole('button', { name: /Exporter/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Exporter une sauvegarde/ }));
     expect(window.api.exportBackup).toHaveBeenCalledOnce();
   });
 
@@ -78,21 +82,21 @@ describe('SettingsPage — export', () => {
       exportBackup: vi.fn().mockResolvedValue({ path: 'D:/backup/mcy.db' }),
     });
     render(<SettingsPage />);
-    await userEvent.click(screen.getByRole('button', { name: /Exporter/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Exporter une sauvegarde/ }));
     expect(await screen.findByText(/Sauvegarde exportée vers/)).toBeInTheDocument();
   });
 
   it('affiche un message si l\'export est annulé (retour null)', async () => {
     mockApi({ exportBackup: vi.fn().mockResolvedValue(null) });
     render(<SettingsPage />);
-    await userEvent.click(screen.getByRole('button', { name: /Exporter/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Exporter une sauvegarde/ }));
     expect(await screen.findByText('Export annulé.')).toBeInTheDocument();
   });
 
   it('affiche un message d\'erreur si l\'export échoue', async () => {
     mockApi({ exportBackup: vi.fn().mockRejectedValue(new Error('Disk full')) });
     render(<SettingsPage />);
-    await userEvent.click(screen.getByRole('button', { name: /Exporter/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Exporter une sauvegarde/ }));
     expect(await screen.findByRole('alert')).toBeInTheDocument();
   });
 });
@@ -126,5 +130,35 @@ describe('SettingsPage — changer le dossier', () => {
     expect(await screen.findByRole('status')).toHaveTextContent('Dossier de données mis à jour');
     const input = await screen.findByLabelText('Chemin de la base de données');
     expect(input).toHaveValue('D:/NewFolder/mcy-compta.db');
+  });
+});
+
+describe('SettingsPage — export Excel', () => {
+  it('affiche la section "Export Excel"', async () => {
+    render(<SettingsPage />);
+    expect(await screen.findByRole('heading', { level: 2, name: 'Export Excel' })).toBeInTheDocument();
+  });
+
+  it('affiche un sélecteur d\'exercice avec l\'exercice 2025', async () => {
+    render(<SettingsPage />);
+    expect(await screen.findByLabelText('Exercice')).toBeInTheDocument();
+    expect(await screen.findByRole('option', { name: '2025' })).toBeInTheDocument();
+  });
+
+  it('appelle exportExcel avec l\'id sélectionné au clic', async () => {
+    render(<SettingsPage />);
+    await screen.findByLabelText('Exercice');
+    await userEvent.click(screen.getByRole('button', { name: 'Exporter en Excel' }));
+    expect(window.api.exportExcel).toHaveBeenCalledWith(1);
+  });
+
+  it('affiche un message de succès après export', async () => {
+    mockApi({
+      exportExcel: vi.fn().mockResolvedValue({ path: 'C:/tmp/mcy-compta-2025.xlsx' }),
+    });
+    render(<SettingsPage />);
+    await screen.findByLabelText('Exercice');
+    await userEvent.click(screen.getByRole('button', { name: 'Exporter en Excel' }));
+    expect(await screen.findByRole('status')).toHaveTextContent(/exporté/i);
   });
 });
