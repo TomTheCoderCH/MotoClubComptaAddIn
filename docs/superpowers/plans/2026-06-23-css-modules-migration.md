@@ -4,7 +4,7 @@
 
 **Goal:** Remplacer tous les objets de styles inline (`const s = { ... }` / `const styles = { ... }`) par des fichiers CSS Modules (`.module.css`) dans chaque composant et page React.
 
-**Architecture:** Un fichier `.module.css` par composant/page, colocalisé dans le même dossier. Vite gère les CSS Modules nativement sans configuration supplémentaire. Les styles dynamiques qui dépendent de valeurs runtime (ex. couleur rouge si solde négatif) restent en inline style. Les classes conditionnelles utilisent des template literals.
+**Architecture:** Un fichier `.module.css` par composant/page, colocalisé dans le même dossier. Vite gère les CSS Modules nativement sans configuration supplémentaire. Les styles conditionnels binaires (ex. couleur rouge si solde négatif) utilisent des **data attributes** (`data-negative={solde < 0 || undefined}` + `[data-negative]` en CSS) — zéro inline style. Les classes conditionnelles multiples utilisent des template literals.
 
 **Tech Stack:** Vite (CSS Modules natif), React, TypeScript. Pas de nouvelle dépendance.
 
@@ -13,7 +13,7 @@
 - Vite v5 — CSS Modules natifs : `import styles from './Foo.module.css'` → `styles.nomDeClasse`
 - Les classes CSS Modules s'utilisent comme `className={styles.btn}`, jamais `style={}`
 - Les styles conditionnels : `className={`${styles.btn}${disabled ? ` ${styles.btnOff}` : ''}`}`
-- Les styles vraiment dynamiques (valeur calculée à runtime) restent en `style={{}}`
+- Les couleurs conditionnelles binaires (positif/négatif) → data attribute : `data-negative={val < 0 || undefined}` + CSS `[data-negative] { color: #dc2626 }` — jamais de `style={{}}` pour ça
 - Pas de bibliothèque `clsx` — template literals suffisent pour ce projet
 - Les `as const` TypeScript sur `flexDirection`, `textAlign` etc. disparaissent en CSS (propriétés natives)
 - La suite de tests (318 tests) doit rester verte après chaque tâche — les tests ne vérifient pas les classes CSS
@@ -770,7 +770,7 @@ git commit -m "refactor(styles): WelcomePage + AccountsPage → CSS Modules"
 
 ### Task 4 : BalancesPage + JournalPage
 
-Ces deux pages ont des styles conditionnels dynamiques (couleur selon valeur) qui restent en `style={{}}`.
+Ces deux pages colorent en rouge les valeurs négatives. Le pattern retenu : **data attribute de présence** (`data-negative={val < 0 || undefined}`) ciblé en CSS avec `[data-negative]`. Zéro `style={{}}` dans ces composants.
 
 **Files:**
 - Create: `app/src/pages/BalancesPage.module.css`
@@ -908,11 +908,17 @@ Ces deux pages ont des styles conditionnels dynamiques (couleur selon valeur) qu
 .subtotalCellItalic {
   font-style: italic;
 }
+
+/* Couleur négative : présence de l'attribut = valeur < 0 */
+.tdRight[data-negative],
+.subtotalCellRight[data-negative] {
+  color: #dc2626;
+}
 ```
 
 - [ ] **Step 2 : Mettre à jour `BalancesPage.tsx`**
 
-Note : `color: row.solde < 0 ? '#dc2626' : 'inherit'` reste en `style={{}}` car c'est une valeur dynamique.
+Note : `data-negative={val < 0 || undefined}` → présence de l'attribut ciblée en CSS, zéro `style={{}}` dans ce composant.
 
 ```tsx
 import { useEffect, useState } from 'react';
@@ -1053,7 +1059,7 @@ function GroupRows({ group }: { group: BalanceGroup }) {
           <td className={styles.td}>{row.name}</td>
           <td className={`${styles.td} ${styles.tdRight}`}>{fmt(row.total_debit)}</td>
           <td className={`${styles.td} ${styles.tdRight}`}>{fmt(row.total_credit)}</td>
-          <td className={`${styles.td} ${styles.tdRight}`} style={{ color: row.solde < 0 ? '#dc2626' : 'inherit' }}>
+          <td className={`${styles.td} ${styles.tdRight}`} data-negative={row.solde < 0 || undefined}>
             {fmt(row.solde)}
           </td>
         </tr>
@@ -1064,7 +1070,7 @@ function GroupRows({ group }: { group: BalanceGroup }) {
         </td>
         <td className={`${styles.subtotalCell} ${styles.subtotalCellRight}`}>{fmt(group.totalDebit)}</td>
         <td className={`${styles.subtotalCell} ${styles.subtotalCellRight}`}>{fmt(group.totalCredit)}</td>
-        <td className={`${styles.subtotalCell} ${styles.subtotalCellRight}`} style={{ color: group.totalSolde < 0 ? '#dc2626' : 'inherit' }}>
+        <td className={`${styles.subtotalCell} ${styles.subtotalCellRight}`} data-negative={group.totalSolde < 0 || undefined}>
           {fmt(group.totalSolde)}
         </td>
       </tr>
@@ -1074,6 +1080,8 @@ function GroupRows({ group }: { group: BalanceGroup }) {
 ```
 
 - [ ] **Step 3 : Créer `JournalPage.module.css`**
+
+Note : JournalPage n'affiche pas de soldes — pas de couleur négative dynamique à gérer. La couleur rouge du bouton Supprimer est statique (`.actionBtnDelete`).
 
 ```css
 /* app/src/pages/JournalPage.module.css */
@@ -3231,7 +3239,7 @@ git commit -m "refactor(styles): EntryForm + OpeningBalanceModal + ClosingModal 
 | 1 | ConfirmDialog, EntryFormModal, JournalFilters | Introduction au pattern, pas de conditionnel |
 | 2 | Layout, Sidebar | `:hover` natif en CSS remplace le state JS |
 | 3 | WelcomePage, AccountsPage | Pages simples, `:disabled` en CSS |
-| 4 | BalancesPage, JournalPage | Couleur dynamique → inline style conservé |
+| 4 | BalancesPage, JournalPage | Couleur négative → `data-negative` + `[data-negative]` en CSS, zéro `style={{}}` |
 | 5 | FiscalYearsPage, SettingsPage | Pages chargées, badges conditionnels |
 | 6 | EntryForm, OpeningBalanceModal, ClosingModal | Composants complexes, équilibre OK/KO |
 
