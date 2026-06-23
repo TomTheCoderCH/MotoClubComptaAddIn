@@ -8,6 +8,7 @@ import type {
   Account, FiscalYear, JournalEntry, JournalEntryLine, AccountBalance,
   CreateJournalEntryPayload, UpdateJournalEntryPayload,
   OpeningBalanceSuggestion, OpeningBalanceLine,
+  ClosingAccountLine, ClosingPreview,
 } from '../types';
 
 let db: Database.Database;
@@ -324,4 +325,186 @@ export function deleteJournalEntry(id: number): void {
   if (fy.is_closed) throw new Error('Cet exercice est clôturé — aucune modification possible');
 
   getDb().prepare('DELETE FROM journal_entries WHERE id = ?').run(id);
+}
+
+// ─── Clôture ──────────────────────────────────────────────────────────────────
+
+export function getClosingPreview(fiscalYearId: number): ClosingPreview {
+  const fy = getDb()
+    .prepare('SELECT year FROM fiscal_years WHERE id = ?')
+    .get(fiscalYearId) as { year: number } | undefined;
+  if (!fy) throw new Error('Exercice introuvable');
+
+  const zeroRows = getDb().prepare(`
+    SELECT
+      a.number, a.name,
+      COALESCE(
+        CASE a.normal_balance
+          WHEN 'DEBIT'  THEN SUM(COALESCE(l.debit, 0))  - SUM(COALESCE(l.credit, 0))
+          WHEN 'CREDIT' THEN SUM(COALESCE(l.credit, 0)) - SUM(COALESCE(l.debit, 0))
+        END,
+        0
+      ) AS solde
+    FROM accounts a
+    LEFT JOIN journal_entry_lines l ON l.account_id = a.id
+      AND EXISTS (
+        SELECT 1 FROM journal_entries e
+        WHERE e.id = l.journal_entry_id AND e.fiscal_year_id = @fiscalYearId
+      )
+    WHERE a.must_be_zero_at_closing = 1 AND a.is_active = 1
+    GROUP BY a.id
+  `).all({ fiscalYearId }) as { number: string; name: string; solde: number }[];
+
+  const blockers: string[] = [];
+  for (const row of zeroRows) {
+    if (row.solde !== 0) {
+      const chf = (Math.abs(row.solde) / 100).toFixed(2);
+      blockers.push(`${row.name} (${row.number}) : solde CHF ${chf} doit être à 0`);
+    }
+  }
+
+  const rows = getDb().prepare(`
+    SELECT
+      a.id       AS accountId,
+      a.number   AS accountNumber,
+      a.name     AS accountName,
+      a.type,
+      COALESCE(
+        CASE a.normal_balance
+          WHEN 'DEBIT'  THEN SUM(COALESCE(l.debit, 0))  - SUM(COALESCE(l.credit, 0))
+          WHEN 'CREDIT' THEN SUM(COALESCE(l.credit, 0)) - SUM(COALESCE(l.debit, 0))
+        END,
+        0
+      ) AS soldeCents
+    FROM accounts a
+    LEFT JOIN journal_entry_lines l ON l.account_id = a.id
+      AND EXISTS (
+        SELECT 1 FROM journal_entries e
+        WHERE e.id = l.journal_entry_id AND e.fiscal_year_id = @fiscalYearId
+      )
+    WHERE a.class IN (3, 4) AND a.is_active = 1
+    GROUP BY a.id
+    ORDER BY a.number
+  `).all({ fiscalYearId }) as ClosingAccountLine[];
+
+  const accounts = rows.filter(r => r.soldeCents !== 0);
+
+  const netResultCents = accounts.reduce((sum, a) => {
+    if (a.type === 'PRODUIT') return sum + a.soldeCents;
+    return sum - a.soldeCents;
+  }, 0);
+
+  return { blockers, accounts, netResultCents };
+}
+
+export function closeFiscalYear(fiscalYearId: number): void {
+  const fy = getDb()
+    .prepare('SELECT year, is_closed FROM fiscal_years WHERE id = ?')
+    .get(fiscalYearId) as { year: number; is_closed: number } | undefined;
+  if (!fy) throw new Error('Exercice introuvable');
+  if (fy.is_closed) throw new Error('Cet exercice est déjà clôturé');
+
+  const existing = getDb()
+    .prepare('SELECT id FROM journal_entries WHERE fiscal_year_id = ? AND is_closing_entry = 1')
+    .get(fiscalYearId);
+  if (existing) throw new Error('Des écritures de clôture existent déjà pour cet exercice');
+
+  const preview = getClosingPreview(fiscalYearId);
+  if (preview.blockers.length > 0) {
+    throw new Error(`Clôture impossible : ${preview.blockers.join('; ')}`);
+  }
+
+  const account900 = getDb()
+    .prepare('SELECT id FROM accounts WHERE is_closing_account = 1')
+    .get() as { id: number } | undefined;
+  if (!account900) throw new Error('Compte Profits et Pertes (900) introuvable');
+
+  const account290 = getDb()
+    .prepare("SELECT id FROM accounts WHERE type = 'FONDS_PROPRES' AND is_active = 1")
+    .get() as { id: number } | undefined;
+  if (!account290) throw new Error('Compte Capital (290) introuvable');
+
+  getDb().transaction(() => {
+    const year = fy.year;
+    const lineStmt = getDb().prepare(`
+      INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit, credit)
+      VALUES (@entry_id, @account_id, @debit, @credit)
+    `);
+
+    if (preview.accounts.length > 0) {
+      const entry1 = getDb().prepare(`
+        INSERT INTO journal_entries (fiscal_year_id, date, description, is_closing_entry)
+        VALUES (@fiscal_year_id, @date, @description, 1)
+      `).run({
+        fiscal_year_id: fiscalYearId,
+        date: `${year}-12-31`,
+        description: `Clôture — Soldage résultat ${year}`,
+      });
+
+      const lines: Array<{ account_id: number; debit: number | null; credit: number | null }> = [];
+      for (const a of preview.accounts) {
+        const amt = Math.abs(a.soldeCents);
+        if (a.type === 'PRODUIT') {
+          if (a.soldeCents > 0) {
+            lines.push({ account_id: a.accountId,    debit: amt,  credit: null });
+            lines.push({ account_id: account900!.id, debit: null, credit: amt  });
+          } else {
+            lines.push({ account_id: a.accountId,    debit: null, credit: amt  });
+            lines.push({ account_id: account900!.id, debit: amt,  credit: null });
+          }
+        } else {
+          if (a.soldeCents > 0) {
+            lines.push({ account_id: a.accountId,    debit: null, credit: amt  });
+            lines.push({ account_id: account900!.id, debit: amt,  credit: null });
+          } else {
+            lines.push({ account_id: a.accountId,    debit: amt,  credit: null });
+            lines.push({ account_id: account900!.id, debit: null, credit: amt  });
+          }
+        }
+      }
+      validateEntryBalance(lines);
+      for (const l of lines) {
+        lineStmt.run({ entry_id: entry1.lastInsertRowid, account_id: l.account_id, debit: l.debit, credit: l.credit });
+      }
+    }
+
+    if (preview.netResultCents !== 0) {
+      const entry2 = getDb().prepare(`
+        INSERT INTO journal_entries (fiscal_year_id, date, description, is_closing_entry)
+        VALUES (@fiscal_year_id, @date, @description, 1)
+      `).run({
+        fiscal_year_id: fiscalYearId,
+        date: `${year}-12-31`,
+        description: `Clôture — Transfert vers Capital ${year}`,
+      });
+
+      const amt = Math.abs(preview.netResultCents);
+      if (preview.netResultCents > 0) {
+        lineStmt.run({ entry_id: entry2.lastInsertRowid, account_id: account900!.id, debit: amt,  credit: null });
+        lineStmt.run({ entry_id: entry2.lastInsertRowid, account_id: account290!.id, debit: null, credit: amt  });
+      } else {
+        lineStmt.run({ entry_id: entry2.lastInsertRowid, account_id: account900!.id, debit: null, credit: amt  });
+        lineStmt.run({ entry_id: entry2.lastInsertRowid, account_id: account290!.id, debit: amt,  credit: null });
+      }
+    }
+
+    getDb().prepare('UPDATE fiscal_years SET is_closed = 1 WHERE id = ?').run(fiscalYearId);
+  })();
+}
+
+export function reopenFiscalYear(fiscalYearId: number): void {
+  const fy = getDb()
+    .prepare('SELECT is_closed FROM fiscal_years WHERE id = ?')
+    .get(fiscalYearId) as { is_closed: number } | undefined;
+  if (!fy) throw new Error('Exercice introuvable');
+  if (!fy.is_closed) throw new Error('Cet exercice n\'est pas clôturé');
+
+  getDb().transaction(() => {
+    getDb()
+      .prepare('DELETE FROM journal_entries WHERE fiscal_year_id = ? AND is_closing_entry = 1')
+      .run(fiscalYearId);
+    getDb()
+      .prepare('UPDATE fiscal_years SET is_closed = 0 WHERE id = ?')
+      .run(fiscalYearId);
+  })();
 }

@@ -118,3 +118,17 @@ export interface OpeningBalanceLine {
   accountId: number;
   amountCents: number;
 }
+
+export interface ClosingAccountLine {
+  accountId: number;
+  accountNumber: string;
+  accountName: string;
+  type: 'PRODUIT' | 'CHARGE';
+  soldeCents: number;
+}
+
+export interface ClosingPreview {
+  blockers: string[];
+  accounts: ClosingAccountLine[];
+  netResultCents: number;
+}

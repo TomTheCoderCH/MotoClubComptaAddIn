@@ -19,6 +19,9 @@ import {
   deleteJournalEntry,
   getOpeningBalanceSuggestions,
   createOpeningBalanceEntry,
+  getClosingPreview,
+  closeFiscalYear,
+  reopenFiscalYear,
 } from '../db';
 
 // Chaque describe repart d'une base SQLite en mémoire fraîche
@@ -510,5 +513,193 @@ describe('getOpeningBalanceSuggestions + createOpeningBalanceEntry', () => {
       { accountId: caisseId,  amountCents: 100000 },
       { accountId: capitalId, amountCents: 100000 },
     ])).toThrow('existent déjà');
+  });
+});
+
+describe('getClosingPreview', () => {
+  let fiscalYearId: number;
+  let raiffeisenId: number;
+  let twintId: number;
+  let cotisationsId: number;
+  let assurancesId: number;
+
+  beforeEach(() => {
+    freshDb();
+    const fy = createFiscalYear(2025);
+    fiscalYearId = fy.id;
+    const accounts = getAllAccounts();
+    raiffeisenId  = accounts.find(a => a.number === '101')!.id;
+    twintId       = accounts.find(a => a.number === '102')!.id;
+    cotisationsId = accounts.find(a => a.number === '300')!.id;
+    assurancesId  = accounts.find(a => a.number === '400')!.id;
+  });
+
+  it('retourne un blocker si Twint a un solde non nul', () => {
+    createJournalEntry({
+      fiscal_year_id: fiscalYearId,
+      date: '2025-03-01',
+      description: 'Encaissement Twint',
+      lines: [
+        { account_id: twintId,        debit:  4500 },
+        { account_id: cotisationsId,  credit: 4500 },
+      ],
+    });
+    const preview = getClosingPreview(fiscalYearId);
+    expect(preview.blockers).toHaveLength(1);
+    expect(preview.blockers[0]).toMatch(/Twint/);
+    expect(preview.blockers[0]).toMatch(/45\.00/);
+  });
+
+  it('retourne accounts et netResultCents corrects', () => {
+    createJournalEntry({
+      fiscal_year_id: fiscalYearId,
+      date: '2025-03-01',
+      description: 'Cotisations',
+      lines: [
+        { account_id: raiffeisenId,  debit:  141000 },
+        { account_id: cotisationsId, credit: 141000 },
+      ],
+    });
+    createJournalEntry({
+      fiscal_year_id: fiscalYearId,
+      date: '2025-04-01',
+      description: 'Assurances',
+      lines: [
+        { account_id: assurancesId,  debit:  35000 },
+        { account_id: raiffeisenId,  credit: 35000 },
+      ],
+    });
+    const preview = getClosingPreview(fiscalYearId);
+    expect(preview.blockers).toHaveLength(0);
+    expect(preview.accounts).toHaveLength(2);
+    expect(preview.netResultCents).toBe(106000); // 1410 - 350 = 1060 CHF
+  });
+
+  it('retourne listes vides et netResultCents = 0 sans mouvements 3xx/4xx', () => {
+    const preview = getClosingPreview(fiscalYearId);
+    expect(preview.blockers).toHaveLength(0);
+    expect(preview.accounts).toHaveLength(0);
+    expect(preview.netResultCents).toBe(0);
+  });
+});
+
+describe('closeFiscalYear + reopenFiscalYear', () => {
+  let fiscalYearId: number;
+  let raiffeisenId: number;
+  let cotisationsId: number;
+  let assurancesId: number;
+
+  beforeEach(() => {
+    freshDb();
+    const fy = createFiscalYear(2025);
+    fiscalYearId = fy.id;
+    const accounts = getAllAccounts();
+    raiffeisenId  = accounts.find(a => a.number === '101')!.id;
+    cotisationsId = accounts.find(a => a.number === '300')!.id;
+    assurancesId  = accounts.find(a => a.number === '400')!.id;
+    createJournalEntry({
+      fiscal_year_id: fiscalYearId,
+      date: '2025-03-01',
+      description: 'Cotisations',
+      lines: [
+        { account_id: raiffeisenId,  debit:  141000 },
+        { account_id: cotisationsId, credit: 141000 },
+      ],
+    });
+    createJournalEntry({
+      fiscal_year_id: fiscalYearId,
+      date: '2025-04-01',
+      description: 'Assurances',
+      lines: [
+        { account_id: assurancesId,  debit:  35000 },
+        { account_id: raiffeisenId,  credit: 35000 },
+      ],
+    });
+  });
+
+  it('génère 2 écritures is_closing_entry et marque is_closed = 1', () => {
+    closeFiscalYear(fiscalYearId);
+    const entries = getDb()
+      .prepare('SELECT * FROM journal_entries WHERE fiscal_year_id = ? AND is_closing_entry = 1')
+      .all(fiscalYearId) as any[];
+    expect(entries).toHaveLength(2);
+    const fy = getDb()
+      .prepare('SELECT is_closed FROM fiscal_years WHERE id = ?')
+      .get(fiscalYearId) as { is_closed: number };
+    expect(fy.is_closed).toBe(1);
+  });
+
+  it('génère 1 seule écriture si netResultCents = 0 (pas d\'écriture 2)', () => {
+    const fy2 = createFiscalYear(2026);
+    const fraisBancairesId = getAllAccounts().find(a => a.number === '401')!.id;
+    createJournalEntry({
+      fiscal_year_id: fy2.id,
+      date: '2026-03-01',
+      description: 'Produit égal charge',
+      lines: [
+        { account_id: raiffeisenId,     debit:  10000 },
+        { account_id: cotisationsId,    credit: 10000 },
+      ],
+    });
+    createJournalEntry({
+      fiscal_year_id: fy2.id,
+      date: '2026-03-01',
+      description: 'Charge égale produit',
+      lines: [
+        { account_id: fraisBancairesId, debit:  10000 },
+        { account_id: raiffeisenId,     credit: 10000 },
+      ],
+    });
+    closeFiscalYear(fy2.id);
+    const entries = getDb()
+      .prepare('SELECT * FROM journal_entries WHERE fiscal_year_id = ? AND is_closing_entry = 1')
+      .all(fy2.id) as any[];
+    expect(entries).toHaveLength(1);
+  });
+
+  it('lève une erreur si des blockers existent (Twint non soldé)', () => {
+    const twintId = getAllAccounts().find(a => a.number === '102')!.id;
+    createJournalEntry({
+      fiscal_year_id: fiscalYearId,
+      date: '2025-05-01',
+      description: 'Twint non soldé',
+      lines: [
+        { account_id: twintId,        debit:  1000 },
+        { account_id: cotisationsId,  credit: 1000 },
+      ],
+    });
+    expect(() => closeFiscalYear(fiscalYearId)).toThrow('impossible');
+  });
+
+  it('lève une erreur si déjà clôturé (idempotence)', () => {
+    closeFiscalYear(fiscalYearId);
+    expect(() => closeFiscalYear(fiscalYearId)).toThrow('déjà clôturé');
+  });
+
+  it('les écritures de clôture ont la date YYYY-12-31', () => {
+    closeFiscalYear(fiscalYearId);
+    const entries = getDb()
+      .prepare('SELECT date FROM journal_entries WHERE fiscal_year_id = ? AND is_closing_entry = 1')
+      .all(fiscalYearId) as { date: string }[];
+    for (const e of entries) {
+      expect(e.date).toBe('2025-12-31');
+    }
+  });
+
+  it('reopenFiscalYear supprime les écritures de clôture et remet is_closed = 0', () => {
+    closeFiscalYear(fiscalYearId);
+    reopenFiscalYear(fiscalYearId);
+    const entries = getDb()
+      .prepare('SELECT * FROM journal_entries WHERE fiscal_year_id = ? AND is_closing_entry = 1')
+      .all(fiscalYearId) as any[];
+    expect(entries).toHaveLength(0);
+    const fy = getDb()
+      .prepare('SELECT is_closed FROM fiscal_years WHERE id = ?')
+      .get(fiscalYearId) as { is_closed: number };
+    expect(fy.is_closed).toBe(0);
+  });
+
+  it('reopenFiscalYear lève une erreur si exercice non clôturé', () => {
+    expect(() => reopenFiscalYear(fiscalYearId)).toThrow('n\'est pas clôturé');
   });
 });
