@@ -119,6 +119,8 @@ Le classeur contient 11 feuilles correspondant aux comptes suivants :
   - N'est PAS l'outil de travail quotidien — c'est un export de clôture
 - **Export Excel :** bibliothèque `exceljs` (supporte styles, formules, tableaux formatés)
 
+- **Styles React :** **CSS Modules** (`.module.css` par composant, colocalisé) — séparation code/design, accès à toutes les features CSS (`:hover`, `:disabled`, media queries, variables CSS). Vite supporte nativement, zéro configuration. Les styles dynamiques calculés à runtime (ex. couleur selon valeur) restent en `style={{}}` inline.
+
 - **Framework UI :** React (renderer Electron) — premier projet React, occasion de se former
 - **Plan comptable :** libre, adapté au club, plus détaillé que l'Excel actuel (voir section dédiée)
 - **Devises :** CHF uniquement — paiements EUR convertis automatiquement par la banque (carte VISA), montant CHF saisi directement
@@ -465,11 +467,15 @@ app/
 - [x] Vue des soldes par compte sur un exercice donné (BalancesPage, groupés par classe)
 - [x] Vue journal avec filtres (libellé, compte/grand-livre, plage de dates) + modification et suppression d'écritures via modale — 143 tests au total
 - [x] Sauvegarde automatique à la fermeture (`backup()` de better-sqlite3) + bouton export manuel + page Paramètres — 190 tests au total
-- [x] Sélecteur du dossier de données au premier lancement (`%APPDATA%\MCYCompta\settings.json`) + migration + WelcomePage — 219 tests au total
+- [x] Sélecteur du dossier de données au premier lancement (`%APPDATA%\MCY Compta\settings.json` via `app.getPath('userData')`) + migration + WelcomePage — 219 tests au total
 - [x] Saisie des soldes à nouveau (report d'exercice) — 249 tests au total
 - [x] Écritures de clôture automatiques (soldage 3xx/4xx → 900 → 290) — 283 tests unitaires
 - [x] Tests E2E Playwright — 12 tests (app, fiscal-year, journal-entry, balance)
 - [x] Export Excel de clôture (`exceljs`) — Journal, Bilan & Résultat, une feuille par compte (SUBTOTAL, Courant), déclencheurs FiscalYearsPage + SettingsPage — 318 tests au total
+- [x] Refactoring settings : `app.getPath('userData')` à la place du chemin `APPDATA` manuel ; `app.setPath('userData')` dans `main.ts` pour l'isolation E2E — 318 tests
+
+#### En cours
+- [ ] Migration styles inline → CSS Modules (plan : `docs/superpowers/plans/2026-06-23-css-modules-migration.md`)
 
 ### Notes techniques actives
 
@@ -478,4 +484,4 @@ app/
 - Les montants sont stockés en **centimes** (INTEGER) — jamais de float pour les montants CHF
 - `better-sqlite3` compilé pour Electron (NODE_MODULE_VERSION 146) ne tourne pas dans le Node système (v127). Le script `pretest` exécute `npm rebuild better-sqlite3` pour le recompiler pour Node avant les tests. `npm start` le recompile automatiquement pour Electron via Electron Forge.
 - Les tests Vitest n'incluent que `src/**` (`include: ['src/**/*.{test,spec}.{ts,tsx}']`) pour éviter de ramasser les specs Playwright du dossier `e2e/`.
-- **Tests E2E** : `npm run test:e2e` → `pretest:e2e` rebuild better-sqlite3 pour Electron → `build:e2e` via `scripts/build-for-e2e.mjs` (produit `.vite/build/main.js` + `.vite/renderer/main_window/` avec `base: './'` pour les chemins relatifs en `file://`) → Playwright lance l'app avec un APPDATA temporaire isolé. `app.getPath('appData')` ignore l'override env (registry Windows) → `settings.ts` utilise `process.env.APPDATA` à la place. Playwright workers = 1 (séquentiel, les instances Electron concurrentes interfèrent). Après `test:e2e`, relancer `npm test` recompile automatiquement pour Node via `pretest`.
+- **Tests E2E** : `npm run test:e2e` → `pretest:e2e` rebuild better-sqlite3 pour Electron → `build:e2e` via `scripts/build-for-e2e.mjs` (produit `.vite/build/main.js` + `.vite/renderer/main_window/` avec `base: './'` pour les chemins relatifs en `file://`) → Playwright lance l'app avec un APPDATA temporaire isolé. `main.ts` appelle `app.setPath('userData', path.join(APPDATA, app.getName()))` avant `app.ready` quand `NODE_ENV=test` — ce qui redirige `app.getPath('userData')` vers le répertoire temporaire. `electron-fixture.ts` place `settings.json` dans `MCY Compta/` (= `app.getName()`). Playwright workers = 1 (séquentiel, les instances Electron concurrentes interfèrent). Après `test:e2e`, relancer `npm test` recompile automatiquement pour Node via `pretest`.
