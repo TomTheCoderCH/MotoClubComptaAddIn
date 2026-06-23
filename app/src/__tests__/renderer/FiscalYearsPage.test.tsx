@@ -32,6 +32,7 @@ function mockApi(years: FiscalYear[] = []) {
     getClosingPreview:  vi.fn().mockResolvedValue({ blockers: [], accounts: [], netResultCents: 0 }),
     closeFiscalYear:    vi.fn().mockResolvedValue(undefined),
     reopenFiscalYear:   vi.fn().mockResolvedValue(undefined),
+    exportExcel:        vi.fn().mockResolvedValue(null),
   });
 }
 
@@ -256,5 +257,31 @@ describe('FiscalYearsPage — clôture', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Rouvrir' }));
     await userEvent.click(await screen.findByRole('button', { name: 'Confirmer' }));
     expect(getFiscalYears).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('FiscalYearsPage — export Excel', () => {
+  it('affiche le bouton "Exporter Excel" pour chaque exercice', async () => {
+    mockApi([fy2025]);
+    render(<FiscalYearsPage />);
+    expect(await screen.findByRole('button', { name: 'Exporter Excel' })).toBeInTheDocument();
+  });
+
+  it('appelle window.api.exportExcel avec l\'id de l\'exercice', async () => {
+    mockApi([fy2025]);
+    render(<FiscalYearsPage />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Exporter Excel' }));
+    expect(window.api.exportExcel).toHaveBeenCalledWith(fy2025.id);
+  });
+
+  it('affiche un message de succès après export', async () => {
+    mockApi([fy2025]);
+    vi.stubGlobal('api', {
+      ...window.api,
+      exportExcel: vi.fn().mockResolvedValue({ path: 'C:/tmp/mcy-compta-2025.xlsx' }),
+    });
+    render(<FiscalYearsPage />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Exporter Excel' }));
+    expect(await screen.findByRole('status')).toHaveTextContent(/exporté/i);
   });
 });

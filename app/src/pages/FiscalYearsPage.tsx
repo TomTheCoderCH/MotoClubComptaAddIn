@@ -14,6 +14,7 @@ export default function FiscalYearsPage() {
   const [suggestions,     setSuggestions]     = useState<OpeningBalanceSuggestion[]>([]);
   const [closingModal,  setClosingModal]  = useState<{ id: number; year: number; preview: ClosingPreview } | null>(null);
   const [confirmReopen, setConfirmReopen] = useState<{ id: number; year: number } | null>(null);
+  const [exportStatus,  setExportStatus]  = useState<{ id: number; msg: string } | null>(null);
 
   useEffect(() => { load(); }, []);
 
@@ -99,6 +100,20 @@ export default function FiscalYearsPage() {
   function handleClosingSuccess() {
     setClosingModal(null);
     load();
+  }
+
+  async function handleExportExcel(y: FiscalYear) {
+    setExportStatus(null);
+    try {
+      const result = await window.api.exportExcel(y.id);
+      if (result && 'path' in result) {
+        setExportStatus({ id: y.id, msg: `Fichier exporté : ${result.path}` });
+      } else if (result && 'error' in result) {
+        setError(result.error);
+      }
+    } catch (e: unknown) {
+      setError((e as Error).message);
+    }
   }
 
   const yearAlreadyExists = years.some(y => y.year === newYear);
@@ -190,6 +205,16 @@ export default function FiscalYearsPage() {
                         Rouvrir
                       </button>
                     )}
+                    {' '}
+                    <button
+                      onClick={() => handleExportExcel(y)}
+                      style={s.btnExport}
+                    >
+                      Exporter Excel
+                    </button>
+                    {exportStatus?.id === y.id && (
+                      <p role="status" style={s.exportSuccess}>{exportStatus.msg}</p>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -245,6 +270,8 @@ const s = {
   btnDisabled: { background: '#94a3b8', cursor: 'not-allowed' },
   btnSmall:    { padding: '0.25rem 0.6rem', background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '5px', fontSize: '0.78rem', cursor: 'pointer' },
   btnReopen:   { padding: '0.25rem 0.6rem', background: '#fff7ed', color: '#c2410c', border: '1px solid #fed7aa', borderRadius: '5px', fontSize: '0.78rem', cursor: 'pointer' },
+  btnExport:     { padding: '0.25rem 0.6rem', background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: '5px', fontSize: '0.78rem', cursor: 'pointer' },
+  exportSuccess: { margin: '0.25rem 0 0', fontSize: '0.75rem', color: '#15803d' },
   empty:       { color: '#64748b', fontSize: '0.875rem' },
   table:       { borderCollapse: 'collapse' as const, width: '100%', maxWidth: '760px', fontSize: '0.875rem', background: '#fff', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.08)' },
   theadRow:    { background: '#f1f5f9' },
