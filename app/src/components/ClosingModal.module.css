@@ -1,0 +1,160 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 1.75rem;
+  width: 560px;
+  max-width: 95vw;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+}
+
+.title {
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+  color: #0f172a;
+}
+
+.alertError {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  padding: 0.6rem 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+  color: #dc2626;
+  font-size: 0.875rem;
+}
+
+.warning {
+  margin: 0 0 1rem;
+  font-size: 0.85rem;
+  color: #92400e;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+}
+
+.blockerBox {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.blockerLine {
+  margin: 0 0 0.25rem;
+  color: #dc2626;
+  font-size: 0.875rem;
+}
+
+.blockerHint {
+  margin: 0.5rem 0 0;
+  color: #7f1d1d;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.sectionLabel {
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+  background: #f8fafc;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.row {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.tdNum {
+  padding: 0.35rem 0.75rem;
+  color: #64748b;
+  font-family: monospace;
+}
+
+.tdName {
+  padding: 0.35rem 0.5rem;
+  color: #334155;
+  width: 100%;
+}
+
+.tdType {
+  padding: 0.35rem 0.5rem;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.tdAmount {
+  padding: 0.35rem 0.75rem;
+  text-align: right;
+  font-family: monospace;
+  color: #334155;
+}
+
+.result {
+  margin: 0 0 1.25rem;
+  font-size: 0.9rem;
+  color: #334155;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.btnCancel {
+  padding: 0.45rem 1rem;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #475569;
+}
+
+.btnCancel:hover {
+  background: #f1f5f9;
+}
+
+.btnConfirm {
+  padding: 0.45rem 1.1rem;
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.btnConfirm:hover {
+  background: #dc2626;
+}
+
+.btnConfirm:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FiscalYear, Account, JournalEntry, JournalEntryLine } from '../types';
 import { parseAmount, formatAmount, validateEntryBalance } from '../lib/accounting';
+import styles from './EntryForm.module.css';
 
 interface Line {
   account_id: string;  // string pour le <select>, converti en number à la soumission
@@ -37,8 +38,6 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
   const [submitting,  setSubmitting]  = useState(false);
   const [apiError,    setApiError]    = useState<string | null>(null);
 
-  // ── Calcul de l'équilibre en temps réel ──────────────────────────────────
-
   const totals = lines.reduce(
     (acc, l) => ({
       debit:  acc.debit  + (parseFloat(l.debit)  || 0),
@@ -50,17 +49,12 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
   const balanced   = totals.debit > 0 && Math.abs(totals.debit - totals.credit) < 0.001;
   const canSubmit  = description.trim() !== '' && date !== '' && balanced && !submitting;
 
-  // ── Modification d'une ligne ──────────────────────────────────────────────
-
   function updateLine(i: number, field: keyof Line, value: string) {
     setLines(prev => {
       const next = [...prev];
       next[i] = { ...next[i], [field]: value };
-
-      // Quand on saisit un débit, efface le crédit de la même ligne (et inversement)
       if (field === 'debit'  && value !== '') next[i].credit = '';
       if (field === 'credit' && value !== '') next[i].debit  = '';
-
       return next;
     });
   }
@@ -74,13 +68,10 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
     setLines(prev => prev.filter((_, idx) => idx !== i));
   }
 
-  // ── Soumission ────────────────────────────────────────────────────────────
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setApiError(null);
 
-    // Construire les lignes en centimes
     const payload = lines
       .filter(l => l.account_id !== '')
       .map(l => ({
@@ -89,7 +80,6 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
         credit: l.credit !== '' ? parseAmount(l.credit) : undefined,
       }));
 
-    // Validation côté client (même règles que le serveur)
     try {
       validateEntryBalance(payload);
     } catch (e: unknown) {
@@ -125,17 +115,16 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
   }
 
   return (
-    <form onSubmit={handleSubmit} aria-label="Formulaire de saisie d'écriture" noValidate style={s.card}>
+    <form onSubmit={handleSubmit} aria-label="Formulaire de saisie d'écriture" noValidate className={styles.card}>
       {!hideTitle && (
-        <h2 style={s.h2}>
+        <h2 className={styles.h2}>
           {editEntry ? 'Modifier l\'écriture' : 'Nouvelle écriture'} — exercice {fiscalYear.year}
         </h2>
       )}
 
-      {/* ── En-tête de l'écriture ── */}
-      <div style={s.row}>
-        <div style={s.field}>
-          <label htmlFor="entry-date" style={s.label}>Date *</label>
+      <div className={styles.row}>
+        <div className={styles.field}>
+          <label htmlFor="entry-date" className={styles.label}>Date *</label>
           <input
             id="entry-date"
             type="date"
@@ -144,11 +133,11 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
             min={fiscalYear.start_date}
             max={fiscalYear.end_date}
             required
-            style={s.input}
+            className={styles.input}
           />
         </div>
-        <div style={{ ...s.field, flex: 2 }}>
-          <label htmlFor="entry-desc" style={s.label}>Libellé *</label>
+        <div className={`${styles.field} ${styles.fieldWide}`}>
+          <label htmlFor="entry-desc" className={styles.label}>Libellé *</label>
           <input
             id="entry-desc"
             type="text"
@@ -156,38 +145,37 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
             onChange={e => setDescription(e.target.value)}
             placeholder="Ex. : Cotisation membre — Dupont"
             required
-            style={s.input}
+            className={styles.input}
           />
         </div>
-        <div style={s.field}>
-          <label htmlFor="entry-piece" style={s.label}>Pièce</label>
+        <div className={styles.field}>
+          <label htmlFor="entry-piece" className={styles.label}>Pièce</label>
           <input
             id="entry-piece"
             type="text"
             value={piece}
             onChange={e => setPiece(e.target.value)}
             placeholder="P-2025-001"
-            style={s.input}
+            className={styles.input}
           />
         </div>
       </div>
 
-      {/* ── Lignes comptables ── */}
-      <div style={{ marginBottom: '0.75rem' }}>
-        <div style={s.linesHeader}>
-          <span style={s.colAccount}>Compte</span>
-          <span style={s.colAmount}>Débit CHF</span>
-          <span style={s.colAmount}>Crédit CHF</span>
-          <span style={{ width: '32px' }} />
+      <div className={styles.linesContainer}>
+        <div className={styles.linesHeader}>
+          <span className={styles.colAccount}>Compte</span>
+          <span className={styles.colAmount}>Débit CHF</span>
+          <span className={styles.colAmount}>Crédit CHF</span>
+          <span className={styles.colSpacer} />
         </div>
 
         {lines.map((line, i) => (
-          <div key={i} style={s.lineRow}>
+          <div key={i} className={styles.lineRow}>
             <select
               value={line.account_id}
               onChange={e => updateLine(i, 'account_id', e.target.value)}
               aria-label={`Compte ligne ${i + 1}`}
-              style={{ ...s.input, ...s.colAccount }}
+              className={`${styles.input} ${styles.colAccount}`}
             >
               <option value="">— choisir un compte —</option>
               {accounts.map(a => (
@@ -205,7 +193,7 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
               step="0.01"
               placeholder="0.00"
               aria-label={`Débit ligne ${i + 1}`}
-              style={{ ...s.input, ...s.colAmount, textAlign: 'right' }}
+              className={`${styles.input} ${styles.colAmount}`}
             />
 
             <input
@@ -216,7 +204,7 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
               step="0.01"
               placeholder="0.00"
               aria-label={`Crédit ligne ${i + 1}`}
-              style={{ ...s.input, ...s.colAmount, textAlign: 'right' }}
+              className={`${styles.input} ${styles.colAmount}`}
             />
 
             <button
@@ -224,34 +212,32 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
               onClick={() => removeLine(i)}
               disabled={lines.length <= 2}
               aria-label={`Supprimer ligne ${i + 1}`}
-              style={s.removeBtn}
+              className={styles.removeBtn}
             >
               ×
             </button>
           </div>
         ))}
 
-        <button type="button" onClick={addLine} style={s.addLineBtn}>
+        <button type="button" onClick={addLine} className={styles.addLineBtn}>
           + Ajouter une ligne
         </button>
       </div>
 
-      {/* ── Résumé débit / crédit ── */}
-      <div style={{ ...s.balance, ...(balanced ? s.balanceOk : s.balanceKo) }}>
+      <div className={`${styles.balance} ${balanced ? styles.balanceOk : styles.balanceKo}`}>
         <span>Total débit : <strong>{totals.debit.toFixed(2)}</strong></span>
         <span>Total crédit : <strong>{totals.credit.toFixed(2)}</strong></span>
         <span>{balanced ? 'Ecriture équilibrée' : 'Déséquilibre : ' + Math.abs(totals.debit - totals.credit).toFixed(2)}</span>
       </div>
 
-      {apiError && <div role="alert" style={s.error}>Erreur : {apiError}</div>}
+      {apiError && <div role="alert" className={styles.error}>Erreur : {apiError}</div>}
 
-      {/* ── Actions ── */}
-      <div style={s.actions}>
-        <button type="button" onClick={onCancel} style={s.cancelBtn}>Annuler</button>
+      <div className={styles.actions}>
+        <button type="button" onClick={onCancel} className={styles.cancelBtn}>Annuler</button>
         <button
           type="submit"
           disabled={!canSubmit}
-          style={{ ...s.submitBtn, ...(!canSubmit ? s.btnDisabled : {}) }}
+          className={styles.submitBtn}
         >
           {submitting ? 'Enregistrement…' : 'Enregistrer l\'écriture'}
         </button>
@@ -263,26 +249,3 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
 function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
-
-const s = {
-  card:        { background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '1.5rem', marginBottom: '1.5rem', boxShadow: '0 1px 4px rgba(0,0,0,.07)' },
-  h2:          { margin: '0 0 1.25rem', fontSize: '1rem', fontWeight: 600, color: '#334155' },
-  row:         { display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' as const },
-  field:       { display: 'flex', flexDirection: 'column' as const, gap: '0.3rem', flex: 1, minWidth: '140px' },
-  label:       { fontSize: '0.8rem', fontWeight: 500, color: '#475569' },
-  input:       { border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.4rem 0.6rem', fontSize: '0.875rem', color: '#0f172a', background: '#fff' },
-  linesHeader: { display: 'flex', gap: '0.5rem', padding: '0 0 0.25rem', fontSize: '0.75rem', fontWeight: 600, color: '#64748b' },
-  lineRow:     { display: 'flex', gap: '0.5rem', marginBottom: '0.4rem', alignItems: 'center' },
-  colAccount:  { flex: 2, minWidth: '200px' },
-  colAmount:   { width: '110px' },
-  removeBtn:   { width: '32px', height: '32px', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#f8fafc', color: '#94a3b8', cursor: 'pointer', fontSize: '1rem', padding: 0 },
-  addLineBtn:  { marginTop: '0.25rem', background: 'none', border: '1px dashed #94a3b8', borderRadius: '6px', padding: '0.35rem 0.75rem', color: '#64748b', cursor: 'pointer', fontSize: '0.8rem' },
-  balance:     { display: 'flex', gap: '1.5rem', padding: '0.6rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', marginBottom: '0.75rem' },
-  balanceOk:   { background: '#dcfce7', color: '#15803d' },
-  balanceKo:   { background: '#fef9c3', color: '#92400e' },
-  error:       { background: '#fee2e2', border: '1px solid #fca5a5', padding: '0.65rem 0.75rem', borderRadius: '6px', marginBottom: '0.75rem', color: '#dc2626', fontSize: '0.875rem' },
-  actions:     { display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' },
-  cancelBtn:   { padding: '0.45rem 1rem', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer', fontSize: '0.875rem', color: '#475569' },
-  submitBtn:   { padding: '0.45rem 1rem', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 500 },
-  btnDisabled: { background: '#94a3b8', cursor: 'not-allowed' },
-} as const;

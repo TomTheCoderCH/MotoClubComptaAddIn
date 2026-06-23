@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { OpeningBalanceSuggestion, OpeningBalanceLine } from '../types';
+import styles from './OpeningBalanceModal.module.css';
 
 export interface OpeningBalanceModalProps {
   fiscalYearId: number;
@@ -55,39 +56,39 @@ export default function OpeningBalanceModal({
   const passifAccounts = suggestions.filter(s => s.type === 'PASSIF');
 
   return (
-    <div style={s.overlay} role="dialog" aria-modal="true" aria-labelledby="ob-title">
-      <div style={s.modal}>
-        <h2 id="ob-title" style={s.h2}>Soldes à nouveau — Exercice {year}</h2>
+    <div className={styles.overlay} role="dialog" aria-modal="true" aria-labelledby="ob-title">
+      <div className={styles.modal}>
+        <h2 id="ob-title" className={styles.h2}>Soldes à nouveau — Exercice {year}</h2>
 
-        {error && <div role="alert" style={s.alert}>{error}</div>}
+        {error && <div role="alert" className={styles.alert}>{error}</div>}
 
-        <table style={s.table}>
+        <table className={styles.table}>
           <tbody>
-            <tr><td colSpan={2} style={s.sectionHeader}>Classe 1 — Actifs</td></tr>
+            <tr><td colSpan={2} className={styles.sectionHeader}>Classe 1 — Actifs</td></tr>
             {actifAccounts.map(sg => (
               <tr key={sg.accountId}>
-                <td style={s.accountCell}>{sg.accountNumber}  {sg.accountName}</td>
-                <td style={s.amountCell}>
+                <td className={styles.accountCell}>{sg.accountNumber}  {sg.accountName}</td>
+                <td className={styles.amountCell}>
                   <input
                     type="text"
                     value={amounts[sg.accountId] ?? ''}
                     onChange={e => setAmounts(prev => ({ ...prev, [sg.accountId]: e.target.value }))}
-                    style={s.input}
+                    className={styles.input}
                     aria-label={`Solde ${sg.accountName}`}
                   />
                 </td>
               </tr>
             ))}
-            <tr><td colSpan={2} style={s.sectionHeader}>Classe 2 — Passifs et fonds propres</td></tr>
+            <tr><td colSpan={2} className={styles.sectionHeader}>Classe 2 — Passifs et fonds propres</td></tr>
             {passifAccounts.map(sg => (
               <tr key={sg.accountId}>
-                <td style={s.accountCell}>{sg.accountNumber}  {sg.accountName}</td>
-                <td style={s.amountCell}>
+                <td className={styles.accountCell}>{sg.accountNumber}  {sg.accountName}</td>
+                <td className={styles.amountCell}>
                   <input
                     type="text"
                     value={amounts[sg.accountId] ?? ''}
                     onChange={e => setAmounts(prev => ({ ...prev, [sg.accountId]: e.target.value }))}
-                    style={s.input}
+                    className={styles.input}
                     aria-label={`Solde ${sg.accountName}`}
                   />
                 </td>
@@ -95,13 +96,13 @@ export default function OpeningBalanceModal({
             ))}
             {capital.map(sg => (
               <tr key={sg.accountId}>
-                <td style={s.accountCell}>{sg.accountNumber}  {sg.accountName}</td>
-                <td style={s.amountCell}>
+                <td className={styles.accountCell}>{sg.accountNumber}  {sg.accountName}</td>
+                <td className={styles.amountCell}>
                   <input
                     type="text"
                     readOnly
                     value={formatCHF(capitalCents)}
-                    style={{ ...s.input, ...s.inputReadOnly }}
+                    className={`${styles.input} ${styles.inputReadOnly}`}
                     aria-label={`Solde ${sg.accountName}`}
                   />
                 </td>
@@ -110,11 +111,11 @@ export default function OpeningBalanceModal({
           </tbody>
         </table>
 
-        <div style={s.actions}>
-          <button onClick={onClose} disabled={saving} style={s.btnSecondary}>
+        <div className={styles.actions}>
+          <button onClick={onClose} disabled={saving} className={styles.btnSecondary}>
             Passer cette étape
           </button>
-          <button onClick={handleSave} disabled={saving} style={s.btn}>
+          <button onClick={handleSave} disabled={saving} className={styles.btn}>
             {saving ? 'Enregistrement…' : 'Enregistrer les soldes'}
           </button>
         </div>
@@ -131,19 +132,3 @@ function parseCHF(str: string): number {
 function formatCHF(cents: number): string {
   return (cents / 100).toFixed(2);
 }
-
-const s = {
-  overlay:       { position: 'fixed' as const, inset: 0, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
-  modal:         { background: '#fff', borderRadius: '10px', padding: '2rem', minWidth: '480px', maxWidth: '640px', boxShadow: '0 8px 32px rgba(0,0,0,.18)' },
-  h2:            { margin: '0 0 1.25rem', fontSize: '1.1rem', color: '#0f172a' },
-  alert:         { background: '#fee2e2', border: '1px solid #fca5a5', padding: '0.6rem 0.75rem', borderRadius: '6px', marginBottom: '1rem', color: '#dc2626', fontSize: '0.875rem' },
-  table:         { width: '100%', borderCollapse: 'collapse' as const, marginBottom: '1.5rem', fontSize: '0.875rem' },
-  sectionHeader: { padding: '0.5rem 0 0.25rem', fontWeight: 600, color: '#475569', fontSize: '0.8rem', textTransform: 'uppercase' as const, letterSpacing: '0.05em' },
-  accountCell:   { padding: '0.3rem 0', color: '#334155', width: '60%' },
-  amountCell:    { padding: '0.3rem 0', textAlign: 'right' as const },
-  input:         { width: '120px', padding: '0.3rem 0.5rem', border: '1px solid #cbd5e1', borderRadius: '5px', fontSize: '0.875rem', textAlign: 'right' as const, fontFamily: 'monospace' },
-  inputReadOnly: { background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0' },
-  actions:       { display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' },
-  btn:           { padding: '0.5rem 1rem', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.875rem', cursor: 'pointer', fontWeight: 500 },
-  btnSecondary:  { padding: '0.5rem 1rem', background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.875rem', cursor: 'pointer' },
-} as const;
