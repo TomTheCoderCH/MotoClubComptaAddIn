@@ -28,6 +28,7 @@ vi.mock('../db', () => ({
   updateJournalEntry: vi.fn(),
   deleteJournalEntry: vi.fn(),
   getAccountBalances: vi.fn(),
+  openDatabase: vi.fn(),
   getDb:    vi.fn(),
   getDbDir: vi.fn(),
 }));
@@ -46,8 +47,8 @@ vi.mock('../migrate', () => ({
   migrateDataDir: vi.fn(),
 }));
 
-import { dialog, app } from 'electron';
-import { getDbDir } from '../db';
+import { dialog } from 'electron';
+import { openDatabase, getDbDir } from '../db';
 import { readSettings, writeSettings } from '../settings';
 import { migrateDataDir } from '../migrate';
 import { registerIpcHandlers } from '../ipc-handlers';
@@ -92,12 +93,12 @@ describe('settings:choose', () => {
     expect(writeSettings).not.toHaveBeenCalled();
   });
 
-  it('écrit les settings et relance si le dialog est accepté', async () => {
+  it('écrit les settings, ouvre la DB et retourne true si le dialog est accepté', async () => {
     vi.mocked(dialog.showOpenDialog).mockResolvedValue({ canceled: false, filePaths: ['/chosen/folder'] });
-    await call('settings:choose');
+    const result = await call('settings:choose');
     expect(writeSettings).toHaveBeenCalledWith({ dataDir: '/chosen/folder' });
-    expect(app.relaunch).toHaveBeenCalled();
-    expect(app.exit).toHaveBeenCalledWith(0);
+    expect(openDatabase).toHaveBeenCalledWith('/chosen/folder');
+    expect(result).toBe(true);
   });
 });
 
@@ -109,15 +110,15 @@ describe('settings:changeDataDir', () => {
     expect(migrateDataDir).not.toHaveBeenCalled();
   });
 
-  it('migre, écrit les settings et relance si accepté', async () => {
+  it('migre, écrit les settings, ouvre la DB et retourne true si accepté', async () => {
     vi.mocked(getDbDir).mockReturnValue('/old/folder');
     vi.mocked(dialog.showOpenDialog).mockResolvedValue({ canceled: false, filePaths: ['/new/folder'] });
     vi.mocked(migrateDataDir).mockResolvedValue(undefined);
-    await call('settings:changeDataDir');
+    const result = await call('settings:changeDataDir');
     expect(migrateDataDir).toHaveBeenCalledWith('/old/folder', '/new/folder');
     expect(writeSettings).toHaveBeenCalledWith({ dataDir: '/new/folder' });
-    expect(app.relaunch).toHaveBeenCalled();
-    expect(app.exit).toHaveBeenCalledWith(0);
+    expect(openDatabase).toHaveBeenCalledWith('/new/folder');
+    expect(result).toBe(true);
   });
 
   it('propage une erreur si la migration échoue', async () => {

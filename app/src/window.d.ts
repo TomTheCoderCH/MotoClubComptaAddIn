@@ -33,8 +33,8 @@ declare global {
       exportBackup:       () => Promise<{ path: string } | null>;
       getDbPath:          () => Promise<string>;
       getSettings:        () => Promise<{ dataDir: string } | null>;
-      chooseDataDir:      () => Promise<null>;
-      changeDataDir:      () => Promise<null>;
+      chooseDataDir:      () => Promise<boolean | null>;
+      changeDataDir:      () => Promise<boolean | null>;
     };
   }
 }

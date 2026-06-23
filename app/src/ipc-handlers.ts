@@ -1,4 +1,4 @@
-import { ipcMain, dialog, app } from 'electron';
+import { ipcMain, dialog } from 'electron';
 import path from 'node:path';
 import {
   getAllAccounts,
@@ -15,6 +15,7 @@ import {
   getClosingPreview,
   closeFiscalYear,
   reopenFiscalYear,
+  openDatabase,
   getDb,
   getDbDir,
 } from './db';
@@ -72,9 +73,10 @@ export function registerIpcHandlers(): void {
       properties: ['openDirectory', 'createDirectory'],
     });
     if (result.canceled || !result.filePaths[0]) return null;
-    writeSettings({ dataDir: result.filePaths[0] });
-    app.relaunch();
-    app.exit(0);
+    const dataDir = result.filePaths[0];
+    writeSettings({ dataDir });
+    openDatabase(dataDir);
+    return true;
   });
 
   ipcMain.handle('settings:changeDataDir', async () => {
@@ -86,8 +88,8 @@ export function registerIpcHandlers(): void {
     const newDir = result.filePaths[0];
     await migrateDataDir(getDbDir(), newDir);
     writeSettings({ dataDir: newDir });
-    app.relaunch();
-    app.exit(0);
+    openDatabase(newDir);
+    return true;
   });
 
   // ─── Soldes à nouveau ────────────────────────────────────────────────────────

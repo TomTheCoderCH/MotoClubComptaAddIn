@@ -19,7 +19,7 @@ export default function App() {
   }, []);
 
   if (currentPage === null) return null;
-  if (currentPage === 'welcome') return <WelcomePage />;
+  if (currentPage === 'welcome') return <WelcomePage onReady={() => setCurrentPage('accounts')} />;
 
   const renderPage = () => {
     switch (currentPage) {

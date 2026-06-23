@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { BackupInfo } from '../types';
 
 type ExportStatus = 'idle' | 'loading' | 'success' | 'error' | 'cancelled';
-type ChangeStatus = 'idle' | 'loading' | 'cancelled';
+type ChangeStatus = 'idle' | 'loading' | 'success' | 'cancelled';
 
 function formatSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} Ko`;
@@ -53,8 +53,13 @@ export default function SettingsPage() {
     setChangeStatus('loading');
     try {
       const result = await window.api.changeDataDir();
-      if (result === null) setChangeStatus('cancelled');
-      // Si non annulé : app.relaunch() a été appelé, on n'arrive jamais ici
+      if (result === null) {
+        setChangeStatus('cancelled');
+      } else {
+        setChangeStatus('success');
+        const newPath = await window.api.getDbPath();
+        setDbPath(newPath);
+      }
     } catch (e) {
       setChangeStatus('idle');
       setError(e instanceof Error ? e.message : String(e));
@@ -85,6 +90,9 @@ export default function SettingsPage() {
         </button>
         {changeStatus === 'cancelled' && (
           <p style={s.hint} role="status">Opération annulée.</p>
+        )}
+        {changeStatus === 'success' && (
+          <p style={s.success} role="status">Dossier de données mis à jour.</p>
         )}
       </section>
 

@@ -1,6 +1,10 @@
 import { useState } from 'react';
 
-export default function WelcomePage() {
+interface WelcomePageProps {
+  onReady: () => void;
+}
+
+export default function WelcomePage({ onReady }: WelcomePageProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
 
@@ -8,8 +12,8 @@ export default function WelcomePage() {
     setLoading(true);
     setError(null);
     try {
-      await window.api.chooseDataDir();
-      // Si accepté : app.relaunch() est appelé — cette Promise ne résout jamais
+      const chosen = await window.api.chooseDataDir();
+      if (chosen) onReady();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {

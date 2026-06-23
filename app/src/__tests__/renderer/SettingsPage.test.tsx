@@ -115,4 +115,16 @@ describe('SettingsPage — changer le dossier', () => {
     await userEvent.click(await screen.findByRole('button', { name: /Changer le dossier de données/ }));
     expect(await screen.findByRole('alert')).toBeInTheDocument();
   });
+
+  it('affiche un message de succès et met à jour le chemin si changeDataDir() retourne true', async () => {
+    mockApi({
+      changeDataDir: vi.fn().mockResolvedValue(true),
+      getDbPath: vi.fn().mockResolvedValue('D:/NewFolder/mcy-compta.db'),
+    });
+    render(<SettingsPage />);
+    await userEvent.click(await screen.findByRole('button', { name: /Changer le dossier de données/ }));
+    expect(await screen.findByRole('status')).toHaveTextContent('Dossier de données mis à jour');
+    const input = await screen.findByLabelText('Chemin de la base de données');
+    expect(input).toHaveValue('D:/NewFolder/mcy-compta.db');
+  });
 });
