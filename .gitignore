@@ -131,3 +131,6 @@ dist
 
 # Claude Code
 .claude
+
+# Test results
+app/test-results
