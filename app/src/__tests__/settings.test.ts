@@ -6,7 +6,6 @@ import fs from 'node:fs';
 // vi.mock is hoisted; factory runs lazily when 'electron' is first imported.
 // mockAppDataDir is set in beforeEach before any test calls getSettingsPath().
 let mockAppDataDir: string;
-let savedAppData: string | undefined;
 
 vi.mock('electron', () => ({
   app: { getPath: vi.fn().mockImplementation(() => mockAppDataDir) },
@@ -16,24 +15,16 @@ import { readSettings, writeSettings, getSettingsPath } from '../settings';
 
 beforeEach(() => {
   mockAppDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mcy-settings-test-'));
-  // Override process.env.APPDATA so getSettingsPath() uses the temp dir
-  savedAppData = process.env['APPDATA'];
-  process.env['APPDATA'] = mockAppDataDir;
 });
 
 afterEach(() => {
-  if (savedAppData !== undefined) {
-    process.env['APPDATA'] = savedAppData;
-  } else {
-    delete process.env['APPDATA'];
-  }
   fs.rmSync(mockAppDataDir, { recursive: true, force: true });
 });
 
 describe('getSettingsPath', () => {
-  it('retourne appData/MCYCompta/settings.json', () => {
+  it('retourne userData/settings.json', () => {
     expect(getSettingsPath()).toBe(
-      path.join(mockAppDataDir, 'MCYCompta', 'settings.json'),
+      path.join(mockAppDataDir, 'settings.json'),
     );
   });
 });
@@ -57,9 +48,9 @@ describe('readSettings', () => {
 });
 
 describe('writeSettings', () => {
-  it('crée le dossier parent si nécessaire', () => {
+  it('crée le fichier settings.json dans le répertoire userData', () => {
     const settingsPath = getSettingsPath();
-    expect(fs.existsSync(path.dirname(settingsPath))).toBe(false);
+    expect(fs.existsSync(settingsPath)).toBe(false);
     writeSettings({ dataDir: '/test/path' });
     expect(fs.existsSync(settingsPath)).toBe(true);
   });

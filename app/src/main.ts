@@ -7,6 +7,12 @@ import { registerIpcHandlers } from './ipc-handlers';
 import { performBackup, pruneBackups } from './backup';
 import { readSettings } from './settings';
 
+// E2E test isolation: redirect userData to the temp APPDATA injected by electron-fixture.ts.
+// app.setPath('userData') must be called before app.ready, and overrides the registry-based default.
+if (process.env['NODE_ENV'] === 'test' && process.env['APPDATA']) {
+  app.setPath('userData', path.join(process.env['APPDATA'], app.getName()));
+}
+
 if (started) app.quit();
 
 let isQuitting = false;

@@ -17,9 +17,9 @@ export const test = base.extend<Fixtures>({
     const tempAppData = fs.mkdtempSync(path.join(os.tmpdir(), 'mcy-e2e-'));
     const dataDir = path.join(tempAppData, 'data');
     fs.mkdirSync(dataDir, { recursive: true });
-    fs.mkdirSync(path.join(tempAppData, 'MCYCompta'), { recursive: true });
+    fs.mkdirSync(path.join(tempAppData, 'MCY Compta'), { recursive: true });
     fs.writeFileSync(
-      path.join(tempAppData, 'MCYCompta', 'settings.json'),
+      path.join(tempAppData, 'MCY Compta', 'settings.json'),
       JSON.stringify({ dataDir }),
       'utf-8',
     );
