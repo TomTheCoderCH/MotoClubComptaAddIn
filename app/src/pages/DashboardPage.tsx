@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import type { FiscalYear, DashboardData } from '../types';
+import type { FiscalYear, DashboardData, DashboardCardConfig } from '../types';
+import AddCardModal from '../components/AddCardModal';
 import styles from './DashboardPage.module.css';
 
 function fmt(centimes: number): string {
@@ -13,7 +14,7 @@ function fmtBalance(centimes: number): string {
   return `CHF ${(centimes / 100).toFixed(2)}`;
 }
 
-const CASH_ACCOUNTS = [
+const FIXED_ACCOUNTS = [
   { number: '100', label: 'Caisse' },
   { number: '101', label: 'Raiffeisen' },
   { number: '102', label: 'Twint' },
@@ -25,6 +26,15 @@ export default function DashboardPage() {
   const [data,           setData]           = useState<DashboardData | null>(null);
   const [loading,        setLoading]        = useState(false);
   const [error,          setError]          = useState<string | null>(null);
+  const [customCards,    setCustomCards]    = useState<DashboardCardConfig[]>([]);
+  const [showAddModal,   setShowAddModal]   = useState(false);
+
+  // Charger les settings au montage pour récupérer les cartes sauvegardées
+  useEffect(() => {
+    window.api.getSettings()
+      .then(s => setCustomCards(s?.dashboardCards ?? []))
+      .catch(() => {/* settings optionnels */});
+  }, []);
 
   useEffect(() => {
     window.api.getFiscalYears()
@@ -39,16 +49,40 @@ export default function DashboardPage() {
   useEffect(() => {
     if (selectedYearId === null) return;
     setLoading(true);
-    window.api.getDashboardData(selectedYearId)
+    window.api.getDashboardData(selectedYearId, customCards)
       .then(setData)
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [selectedYearId]);
+  }, [selectedYearId, customCards]);
+
+  async function addCard(card: DashboardCardConfig) {
+    const updated = [...customCards, card];
+    setCustomCards(updated);
+    setShowAddModal(false);
+    await window.api.saveDashboardCards(updated);
+  }
+
+  async function removeCard(key: string) {
+    const updated = customCards.filter(c => {
+      const k = c.type === 'account' ? `account-${c.accountId}` : `group-${c.groupName}`;
+      return k !== key;
+    });
+    setCustomCards(updated);
+    await window.api.saveDashboardCards(updated);
+  }
 
   const selectedYear = years.find(y => y.id === selectedYearId);
 
   return (
     <div>
+      {showAddModal && (
+        <AddCardModal
+          existingCards={customCards}
+          onAdd={addCard}
+          onCancel={() => setShowAddModal(false)}
+        />
+      )}
+
       <div className={styles.header}>
         <h1 className={styles.h1}>Tableau de bord</h1>
         {years.length > 0 && (
@@ -80,12 +114,13 @@ export default function DashboardPage() {
         <p className={styles.empty}>Chargement…</p>
       ) : data && (
         <>
-          {selectedYear?.is_closed && (
+          {!!selectedYear?.is_closed && (
             <p className={styles.closedBadge}>Exercice clôturé</p>
           )}
 
           <div className={styles.cards}>
-            {CASH_ACCOUNTS.map(({ number, label }) => {
+            {/* Cartes fixes */}
+            {FIXED_ACCOUNTS.map(({ number, label }) => {
               const balance = data.cashBalances.find(b => b.number === number);
               const solde   = balance?.solde ?? 0;
               return (
@@ -105,6 +140,35 @@ export default function DashboardPage() {
               <div className={styles.cardNumber}>3xx − 4xx</div>
               <div className={styles.cardAmount}>{fmt(data.netResultCents)}</div>
             </div>
+
+            {/* Cartes personnalisées */}
+            {data.customCards.map(card => (
+              <div
+                key={card.key}
+                className={styles.card}
+                data-result={card.isResult ? (card.valueCents >= 0 ? 'positive' : 'negative') : undefined}
+              >
+                <button
+                  className={styles.removeBtn}
+                  onClick={() => removeCard(card.key)}
+                  aria-label={`Supprimer ${card.label}`}
+                >×</button>
+                <div className={styles.cardLabel}>{card.label}</div>
+                <div className={styles.cardNumber}>{card.subLabel}</div>
+                <div className={styles.cardAmount}>
+                  {card.isResult ? fmt(card.valueCents) : fmtBalance(card.valueCents)}
+                </div>
+              </div>
+            ))}
+
+            {/* Bouton ajouter */}
+            <button
+              className={styles.addCard}
+              onClick={() => setShowAddModal(true)}
+              aria-label="Ajouter une carte"
+            >
+              + Ajouter
+            </button>
           </div>
         </>
       )}

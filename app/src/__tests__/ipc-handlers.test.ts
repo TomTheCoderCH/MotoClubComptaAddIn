@@ -327,12 +327,20 @@ describe('dashboard:get', () => {
     expect(handlers.has('dashboard:get')).toBe(true);
   });
 
-  it('délègue à getDashboardData et retourne le résultat', async () => {
-    const data = { cashBalances: [], netResultCents: 0 };
+  it('délègue à getDashboardData avec les cards et retourne le résultat', async () => {
+    const cards = [{ type: 'account' as const, accountId: 5 }];
+    const data = { cashBalances: [], netResultCents: 0, customCards: [] };
     vi.mocked(getDashboardData).mockReturnValue(data as any);
-    const result = await call('dashboard:get', 1);
-    expect(getDashboardData).toHaveBeenCalledWith(1);
+    const result = await call('dashboard:get', 1, cards);
+    expect(getDashboardData).toHaveBeenCalledWith(1, cards);
     expect(result).toBe(data);
+  });
+
+  it('passe un tableau vide si aucune card fournie', async () => {
+    const data = { cashBalances: [], netResultCents: 0, customCards: [] };
+    vi.mocked(getDashboardData).mockReturnValue(data as any);
+    await call('dashboard:get', 1);
+    expect(getDashboardData).toHaveBeenCalledWith(1, []);
   });
 
   it('propage une erreur de getDashboardData', async () => {
@@ -340,6 +348,7 @@ describe('dashboard:get', () => {
     await expect(call('dashboard:get', 9999)).rejects.toThrow('Exercice introuvable');
   });
 });
+
 
 // ─── accounts:delete ────────────────────────────────────────────────────────
 

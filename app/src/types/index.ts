@@ -160,9 +160,22 @@ export interface DashboardCashBalance {
   solde: number;
 }
 
+export type DashboardCardConfig =
+  | { type: 'account'; accountId: number }
+  | { type: 'group'; groupName: string };
+
+export interface DashboardCustomCard {
+  key: string;       // "account-5" | "group-Marché Villageois"
+  label: string;
+  subLabel: string;
+  valueCents: number;
+  isResult: boolean; // true → affichage +/− comme le Résultat
+}
+
 export interface DashboardData {
   cashBalances: DashboardCashBalance[];
   netResultCents: number;
+  customCards: DashboardCustomCard[];
 }
 
 export interface AnalyticsAccountRow {

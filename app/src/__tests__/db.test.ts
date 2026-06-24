@@ -991,23 +991,33 @@ describe('getDashboardData', () => {
   let cotisationsId: number;
   let assurancesId: number;
   let capitalId: number;
+  let avancesCaissierId: number;
+  let marcheProduitId: number;
+  let marcheChargeId: number;
 
   beforeEach(() => {
     freshDb();
     const fy = createFiscalYear(2025);
     fyId = fy.id;
     const accounts = getAllAccounts();
-    caisseId      = accounts.find(a => a.number === '100')!.id;
-    raiffeisenId  = accounts.find(a => a.number === '101')!.id;
-    cotisationsId = accounts.find(a => a.number === '300')!.id;
-    assurancesId  = accounts.find(a => a.number === '400')!.id;
-    capitalId     = accounts.find(a => a.number === '290')!.id;
+    caisseId           = accounts.find(a => a.number === '100')!.id;
+    raiffeisenId       = accounts.find(a => a.number === '101')!.id;
+    cotisationsId      = accounts.find(a => a.number === '300')!.id;
+    assurancesId       = accounts.find(a => a.number === '400')!.id;
+    capitalId          = accounts.find(a => a.number === '290')!.id;
+    avancesCaissierId  = accounts.find(a => a.number === '103')!.id;
+    marcheProduitId    = accounts.find(a => a.number === '330')!.id;
+    marcheChargeId     = accounts.find(a => a.number === '430')!.id;
+    // Assigner un groupe analytique aux comptes Marché
+    updateAccount({ id: marcheProduitId, account_group: 'Marché' });
+    updateAccount({ id: marcheChargeId,  account_group: 'Marché' });
   });
 
   it('retourne cashBalances vides et netResultCents=0 sans écriture', () => {
-    const data = getDashboardData(fyId);
+    const data = getDashboardData(fyId, []);
     expect(data.cashBalances).toHaveLength(0);
     expect(data.netResultCents).toBe(0);
+    expect(data.customCards).toHaveLength(0);
   });
 
   it('retourne le solde de la Caisse', () => {
@@ -1018,7 +1028,7 @@ describe('getDashboardData', () => {
         { account_id: cotisationsId, credit: 3000 },
       ],
     });
-    const data = getDashboardData(fyId);
+    const data = getDashboardData(fyId, []);
     const caisse = data.cashBalances.find(b => b.number === '100');
     expect(caisse).toBeDefined();
     expect(caisse!.solde).toBe(3000);
@@ -1039,7 +1049,7 @@ describe('getDashboardData', () => {
         { account_id: raiffeisenId,  credit: 1000 },
       ],
     });
-    const data = getDashboardData(fyId);
+    const data = getDashboardData(fyId, []);
     // Produits: 3000, Charges: 1000 → résultat = 2000
     expect(data.netResultCents).toBe(2000);
   });
@@ -1053,9 +1063,7 @@ describe('getDashboardData', () => {
       ],
     });
     closeFiscalYear(fyId);
-    // Après clôture, les écritures de clôture zèrent les comptes 3xx/4xx
-    // → le netResultCents doit toujours être 3000, pas 0
-    const data = getDashboardData(fyId);
+    const data = getDashboardData(fyId, []);
     expect(data.netResultCents).toBe(3000);
   });
 
@@ -1067,7 +1075,74 @@ describe('getDashboardData', () => {
         { account_id: cotisationsId, credit: 3000 },
       ],
     });
-    const data = getDashboardData(fyId);
+    const data = getDashboardData(fyId, []);
     expect(data.cashBalances.find(b => b.number === '101')).toBeUndefined();
+  });
+
+  describe('cartes personnalisées — compte', () => {
+    it('retourne le solde d\'un compte personnalisé (Avances caissier)', () => {
+      createJournalEntry({
+        fiscal_year_id: fyId, date: '2025-03-01', description: 'Avance',
+        lines: [
+          { account_id: avancesCaissierId, debit:  5000 },
+          { account_id: caisseId,          credit: 5000 },
+        ],
+      });
+      const data = getDashboardData(fyId, [{ type: 'account', accountId: avancesCaissierId }]);
+      expect(data.customCards).toHaveLength(1);
+      const card = data.customCards[0];
+      expect(card.key).toBe(`account-${avancesCaissierId}`);
+      expect(card.valueCents).toBe(5000);
+      expect(card.isResult).toBe(false);
+    });
+
+    it('retourne valueCents=0 si le compte personnalisé n\'a pas de mouvement', () => {
+      const data = getDashboardData(fyId, [{ type: 'account', accountId: avancesCaissierId }]);
+      expect(data.customCards[0].valueCents).toBe(0);
+    });
+
+    it('inclut le label et subLabel du compte', () => {
+      const data = getDashboardData(fyId, [{ type: 'account', accountId: caisseId }]);
+      const card = data.customCards[0];
+      expect(card.label).toBe('Caisse');
+      expect(card.subLabel).toBe('100');
+    });
+  });
+
+  describe('cartes personnalisées — groupe analytique', () => {
+    it('retourne le P&L d\'un groupe analytique', () => {
+      createJournalEntry({
+        fiscal_year_id: fyId, date: '2025-05-01', description: 'Marché — recettes',
+        lines: [
+          { account_id: caisseId,       debit:  200000 },
+          { account_id: marcheProduitId, credit: 200000 },
+        ],
+      });
+      createJournalEntry({
+        fiscal_year_id: fyId, date: '2025-05-02', description: 'Marché — dépenses',
+        lines: [
+          { account_id: marcheChargeId, debit:  50000 },
+          { account_id: caisseId,       credit: 50000 },
+        ],
+      });
+      const data = getDashboardData(fyId, [{ type: 'group', groupName: 'Marché' }]);
+      expect(data.customCards).toHaveLength(1);
+      const card = data.customCards[0];
+      expect(card.key).toBe('group-Marché');
+      expect(card.valueCents).toBe(150000); // 200000 - 50000
+      expect(card.isResult).toBe(true);
+    });
+
+    it('retourne valueCents=0 si le groupe n\'a pas de mouvement', () => {
+      const data = getDashboardData(fyId, [{ type: 'group', groupName: 'Marché' }]);
+      expect(data.customCards[0].valueCents).toBe(0);
+    });
+
+    it('inclut label et subLabel du groupe', () => {
+      const data = getDashboardData(fyId, [{ type: 'group', groupName: 'Marché' }]);
+      const card = data.customCards[0];
+      expect(card.label).toBe('Marché');
+      expect(card.subLabel).toBe('Analytique');
+    });
   });
 });

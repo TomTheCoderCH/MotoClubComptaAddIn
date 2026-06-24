@@ -28,9 +28,19 @@ vi.mock('../db', () => ({
   updateJournalEntry: vi.fn(),
   deleteJournalEntry: vi.fn(),
   getAccountBalances: vi.fn(),
+  updateAccount:      vi.fn(),
+  createAccount:      vi.fn(),
+  deleteAccount:      vi.fn(),
+  getDashboardData:   vi.fn(),
+  getAnalyticsData:   vi.fn(),
   openDatabase: vi.fn(),
   getDb:    vi.fn(),
   getDbDir: vi.fn(),
+  getOpeningBalanceSuggestions: vi.fn(),
+  createOpeningBalanceEntry:    vi.fn(),
+  getClosingPreview:  vi.fn(),
+  closeFiscalYear:    vi.fn(),
+  reopenFiscalYear:   vi.fn(),
 }));
 
 vi.mock('../backup', () => ({
@@ -66,10 +76,11 @@ async function call(channel: string, ...args: unknown[]): Promise<unknown> {
 }
 
 describe('registration des canaux settings', () => {
-  it('enregistre les 3 canaux settings', () => {
+  it('enregistre les 4 canaux settings', () => {
     expect(handlers.has('settings:get')).toBe(true);
     expect(handlers.has('settings:choose')).toBe(true);
     expect(handlers.has('settings:changeDataDir')).toBe(true);
+    expect(handlers.has('settings:saveDashboardCards')).toBe(true);
   });
 });
 
@@ -126,6 +137,25 @@ describe('settings:changeDataDir', () => {
     vi.mocked(dialog.showOpenDialog).mockResolvedValue({ canceled: false, filePaths: ['/new/folder'] });
     vi.mocked(migrateDataDir).mockRejectedValue(new Error('Disk full'));
     await expect(call('settings:changeDataDir')).rejects.toThrow('Disk full');
+    expect(writeSettings).not.toHaveBeenCalled();
+  });
+});
+
+describe('settings:saveDashboardCards', () => {
+  it('enregistre le canal settings:saveDashboardCards', () => {
+    expect(handlers.has('settings:saveDashboardCards')).toBe(true);
+  });
+
+  it('appelle writeSettings avec les cards fusionnées aux settings existants', async () => {
+    vi.mocked(readSettings).mockReturnValue({ dataDir: '/data' });
+    const cards = [{ type: 'group' as const, groupName: 'Marché' }];
+    await call('settings:saveDashboardCards', cards);
+    expect(writeSettings).toHaveBeenCalledWith({ dataDir: '/data', dashboardCards: cards });
+  });
+
+  it('ne fait rien si readSettings() retourne null', async () => {
+    vi.mocked(readSettings).mockReturnValue(null);
+    await call('settings:saveDashboardCards', []);
     expect(writeSettings).not.toHaveBeenCalled();
   });
 });

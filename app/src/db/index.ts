@@ -12,7 +12,7 @@ import type {
   ClosingAccountLine, ClosingPreview,
   UpdateAccountPayload, CreateAccountPayload,
   AnalyticsAccountRow, AnalyticsGroup, AnalyticsData,
-  DashboardCashBalance, DashboardData,
+  DashboardCashBalance, DashboardData, DashboardCardConfig, DashboardCustomCard,
 } from '../types';
 
 let db: Database.Database;
@@ -212,7 +212,10 @@ export function getAnalyticsData(fiscalYearId: number): AnalyticsData {
   return { groups, ungrouped: ungrouped.map(toRow) };
 }
 
-export function getDashboardData(fiscalYearId: number): DashboardData {
+export function getDashboardData(
+  fiscalYearId: number,
+  cards: DashboardCardConfig[] = [],
+): DashboardData {
   const cashBalances = getDb().prepare(`
     SELECT a.number, a.name,
       CASE a.normal_balance
@@ -244,7 +247,60 @@ export function getDashboardData(fiscalYearId: number): DashboardData {
     r.class === 3 ? sum + r.solde : sum - r.solde
   ), 0);
 
-  return { cashBalances, netResultCents };
+  const accountStmt = getDb().prepare(`
+    SELECT a.number, a.name, a.normal_balance,
+      COALESCE((
+        SELECT CASE a.normal_balance
+          WHEN 'DEBIT'  THEN SUM(COALESCE(l.debit,0))  - SUM(COALESCE(l.credit,0))
+          WHEN 'CREDIT' THEN SUM(COALESCE(l.credit,0)) - SUM(COALESCE(l.debit,0))
+        END
+        FROM journal_entry_lines l
+        JOIN journal_entries e ON e.id = l.journal_entry_id
+        WHERE l.account_id = a.id AND e.fiscal_year_id = ?
+      ), 0) AS solde
+    FROM accounts a WHERE a.id = ?
+  `);
+
+  const groupStmt = getDb().prepare(`
+    SELECT a.class,
+      CASE a.normal_balance
+        WHEN 'DEBIT'  THEN SUM(COALESCE(l.debit,0))  - SUM(COALESCE(l.credit,0))
+        WHEN 'CREDIT' THEN SUM(COALESCE(l.credit,0)) - SUM(COALESCE(l.debit,0))
+      END AS solde
+    FROM accounts a
+    JOIN journal_entry_lines l ON l.account_id = a.id
+    JOIN journal_entries e     ON e.id = l.journal_entry_id
+    WHERE e.fiscal_year_id = ? AND a.account_group = ? AND a.class IN (3, 4)
+      AND e.is_closing_entry = 0
+    GROUP BY a.id
+  `);
+
+  const customCards: DashboardCustomCard[] = cards.map(card => {
+    if (card.type === 'account') {
+      const row = accountStmt.get(fiscalYearId, card.accountId) as
+        { number: string; name: string; solde: number } | undefined;
+      return {
+        key:        `account-${card.accountId}`,
+        label:      row?.name    ?? '',
+        subLabel:   row?.number  ?? '',
+        valueCents: row?.solde   ?? 0,
+        isResult:   false,
+      };
+    } else {
+      const rows = groupStmt.all(fiscalYearId, card.groupName) as
+        Array<{ class: number; solde: number }>;
+      const pl = rows.reduce((s, r) => (r.class === 3 ? s + r.solde : s - r.solde), 0);
+      return {
+        key:        `group-${card.groupName}`,
+        label:      card.groupName,
+        subLabel:   'Analytique',
+        valueCents: pl,
+        isResult:   true,
+      };
+    }
+  });
+
+  return { cashBalances, netResultCents, customCards };
 }
 
 // ─── Exercices ────────────────────────────────────────────────────────────────

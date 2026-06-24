@@ -98,3 +98,41 @@
   color: #0f172a;
   margin-top: 0.5rem;
 }
+
+/* Carte personnalisée — positionnement relatif pour le bouton × */
+.card:has(.removeBtn) {
+  position: relative;
+}
+
+.removeBtn {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.5rem;
+  border: none;
+  background: none;
+  color: #94a3b8;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.removeBtn:hover { color: #dc2626; }
+
+/* Bouton "+" en fin de grille */
+.addCard {
+  background: #f8fafc;
+  border: 2px dashed #cbd5e1;
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.addCard:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+}

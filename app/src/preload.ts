@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { Account, FiscalYear, JournalEntry, JournalEntryLine, AccountBalance, CreateJournalEntryPayload, UpdateJournalEntryPayload, BackupInfo, OpeningBalanceSuggestion, OpeningBalanceLine, ClosingPreview, UpdateAccountPayload, CreateAccountPayload, AnalyticsData, DashboardData } from './types';
+import type { Account, FiscalYear, JournalEntry, JournalEntryLine, AccountBalance, CreateJournalEntryPayload, UpdateJournalEntryPayload, BackupInfo, OpeningBalanceSuggestion, OpeningBalanceLine, ClosingPreview, UpdateAccountPayload, CreateAccountPayload, AnalyticsData, DashboardData, DashboardCardConfig } from './types';
 
 // API exposée au renderer via window.api
 contextBridge.exposeInMainWorld('api', {
@@ -62,8 +62,10 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.invoke('accounts:delete', id),
 
   // Tableau de bord
-  getDashboardData: (fiscalYearId: number): Promise<DashboardData> =>
-    ipcRenderer.invoke('dashboard:get', fiscalYearId),
+  getDashboardData: (fiscalYearId: number, cards: DashboardCardConfig[]): Promise<DashboardData> =>
+    ipcRenderer.invoke('dashboard:get', fiscalYearId, cards),
+  saveDashboardCards: (cards: DashboardCardConfig[]): Promise<void> =>
+    ipcRenderer.invoke('settings:saveDashboardCards', cards),
 
   // Analytique
   getAnalytics: (fiscalYearId: number): Promise<AnalyticsData> =>
@@ -98,6 +100,7 @@ export type ElectronAPI = {
   updateAccount:     (payload: UpdateAccountPayload) => Promise<Account>;
   createAccount:     (payload: CreateAccountPayload) => Promise<Account>;
   deleteAccount:     (id: number) => Promise<void>;
-  getDashboardData:  (fiscalYearId: number) => Promise<DashboardData>;
-  getAnalytics:      (fiscalYearId: number) => Promise<AnalyticsData>;
+  getDashboardData:   (fiscalYearId: number, cards: DashboardCardConfig[]) => Promise<DashboardData>;
+  saveDashboardCards: (cards: DashboardCardConfig[]) => Promise<void>;
+  getAnalytics:       (fiscalYearId: number) => Promise<AnalyticsData>;
 };

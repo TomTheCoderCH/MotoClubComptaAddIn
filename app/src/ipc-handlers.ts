@@ -27,7 +27,7 @@ import {
   getDashboardData,
 } from './db';
 import { listBackups, formatBackupFilename, performBackup } from './backup';
-import type { CreateJournalEntryPayload, UpdateJournalEntryPayload, OpeningBalanceLine, UpdateAccountPayload, CreateAccountPayload } from './types';
+import type { CreateJournalEntryPayload, UpdateJournalEntryPayload, OpeningBalanceLine, UpdateAccountPayload, CreateAccountPayload, DashboardCardConfig } from './types';
 import { readSettings, writeSettings } from './settings';
 import { migrateDataDir } from './migrate';
 
@@ -45,7 +45,14 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('accounts:delete', (_e, id: number) => deleteAccount(id));
 
   // ─── Tableau de bord ─────────────────────────────────────────────────────────
-  ipcMain.handle('dashboard:get', (_e, fiscalYearId: number) => getDashboardData(fiscalYearId));
+  ipcMain.handle('dashboard:get', (_e, fiscalYearId: number, cards: DashboardCardConfig[] = []) =>
+    getDashboardData(fiscalYearId, cards));
+
+  ipcMain.handle('settings:saveDashboardCards', (_e, cards: DashboardCardConfig[]) => {
+    const current = readSettings();
+    if (!current) return;
+    writeSettings({ ...current, dashboardCards: cards });
+  });
 
   // ─── Analytique ──────────────────────────────────────────────────────────────
   ipcMain.handle('analytics:get', (_e, fiscalYearId: number) => getAnalyticsData(fiscalYearId));
