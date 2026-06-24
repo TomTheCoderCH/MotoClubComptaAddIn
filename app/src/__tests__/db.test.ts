@@ -8,6 +8,7 @@ vi.mock('electron', () => ({
 import {
   openDatabase,
   getDb,
+  hasDbChanges,
   getAllAccounts,
   getActiveAccounts,
   getAllFiscalYears,
@@ -701,5 +702,29 @@ describe('closeFiscalYear + reopenFiscalYear', () => {
 
   it('reopenFiscalYear lève une erreur si exercice non clôturé', () => {
     expect(() => reopenFiscalYear(fiscalYearId)).toThrow('n\'est pas clôturé');
+  });
+});
+
+describe('hasDbChanges', () => {
+  it('retourne false juste après openDatabase (seed inclus)', () => {
+    openDatabase(':memory:');
+    expect(hasDbChanges()).toBe(false);
+  });
+
+  it('retourne true après une écriture utilisateur', () => {
+    openDatabase(':memory:');
+    const fy = createFiscalYear(2025);
+    const caisse      = getAllAccounts().find(a => a.number === '100')!.id;
+    const cotisations = getAllAccounts().find(a => a.number === '300')!.id;
+    createJournalEntry({
+      fiscal_year_id: fy.id,
+      date: '2025-03-01',
+      description: 'Test hasDbChanges',
+      lines: [
+        { account_id: caisse,       debit:  3000 },
+        { account_id: cotisations,  credit: 3000 },
+      ],
+    });
+    expect(hasDbChanges()).toBe(true);
   });
 });

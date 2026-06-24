@@ -14,6 +14,7 @@ import type {
 
 let db: Database.Database;
 let dbDir: string;
+let changesAtOpen = 0;
 
 export function getDb(): Database.Database {
   if (!db) throw new Error('Base de données non initialisée');
@@ -29,6 +30,12 @@ export function isDbOpen(): boolean {
   return !!db;
 }
 
+export function hasDbChanges(): boolean {
+  if (!db) return false;
+  const current = db.prepare('SELECT total_changes()').pluck().get() as number;
+  return current > changesAtOpen;
+}
+
 export function openDatabase(dataPath?: string): Database.Database {
   // Mode test : base SQLite en mémoire (isolation totale, pas de fichier résiduel)
   if (dataPath === ':memory:') {
@@ -36,6 +43,7 @@ export function openDatabase(dataPath?: string): Database.Database {
     initSchema(db);
     runSchemaMigrations(db);
     seedAccountsIfEmpty(db);
+    changesAtOpen = db.prepare('SELECT total_changes()').pluck().get() as number;
     return db;
   }
 
@@ -51,6 +59,7 @@ export function openDatabase(dataPath?: string): Database.Database {
   initSchema(db);
   runSchemaMigrations(db);
   seedAccountsIfEmpty(db);
+  changesAtOpen = db.prepare('SELECT total_changes()').pluck().get() as number;
   return db;
 }
 

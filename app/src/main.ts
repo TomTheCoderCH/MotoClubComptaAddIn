@@ -2,7 +2,7 @@ import { app, BrowserWindow, dialog } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
 import started from 'electron-squirrel-startup';
-import { openDatabase, getDb, getDbDir, isDbOpen } from './db';
+import { openDatabase, getDb, getDbDir, isDbOpen, hasDbChanges } from './db';
 import { registerIpcHandlers } from './ipc-handlers';
 import { performBackup, pruneBackups } from './backup';
 import { readSettings } from './settings';
@@ -86,6 +86,12 @@ app.on('before-quit', async (e) => {
 
   if (!isDbOpen()) {
     // Premier lancement ou dossier manquant — aucune DB à sauvegarder
+    app.exit(0);
+    return;
+  }
+
+  if (!hasDbChanges()) {
+    // Session en lecture seule — aucun backup nécessaire
     app.exit(0);
     return;
   }
