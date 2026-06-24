@@ -255,6 +255,7 @@ CREATE TABLE accounts (
     -- RESULTAT      → soldé vers FONDS_PROPRES en clôture (compte 900 uniquement)
   normal_balance          TEXT    NOT NULL,          -- 'DEBIT' ou 'CREDIT'
   description             TEXT,
+  account_group           TEXT,                        -- tag analytique libre (migration v2)
   must_be_zero_at_closing INTEGER NOT NULL DEFAULT 0, -- 1 pour Twint, Avances caissier
   is_closing_account      INTEGER NOT NULL DEFAULT 0, -- 1 uniquement pour compte 900
   is_active               INTEGER NOT NULL DEFAULT 1,
@@ -484,10 +485,12 @@ app/
 - [x] Système d'aide : Tooltip dynamique par ligne (EntryForm) + drawer latéral global (F1 / bouton sidebar) — 334 tests — spec : `docs/superpowers/specs/2026-06-24-help-system-design.md`
 - [x] Flèches ▲▼ colorées sur les inputs débit/crédit de l'EntryForm selon le type de compte — wrapper `.amountWrapper` avec `data-effect="increase|decrease"` + CSS `::after` (▲ vert / ▼ rouge) — 362 tests
 
-- [x] Migrations de schéma SQLite : `db/schema-migrations.ts` — `PRAGMA user_version` + tableau `MIGRATIONS[]`, appelé dans `openDatabase()` après `initSchema()`. Version actuelle : 1 (schéma initial). Pour ajouter une migration : ajouter `{ version: N, description: '...', sql: '...' }` au tableau — 339 tests
+- [x] Migrations de schéma SQLite : `db/schema-migrations.ts` — `PRAGMA user_version` + tableau `MIGRATIONS[]`, appelé dans `openDatabase()` après `initSchema()`. Version actuelle : 2 (v1 schéma initial, v2 account_group). Pour ajouter une migration : ajouter `{ version: N, description: '...', sql: '...' }` au tableau — 339 tests
 - [x] Restauration depuis une sauvegarde — bouton dialog libre + bouton par ligne de sauvegarde automatique dans SettingsPage ; handler `backup:restore(filename?)` (backup de sécurité, `close()` + `copyFileSync` + `openDatabase()` + `webContents.reload()`) — 360 tests
 - [x] Version du schéma SQLite — `schemaVersion` dans `BackupInfo` (lecture header SQLite offset 60, sans connexion DB), handler `db:getSchemaVersion`, colonne "Ver." dans la liste des sauvegardes, version DB courante dans la section Base de données — 360 tests
 - [x] Backup automatique conditionnel — `hasDbChanges()` via `total_changes()` SQLite (snapshot post-`openDatabase()`, comparé dans `before-quit`) ; aucun backup si session en lecture seule — 362 tests
+
+- [x] Vue analytique par groupe + gestion du plan comptable — migration schéma v2 (`account_group TEXT` sur `accounts`), `updateAccount` / `createAccount` / `getAnalyticsData`, page **Plan comptable** éditable (modale create/edit, groupe analytique avec autocomplétion), page **Analytique** (P&L par groupe + section Non groupés), navigation sidebar — 409 tests — plan : `docs/superpowers/plans/2026-06-24-analytics-accounts.md`
 
 ### Notes techniques actives
 
