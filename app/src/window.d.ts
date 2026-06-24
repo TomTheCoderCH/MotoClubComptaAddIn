@@ -13,6 +13,7 @@ import type {
   UpdateAccountPayload,
   CreateAccountPayload,
   AnalyticsData,
+  DashboardData,
 } from './types';
 
 declare global {
@@ -44,6 +45,7 @@ declare global {
       updateAccount:      (payload: UpdateAccountPayload) => Promise<Account>;
       createAccount:      (payload: CreateAccountPayload) => Promise<Account>;
       deleteAccount:      (id: number) => Promise<void>;
+      getDashboardData:   (fiscalYearId: number) => Promise<DashboardData>;
       getAnalytics:       (fiscalYearId: number) => Promise<AnalyticsData>;
     };
   }

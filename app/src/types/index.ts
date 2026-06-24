@@ -154,6 +154,17 @@ export interface CreateAccountPayload {
   account_group?: string | null;
 }
 
+export interface DashboardCashBalance {
+  number: string;
+  name: string;
+  solde: number;
+}
+
+export interface DashboardData {
+  cashBalances: DashboardCashBalance[];
+  netResultCents: number;
+}
+
 export interface AnalyticsAccountRow {
   id: number;
   number: string;

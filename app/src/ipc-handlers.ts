@@ -24,6 +24,7 @@ import {
   createAccount,
   deleteAccount,
   getAnalyticsData,
+  getDashboardData,
 } from './db';
 import { listBackups, formatBackupFilename, performBackup } from './backup';
 import type { CreateJournalEntryPayload, UpdateJournalEntryPayload, OpeningBalanceLine, UpdateAccountPayload, CreateAccountPayload } from './types';
@@ -42,6 +43,9 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('accounts:update', (_e, payload: UpdateAccountPayload) => updateAccount(payload));
   ipcMain.handle('accounts:create', (_e, payload: CreateAccountPayload) => createAccount(payload));
   ipcMain.handle('accounts:delete', (_e, id: number) => deleteAccount(id));
+
+  // ─── Tableau de bord ─────────────────────────────────────────────────────────
+  ipcMain.handle('dashboard:get', (_e, fiscalYearId: number) => getDashboardData(fiscalYearId));
 
   // ─── Analytique ──────────────────────────────────────────────────────────────
   ipcMain.handle('analytics:get', (_e, fiscalYearId: number) => getAnalyticsData(fiscalYearId));

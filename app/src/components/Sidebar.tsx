@@ -3,6 +3,7 @@ import { useHelp } from './HelpContext';
 import styles from './Sidebar.module.css';
 
 const NAV_ITEMS: Array<{ id: Page; label: string }> = [
+  { id: 'dashboard',    label: 'Accueil'        },
   { id: 'accounts',     label: 'Plan comptable' },
   { id: 'journal',      label: 'Journal'        },
   { id: 'fiscal-years', label: 'Exercices'      },

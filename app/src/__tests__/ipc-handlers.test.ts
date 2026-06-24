@@ -24,6 +24,7 @@ vi.mock('../db', () => ({
   updateAccount:       vi.fn(),
   createAccount:       vi.fn(),
   deleteAccount:       vi.fn(),
+  getDashboardData:    vi.fn(),
   getAnalyticsData:    vi.fn(),
 }));
 
@@ -40,6 +41,7 @@ import {
   updateAccount,
   createAccount,
   deleteAccount,
+  getDashboardData,
   getAnalyticsData,
 } from '../db';
 import { registerIpcHandlers } from '../ipc-handlers';
@@ -315,6 +317,27 @@ describe('analytics:get', () => {
   it('propage une erreur de getAnalyticsData', async () => {
     vi.mocked(getAnalyticsData).mockImplementation(() => { throw new Error('Exercice introuvable'); });
     await expect(call('analytics:get', 9999)).rejects.toThrow('Exercice introuvable');
+  });
+});
+
+// ─── dashboard:get ──────────────────────────────────────────────────────────
+
+describe('dashboard:get', () => {
+  it('enregistre le canal dashboard:get', () => {
+    expect(handlers.has('dashboard:get')).toBe(true);
+  });
+
+  it('délègue à getDashboardData et retourne le résultat', async () => {
+    const data = { cashBalances: [], netResultCents: 0 };
+    vi.mocked(getDashboardData).mockReturnValue(data as any);
+    const result = await call('dashboard:get', 1);
+    expect(getDashboardData).toHaveBeenCalledWith(1);
+    expect(result).toBe(data);
+  });
+
+  it('propage une erreur de getDashboardData', async () => {
+    vi.mocked(getDashboardData).mockImplementation(() => { throw new Error('Exercice introuvable'); });
+    await expect(call('dashboard:get', 9999)).rejects.toThrow('Exercice introuvable');
   });
 });
 

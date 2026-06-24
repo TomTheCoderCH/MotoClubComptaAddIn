@@ -27,6 +27,7 @@ import {
   createAccount,
   deleteAccount,
   getAnalyticsData,
+  getDashboardData,
 } from '../db';
 
 // Chaque describe repart d'une base SQLite en mémoire fraîche
@@ -980,5 +981,93 @@ describe('getAnalyticsData', () => {
     expect(data.groups[0].totalCharges).toBe(2000);
     expect(data.groups[0].resultat).toBe(3000);
     expect(data.ungrouped).toHaveLength(0);
+  });
+});
+
+describe('getDashboardData', () => {
+  let fyId: number;
+  let caisseId: number;
+  let raiffeisenId: number;
+  let cotisationsId: number;
+  let assurancesId: number;
+  let capitalId: number;
+
+  beforeEach(() => {
+    freshDb();
+    const fy = createFiscalYear(2025);
+    fyId = fy.id;
+    const accounts = getAllAccounts();
+    caisseId      = accounts.find(a => a.number === '100')!.id;
+    raiffeisenId  = accounts.find(a => a.number === '101')!.id;
+    cotisationsId = accounts.find(a => a.number === '300')!.id;
+    assurancesId  = accounts.find(a => a.number === '400')!.id;
+    capitalId     = accounts.find(a => a.number === '290')!.id;
+  });
+
+  it('retourne cashBalances vides et netResultCents=0 sans écriture', () => {
+    const data = getDashboardData(fyId);
+    expect(data.cashBalances).toHaveLength(0);
+    expect(data.netResultCents).toBe(0);
+  });
+
+  it('retourne le solde de la Caisse', () => {
+    createJournalEntry({
+      fiscal_year_id: fyId, date: '2025-01-01', description: 'Cotisation',
+      lines: [
+        { account_id: caisseId,      debit:  3000 },
+        { account_id: cotisationsId, credit: 3000 },
+      ],
+    });
+    const data = getDashboardData(fyId);
+    const caisse = data.cashBalances.find(b => b.number === '100');
+    expect(caisse).toBeDefined();
+    expect(caisse!.solde).toBe(3000);
+  });
+
+  it('calcule netResultCents correctement (produits - charges)', () => {
+    createJournalEntry({
+      fiscal_year_id: fyId, date: '2025-01-01', description: 'Cotisation',
+      lines: [
+        { account_id: caisseId,      debit:  3000 },
+        { account_id: cotisationsId, credit: 3000 },
+      ],
+    });
+    createJournalEntry({
+      fiscal_year_id: fyId, date: '2025-02-01', description: 'Assurance',
+      lines: [
+        { account_id: assurancesId,  debit:  1000 },
+        { account_id: raiffeisenId,  credit: 1000 },
+      ],
+    });
+    const data = getDashboardData(fyId);
+    // Produits: 3000, Charges: 1000 → résultat = 2000
+    expect(data.netResultCents).toBe(2000);
+  });
+
+  it('exclut les écritures de clôture du netResultCents', () => {
+    createJournalEntry({
+      fiscal_year_id: fyId, date: '2025-01-01', description: 'Cotisation',
+      lines: [
+        { account_id: caisseId,      debit:  3000 },
+        { account_id: cotisationsId, credit: 3000 },
+      ],
+    });
+    closeFiscalYear(fyId);
+    // Après clôture, les écritures de clôture zèrent les comptes 3xx/4xx
+    // → le netResultCents doit toujours être 3000, pas 0
+    const data = getDashboardData(fyId);
+    expect(data.netResultCents).toBe(3000);
+  });
+
+  it('n\'inclut pas le compte Raiffeisen dans cashBalances s\'il n\'a pas de mouvement', () => {
+    createJournalEntry({
+      fiscal_year_id: fyId, date: '2025-01-01', description: 'Cotisation',
+      lines: [
+        { account_id: caisseId,      debit:  3000 },
+        { account_id: cotisationsId, credit: 3000 },
+      ],
+    });
+    const data = getDashboardData(fyId);
+    expect(data.cashBalances.find(b => b.number === '101')).toBeUndefined();
   });
 });

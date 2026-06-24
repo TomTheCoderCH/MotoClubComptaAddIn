@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Layout from './components/Layout';
+import DashboardPage   from './pages/DashboardPage';
 import AccountsPage    from './pages/AccountsPage';
 import JournalPage     from './pages/JournalPage';
 import FiscalYearsPage from './pages/FiscalYearsPage';
@@ -8,14 +9,14 @@ import AnalyticsPage   from './pages/AnalyticsPage';
 import SettingsPage    from './pages/SettingsPage';
 import WelcomePage     from './pages/WelcomePage';
 
-export type Page = 'accounts' | 'journal' | 'fiscal-years' | 'balances' | 'analytics' | 'settings' | 'welcome';
+export type Page = 'dashboard' | 'accounts' | 'journal' | 'fiscal-years' | 'balances' | 'analytics' | 'settings' | 'welcome';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page | null>(null);
 
   useEffect(() => {
     window.api.getSettings()
-      .then(s  => setCurrentPage(s ? 'accounts' : 'welcome'))
+      .then(s  => setCurrentPage(s ? 'dashboard' : 'welcome'))
       .catch(() => setCurrentPage('welcome'));
   }, []);
 
@@ -24,13 +25,14 @@ export default function App() {
 
   const renderPage = () => {
     switch (currentPage) {
+      case 'dashboard':    return <DashboardPage />;
       case 'accounts':     return <AccountsPage />;
       case 'journal':      return <JournalPage />;
       case 'fiscal-years': return <FiscalYearsPage />;
       case 'balances':     return <BalancesPage />;
       case 'analytics':    return <AnalyticsPage />;
       case 'settings':     return <SettingsPage />;
-      default:             return <AccountsPage />;
+      default:             return <DashboardPage />;
     }
   };
 

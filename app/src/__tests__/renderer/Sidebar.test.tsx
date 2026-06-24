@@ -6,8 +6,9 @@ import Sidebar from '../../components/Sidebar';
 import { HelpContext } from '../../components/HelpContext';
 
 describe('Sidebar — affichage', () => {
-  it('affiche les 6 items de navigation', () => {
+  it('affiche les 7 items de navigation', () => {
     render(<Sidebar currentPage="accounts" onNavigate={vi.fn()} />);
+    expect(screen.getByText('Accueil')).toBeInTheDocument();
     expect(screen.getByText('Plan comptable')).toBeInTheDocument();
     expect(screen.getByText('Journal')).toBeInTheDocument();
     expect(screen.getByText('Exercices')).toBeInTheDocument();

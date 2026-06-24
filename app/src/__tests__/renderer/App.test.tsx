@@ -9,15 +9,15 @@ const mockAccounts: Account[] = [
   {
     id: 1, number: '100', name: 'Caisse', class: 1,
     type: 'ACTIF', normal_balance: 'DEBIT',
-    description: null, must_be_zero_at_closing: false,
-    is_closing_account: false, is_active: true,
+    description: null, account_group: null, must_be_zero_at_closing: false,
+    is_closing_account: false, is_active: true, has_entries: false,
     created_at: '2025-01-01T00:00:00.000Z',
   },
   {
     id: 2, number: '300', name: 'Cotisations membres', class: 3,
     type: 'PRODUIT', normal_balance: 'CREDIT',
-    description: null, must_be_zero_at_closing: false,
-    is_closing_account: false, is_active: true,
+    description: null, account_group: null, must_be_zero_at_closing: false,
+    is_closing_account: false, is_active: true, has_entries: false,
     created_at: '2025-01-01T00:00:00.000Z',
   },
 ];
@@ -28,6 +28,7 @@ beforeEach(() => {
     getAccounts:        vi.fn().mockResolvedValue(mockAccounts),
     getActiveAccounts:  vi.fn().mockResolvedValue(mockAccounts),
     getFiscalYears:     vi.fn().mockResolvedValue([]),
+    getDashboardData:   vi.fn().mockResolvedValue({ cashBalances: [], netResultCents: 0 }),
     createFiscalYear:   vi.fn(),
     getJournalEntries:  vi.fn().mockResolvedValue([]),
     createJournalEntry: vi.fn(),
@@ -46,26 +47,35 @@ describe('App — layout', () => {
     expect(await screen.findByText('MCY Compta')).toBeInTheDocument();
   });
 
-  it('affiche les 5 items de navigation', async () => {
+  it('affiche les 7 items de navigation', async () => {
     render(<App />);
-    expect(await screen.findByRole('button', { name: 'Plan comptable' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Accueil' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Plan comptable' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Journal' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Exercices' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Soldes' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Analytique' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Paramètres' })).toBeInTheDocument();
   });
 
-  it('démarre sur la page Plan comptable', async () => {
+  it('démarre sur la page Accueil (tableau de bord)', async () => {
     render(<App />);
-    expect(await screen.findByRole('button', { name: 'Plan comptable' }))
+    expect(await screen.findByRole('button', { name: 'Accueil' }))
       .toHaveAttribute('aria-current', 'page');
   });
 });
 
 describe('App — navigation', () => {
-  it('affiche le plan comptable par défaut', async () => {
+  it('affiche le tableau de bord par défaut', async () => {
     render(<App />);
-    expect(await screen.findByRole('heading', { name: 'Plan comptable' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Tableau de bord' })).toBeInTheDocument();
+  });
+
+  it('navigue vers Plan comptable au clic', async () => {
+    render(<App />);
+    const btn = await screen.findByRole('button', { name: 'Plan comptable' });
+    await userEvent.click(btn);
+    expect(screen.getByRole('heading', { name: 'Plan comptable' })).toBeInTheDocument();
   });
 
   it('navigue vers Journal au clic', async () => {
@@ -91,14 +101,16 @@ describe('App — navigation', () => {
 });
 
 describe('App — AccountsPage', () => {
-  it('affiche les comptes après chargement', async () => {
+  it('affiche les comptes après navigation vers Plan comptable', async () => {
     render(<App />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Plan comptable' }));
     expect(await screen.findByText('Caisse')).toBeInTheDocument();
     expect(screen.getByText('Cotisations membres')).toBeInTheDocument();
   });
 
-  it('affiche le nombre de comptes', async () => {
+  it('affiche le nombre de comptes après navigation', async () => {
     render(<App />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Plan comptable' }));
     expect(await screen.findByText('2 comptes')).toBeInTheDocument();
   });
 
@@ -108,6 +120,7 @@ describe('App — AccountsPage', () => {
       getAccounts: vi.fn().mockRejectedValue(new Error('DB non disponible')),
     });
     render(<App />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Plan comptable' }));
     expect(await screen.findByText(/DB non disponible/)).toBeInTheDocument();
   });
 });

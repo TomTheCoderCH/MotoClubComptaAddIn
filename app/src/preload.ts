@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { Account, FiscalYear, JournalEntry, JournalEntryLine, AccountBalance, CreateJournalEntryPayload, UpdateJournalEntryPayload, BackupInfo, OpeningBalanceSuggestion, OpeningBalanceLine, ClosingPreview, UpdateAccountPayload, CreateAccountPayload, AnalyticsData } from './types';
+import type { Account, FiscalYear, JournalEntry, JournalEntryLine, AccountBalance, CreateJournalEntryPayload, UpdateJournalEntryPayload, BackupInfo, OpeningBalanceSuggestion, OpeningBalanceLine, ClosingPreview, UpdateAccountPayload, CreateAccountPayload, AnalyticsData, DashboardData } from './types';
 
 // API exposée au renderer via window.api
 contextBridge.exposeInMainWorld('api', {
@@ -61,6 +61,10 @@ contextBridge.exposeInMainWorld('api', {
   deleteAccount: (id: number): Promise<void> =>
     ipcRenderer.invoke('accounts:delete', id),
 
+  // Tableau de bord
+  getDashboardData: (fiscalYearId: number): Promise<DashboardData> =>
+    ipcRenderer.invoke('dashboard:get', fiscalYearId),
+
   // Analytique
   getAnalytics: (fiscalYearId: number): Promise<AnalyticsData> =>
     ipcRenderer.invoke('analytics:get', fiscalYearId),
@@ -91,8 +95,9 @@ export type ElectronAPI = {
   exportExcel: (fiscalYearId: number) => Promise<{ path: string } | { error: string } | null>;
   restoreBackup:    (filename?: string) => Promise<null>;
   getSchemaVersion: () => Promise<number>;
-  updateAccount:    (payload: UpdateAccountPayload) => Promise<Account>;
-  createAccount:    (payload: CreateAccountPayload) => Promise<Account>;
-  deleteAccount:    (id: number) => Promise<void>;
-  getAnalytics:     (fiscalYearId: number) => Promise<AnalyticsData>;
+  updateAccount:     (payload: UpdateAccountPayload) => Promise<Account>;
+  createAccount:     (payload: CreateAccountPayload) => Promise<Account>;
+  deleteAccount:     (id: number) => Promise<void>;
+  getDashboardData:  (fiscalYearId: number) => Promise<DashboardData>;
+  getAnalytics:      (fiscalYearId: number) => Promise<AnalyticsData>;
 };
