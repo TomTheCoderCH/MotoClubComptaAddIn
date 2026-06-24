@@ -58,6 +58,8 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.invoke('accounts:update', payload),
   createAccount: (payload: CreateAccountPayload): Promise<Account> =>
     ipcRenderer.invoke('accounts:create', payload),
+  deleteAccount: (id: number): Promise<void> =>
+    ipcRenderer.invoke('accounts:delete', id),
 
   // Analytique
   getAnalytics: (fiscalYearId: number): Promise<AnalyticsData> =>
@@ -91,5 +93,6 @@ export type ElectronAPI = {
   getSchemaVersion: () => Promise<number>;
   updateAccount:    (payload: UpdateAccountPayload) => Promise<Account>;
   createAccount:    (payload: CreateAccountPayload) => Promise<Account>;
+  deleteAccount:    (id: number) => Promise<void>;
   getAnalytics:     (fiscalYearId: number) => Promise<AnalyticsData>;
 };

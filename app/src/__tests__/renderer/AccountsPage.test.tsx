@@ -10,13 +10,13 @@ const mockAccounts: Account[] = [
     id: 1, number: '100', name: 'Caisse', class: 1, type: 'ACTIF',
     normal_balance: 'DEBIT', description: null, account_group: null,
     must_be_zero_at_closing: false, is_closing_account: false,
-    is_active: true, created_at: '',
+    is_active: true, has_entries: true, created_at: '',
   },
   {
     id: 2, number: '310', name: 'Vente boissons', class: 3, type: 'PRODUIT',
     normal_balance: 'CREDIT', description: null, account_group: 'boissons',
     must_be_zero_at_closing: false, is_closing_account: false,
-    is_active: true, created_at: '',
+    is_active: true, has_entries: false, created_at: '',
   },
 ];
 
@@ -25,6 +25,7 @@ function mockApi(overrides: Partial<Window['api']> = {}) {
     getAccounts:   vi.fn().mockResolvedValue(mockAccounts),
     updateAccount: vi.fn().mockResolvedValue(mockAccounts[0]),
     createAccount: vi.fn().mockResolvedValue({ ...mockAccounts[0], id: 30, number: '395' }),
+    deleteAccount: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   });
 }
@@ -104,6 +105,70 @@ describe('AccountsPage — édition', () => {
     await user.click((await screen.findAllByRole('button', { name: /Modifier/ }))[0]);
     await user.click(screen.getByRole('button', { name: /Annuler/ }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+});
+
+describe('AccountsPage — suppression et champs avancés', () => {
+  it('affiche le bouton Supprimer quand has_entries = false', async () => {
+    const user = userEvent.setup();
+    render(<AccountsPage />);
+    // mockAccounts[1] (Vente boissons) a has_entries = false — c'est le 2e bouton Modifier
+    const btns = await screen.findAllByRole('button', { name: /Modifier/ });
+    await user.click(btns[1]);
+    expect(screen.getByRole('button', { name: /Supprimer/ })).toBeInTheDocument();
+  });
+
+  it('n\'affiche pas le bouton Supprimer quand has_entries = true', async () => {
+    const user = userEvent.setup();
+    render(<AccountsPage />);
+    // mockAccounts[0] (Caisse) a has_entries = true — c'est le 1er bouton Modifier
+    const btns = await screen.findAllByRole('button', { name: /Modifier/ });
+    await user.click(btns[0]);
+    expect(screen.queryByRole('button', { name: /Supprimer/ })).not.toBeInTheDocument();
+  });
+
+  it('appelle deleteAccount après confirmation', async () => {
+    const deleteAccount = vi.fn().mockResolvedValue(undefined);
+    mockApi({ deleteAccount });
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const user = userEvent.setup();
+    render(<AccountsPage />);
+    const btns = await screen.findAllByRole('button', { name: /Modifier/ });
+    await user.click(btns[1]);
+    await user.click(screen.getByRole('button', { name: /Supprimer/ }));
+    await waitFor(() => expect(deleteAccount).toHaveBeenCalledWith(mockAccounts[1].id));
+  });
+
+  it('ne supprime pas si l\'utilisateur annule la confirmation', async () => {
+    const deleteAccount = vi.fn();
+    mockApi({ deleteAccount });
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const user = userEvent.setup();
+    render(<AccountsPage />);
+    const btns = await screen.findAllByRole('button', { name: /Modifier/ });
+    await user.click(btns[1]);
+    await user.click(screen.getByRole('button', { name: /Supprimer/ }));
+    expect(deleteAccount).not.toHaveBeenCalled();
+  });
+
+  it('affiche les champs numéro et type éditables quand has_entries = false', async () => {
+    const user = userEvent.setup();
+    render(<AccountsPage />);
+    const btns = await screen.findAllByRole('button', { name: /Modifier/ });
+    await user.click(btns[1]); // Vente boissons — has_entries = false
+    // Le champ Numéro doit être présent et pré-rempli
+    expect(screen.getByDisplayValue('310')).toBeInTheDocument();
+    // Le sélecteur Type doit être présent
+    expect(screen.getByRole('combobox', { name: /Type/ })).toBeInTheDocument();
+  });
+
+  it('n\'affiche pas de champ numéro éditable quand has_entries = true', async () => {
+    const user = userEvent.setup();
+    render(<AccountsPage />);
+    const btns = await screen.findAllByRole('button', { name: /Modifier/ });
+    await user.click(btns[0]); // Caisse — has_entries = true
+    // Pas de champ Numéro avec valeur '100' éditable
+    expect(screen.queryByDisplayValue('100')).not.toBeInTheDocument();
   });
 });
 

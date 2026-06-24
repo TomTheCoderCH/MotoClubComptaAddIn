@@ -43,6 +43,7 @@ declare global {
       getSchemaVersion:   () => Promise<number>;
       updateAccount:      (payload: UpdateAccountPayload) => Promise<Account>;
       createAccount:      (payload: CreateAccountPayload) => Promise<Account>;
+      deleteAccount:      (id: number) => Promise<void>;
       getAnalytics:       (fiscalYearId: number) => Promise<AnalyticsData>;
     };
   }

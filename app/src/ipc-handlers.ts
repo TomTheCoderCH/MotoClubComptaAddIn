@@ -22,6 +22,7 @@ import {
   getDbDir,
   updateAccount,
   createAccount,
+  deleteAccount,
   getAnalyticsData,
 } from './db';
 import { listBackups, formatBackupFilename, performBackup } from './backup';
@@ -40,6 +41,7 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('db:getActiveAccounts',  () => getActiveAccounts());
   ipcMain.handle('accounts:update', (_e, payload: UpdateAccountPayload) => updateAccount(payload));
   ipcMain.handle('accounts:create', (_e, payload: CreateAccountPayload) => createAccount(payload));
+  ipcMain.handle('accounts:delete', (_e, id: number) => deleteAccount(id));
 
   // ─── Analytique ──────────────────────────────────────────────────────────────
   ipcMain.handle('analytics:get', (_e, fiscalYearId: number) => getAnalyticsData(fiscalYearId));

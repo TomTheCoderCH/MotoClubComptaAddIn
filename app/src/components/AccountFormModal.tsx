@@ -13,21 +13,24 @@ interface Props {
   existingGroups: string[];
   onClose:        () => void;
   onSaved:        () => void;
+  onDeleted?:     () => void;
 }
 
-export default function AccountFormModal({ account, existingGroups, onClose, onSaved }: Props) {
-  const isEdit = account !== undefined;
+export default function AccountFormModal({ account, existingGroups, onClose, onSaved, onDeleted }: Props) {
+  const isEdit           = account !== undefined;
+  const canEditStructure = isEdit && !account!.has_entries;
 
   const [name,         setName]         = useState(account?.name ?? '');
-  const [number,       setNumber]       = useState('');
+  const [number,       setNumber]       = useState(account?.number ?? '');
   const [type,         setType]         = useState<AccountType>(account?.type ?? 'PRODUIT');
   const [description,  setDescription]  = useState(account?.description ?? '');
   const [accountGroup, setAccountGroup] = useState(account?.account_group ?? '');
   const [isActive,     setIsActive]     = useState(account?.is_active !== false);
   const [submitting,   setSubmitting]   = useState(false);
+  const [deleting,     setDeleting]     = useState(false);
   const [error,        setError]        = useState<string | null>(null);
 
-  const canSubmit = name.trim() !== '' && (isEdit || number.trim() !== '') && !submitting;
+  const canSubmit = name.trim() !== '' && number.trim() !== '' && !submitting && !deleting;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -42,6 +45,10 @@ export default function AccountFormModal({ account, existingGroups, onClose, onS
           account_group: accountGroup.trim() || null,
           is_active:     isActive,
         };
+        if (canEditStructure) {
+          payload.number = number.trim();
+          payload.type   = type;
+        }
         await window.api.updateAccount(payload);
       } else {
         const payload: CreateAccountPayload = {
@@ -61,6 +68,23 @@ export default function AccountFormModal({ account, existingGroups, onClose, onS
     }
   }
 
+  async function handleDelete() {
+    if (!window.confirm(`Supprimer le compte ${account!.number} — ${account!.name} ? Cette action est irréversible.`)) return;
+    setError(null);
+    setDeleting(true);
+    try {
+      await window.api.deleteAccount(account!.id);
+      onDeleted?.();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  const showNumberField = !isEdit || canEditStructure;
+  const showTypeSelect  = !isEdit || canEditStructure;
+
   return (
     <div className={styles.overlay} role="dialog" aria-modal="true">
       <div className={styles.modal}>
@@ -73,7 +97,7 @@ export default function AccountFormModal({ account, existingGroups, onClose, onS
         {error && <div className={styles.errorBox} role="alert">{error}</div>}
 
         <form onSubmit={handleSubmit} noValidate>
-          {!isEdit && (
+          {showNumberField ? (
             <div className={styles.field}>
               <label htmlFor="acc-number" className={styles.fieldLabel}>Numéro *</label>
               <input
@@ -85,6 +109,11 @@ export default function AccountFormModal({ account, existingGroups, onClose, onS
                 required
                 className={styles.input}
               />
+            </div>
+          ) : (
+            <div className={styles.field}>
+              <span className={styles.fieldLabel}>Numéro</span>
+              <span className={styles.readOnly}>{account!.number}</span>
             </div>
           )}
 
@@ -100,7 +129,7 @@ export default function AccountFormModal({ account, existingGroups, onClose, onS
             />
           </div>
 
-          {!isEdit ? (
+          {showTypeSelect ? (
             <div className={styles.field}>
               <label htmlFor="acc-type" className={styles.fieldLabel}>Type *</label>
               <select
@@ -165,6 +194,16 @@ export default function AccountFormModal({ account, existingGroups, onClose, onS
           )}
 
           <div className={styles.actions}>
+            {canEditStructure && (
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting || submitting}
+                className={styles.deleteBtn}
+              >
+                {deleting ? 'Suppression…' : 'Supprimer'}
+              </button>
+            )}
             <button type="button" onClick={onClose} className={styles.cancelBtn}>
               Annuler
             </button>

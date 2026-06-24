@@ -22,6 +22,7 @@ export interface Account {
   must_be_zero_at_closing: boolean;
   is_closing_account: boolean;
   is_active: boolean;
+  has_entries: boolean;
   created_at: string;
 }
 
@@ -141,6 +142,8 @@ export interface UpdateAccountPayload {
   description?: string;
   account_group?: string | null;
   is_active?: boolean;
+  number?: string;      // modifiable uniquement si has_entries = false
+  type?: AccountType;   // modifiable uniquement si has_entries = false
 }
 
 export interface CreateAccountPayload {

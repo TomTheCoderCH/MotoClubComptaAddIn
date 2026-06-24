@@ -25,6 +25,7 @@ import {
   reopenFiscalYear,
   updateAccount,
   createAccount,
+  deleteAccount,
   getAnalyticsData,
 } from '../db';
 
@@ -815,6 +816,111 @@ describe('createAccount', () => {
   it('lève une erreur si numéro invalide (non numérique)', () => {
     expect(() => createAccount({ number: 'ABC', name: 'Test', type: 'PRODUIT' }))
       .toThrow('invalide');
+  });
+});
+
+describe('has_entries sur Account', () => {
+  beforeEach(freshDb);
+
+  it('has_entries = false pour les comptes seed sans écriture', () => {
+    const caisse = getAllAccounts().find(a => a.number === '100')!;
+    expect(caisse.has_entries).toBeFalsy();
+  });
+
+  it('has_entries = true après une écriture sur ce compte', () => {
+    const fy = createFiscalYear(2025);
+    const accounts = getAllAccounts();
+    const caisseId = accounts.find(a => a.number === '100')!.id;
+    const cotisId  = accounts.find(a => a.number === '300')!.id;
+    createJournalEntry({
+      fiscal_year_id: fy.id, date: '2025-01-01', description: 'Test',
+      lines: [{ account_id: caisseId, debit: 1000 }, { account_id: cotisId, credit: 1000 }],
+    });
+    const after = getAllAccounts().find(a => a.number === '100')!;
+    expect(after.has_entries).toBeTruthy();
+  });
+
+  it('has_entries = false sur un compte nouvellement créé', () => {
+    const acc = createAccount({ number: '395', name: 'Test', type: 'PRODUIT' });
+    expect(acc.has_entries).toBeFalsy();
+  });
+});
+
+describe('deleteAccount', () => {
+  beforeEach(freshDb);
+
+  it('supprime un compte sans écriture', () => {
+    const acc = createAccount({ number: '395', name: 'Test', type: 'PRODUIT' });
+    deleteAccount(acc.id);
+    expect(getAllAccounts().find(a => a.number === '395')).toBeUndefined();
+  });
+
+  it('lève une erreur si des écritures existent sur ce compte', () => {
+    const fy = createFiscalYear(2025);
+    const accounts = getAllAccounts();
+    const caisseId = accounts.find(a => a.number === '100')!.id;
+    const cotisId  = accounts.find(a => a.number === '300')!.id;
+    createJournalEntry({
+      fiscal_year_id: fy.id, date: '2025-01-01', description: 'Test',
+      lines: [{ account_id: caisseId, debit: 1000 }, { account_id: cotisId, credit: 1000 }],
+    });
+    expect(() => deleteAccount(caisseId)).toThrow('écritures');
+  });
+
+  it('lève une erreur si compte introuvable', () => {
+    expect(() => deleteAccount(99999)).toThrow('introuvable');
+  });
+});
+
+describe('updateAccount — numéro et type', () => {
+  beforeEach(freshDb);
+
+  it('modifie le numéro d\'un compte sans écriture', () => {
+    const acc = createAccount({ number: '395', name: 'Test', type: 'PRODUIT' });
+    const updated = updateAccount({ id: acc.id, number: '396' });
+    expect(updated.number).toBe('396');
+    expect(updated.class).toBe(3);
+  });
+
+  it('modifie le type d\'un compte sans écriture (recalcule normal_balance)', () => {
+    const acc = createAccount({ number: '395', name: 'Test', type: 'PRODUIT' });
+    const updated = updateAccount({ id: acc.id, type: 'CHARGE' });
+    expect(updated.type).toBe('CHARGE');
+    expect(updated.normal_balance).toBe('DEBIT');
+  });
+
+  it('lève une erreur si modification du numéro avec des écritures existantes', () => {
+    const fy = createFiscalYear(2025);
+    const accounts = getAllAccounts();
+    const caisseId = accounts.find(a => a.number === '100')!.id;
+    const cotisId  = accounts.find(a => a.number === '300')!.id;
+    createJournalEntry({
+      fiscal_year_id: fy.id, date: '2025-01-01', description: 'Test',
+      lines: [{ account_id: caisseId, debit: 1000 }, { account_id: cotisId, credit: 1000 }],
+    });
+    expect(() => updateAccount({ id: caisseId, number: '199' })).toThrow('écritures');
+  });
+
+  it('lève une erreur si modification du type avec des écritures existantes', () => {
+    const fy = createFiscalYear(2025);
+    const accounts = getAllAccounts();
+    const caisseId = accounts.find(a => a.number === '100')!.id;
+    const cotisId  = accounts.find(a => a.number === '300')!.id;
+    createJournalEntry({
+      fiscal_year_id: fy.id, date: '2025-01-01', description: 'Test',
+      lines: [{ account_id: caisseId, debit: 1000 }, { account_id: cotisId, credit: 1000 }],
+    });
+    expect(() => updateAccount({ id: caisseId, type: 'PASSIF' })).toThrow('écritures');
+  });
+
+  it('lève une erreur si le nouveau numéro est déjà utilisé', () => {
+    const acc = createAccount({ number: '395', name: 'Test', type: 'PRODUIT' });
+    expect(() => updateAccount({ id: acc.id, number: '100' })).toThrow('déjà utilisé');
+  });
+
+  it('lève une erreur si le nouveau numéro est invalide', () => {
+    const acc = createAccount({ number: '395', name: 'Test', type: 'PRODUIT' });
+    expect(() => updateAccount({ id: acc.id, number: 'XYZ' })).toThrow('invalide');
   });
 });
 

@@ -90,6 +90,7 @@ export default function AccountsPage() {
           existingGroups={existingGroups}
           onClose={() => setModal(null)}
           onSaved={handleSaved}
+          onDeleted={handleSaved}
         />
       )}
     </div>

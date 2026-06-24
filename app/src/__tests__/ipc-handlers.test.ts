@@ -23,6 +23,7 @@ vi.mock('../db', () => ({
   getAccountBalances:  vi.fn(),
   updateAccount:       vi.fn(),
   createAccount:       vi.fn(),
+  deleteAccount:       vi.fn(),
   getAnalyticsData:    vi.fn(),
 }));
 
@@ -38,6 +39,7 @@ import {
   getAccountBalances,
   updateAccount,
   createAccount,
+  deleteAccount,
   getAnalyticsData,
 } from '../db';
 import { registerIpcHandlers } from '../ipc-handlers';
@@ -313,5 +315,24 @@ describe('analytics:get', () => {
   it('propage une erreur de getAnalyticsData', async () => {
     vi.mocked(getAnalyticsData).mockImplementation(() => { throw new Error('Exercice introuvable'); });
     await expect(call('analytics:get', 9999)).rejects.toThrow('Exercice introuvable');
+  });
+});
+
+// ─── accounts:delete ────────────────────────────────────────────────────────
+
+describe('accounts:delete', () => {
+  it('enregistre le canal accounts:delete', () => {
+    expect(handlers.has('accounts:delete')).toBe(true);
+  });
+
+  it('délègue à deleteAccount', async () => {
+    vi.mocked(deleteAccount).mockReturnValue(undefined);
+    await call('accounts:delete', 5);
+    expect(deleteAccount).toHaveBeenCalledWith(5);
+  });
+
+  it('propage une erreur de deleteAccount', async () => {
+    vi.mocked(deleteAccount).mockImplementation(() => { throw new Error('des écritures existent'); });
+    await expect(call('accounts:delete', 1)).rejects.toThrow('des écritures existent');
   });
 });

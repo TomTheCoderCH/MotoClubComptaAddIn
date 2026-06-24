@@ -71,18 +71,44 @@ function normalBalanceForType(type: AccountType): 'DEBIT' | 'CREDIT' {
   return (type === 'ACTIF' || type === 'CHARGE') ? 'DEBIT' : 'CREDIT';
 }
 
+const ACCOUNT_WITH_ENTRIES_SQL = `
+  SELECT a.*,
+    EXISTS(SELECT 1 FROM journal_entry_lines jel WHERE jel.account_id = a.id) AS has_entries
+  FROM accounts a
+`;
+
 export function getAllAccounts(): Account[] {
-  return getDb().prepare('SELECT * FROM accounts ORDER BY number').all() as Account[];
+  return getDb().prepare(`${ACCOUNT_WITH_ENTRIES_SQL} ORDER BY a.number`).all() as Account[];
 }
 
 export function getActiveAccounts(): Account[] {
-  return getDb().prepare('SELECT * FROM accounts WHERE is_active = 1 ORDER BY number').all() as Account[];
+  return getDb().prepare(`${ACCOUNT_WITH_ENTRIES_SQL} WHERE a.is_active = 1 ORDER BY a.number`).all() as Account[];
 }
 
 export function updateAccount(payload: UpdateAccountPayload): Account {
-  const { id, name, description, account_group, is_active } = payload;
+  const { id, name, description, account_group, is_active, number, type } = payload;
   const fields: string[]  = [];
   const values: unknown[] = [];
+
+  if (number !== undefined || type !== undefined) {
+    const hasEntries = (getDb()
+      .prepare('SELECT EXISTS(SELECT 1 FROM journal_entry_lines WHERE account_id = ?)')
+      .pluck().get(id) as number) === 1;
+    if (hasEntries) throw new Error('Impossible de modifier le numéro ou le type : des écritures existent pour ce compte');
+  }
+
+  if (number !== undefined) {
+    if (!/^\d/.test(number)) throw new Error(`Numéro de compte invalide : "${number}"`);
+    const conflict = getDb().prepare('SELECT id FROM accounts WHERE number = ? AND id != ?').get(number, id);
+    if (conflict) throw new Error(`Numéro de compte ${number} déjà utilisé`);
+    fields.push('number = ?'); values.push(number);
+    fields.push('class = ?');  values.push(parseInt(number[0], 10));
+  }
+
+  if (type !== undefined) {
+    fields.push('type = ?');           values.push(type);
+    fields.push('normal_balance = ?'); values.push(normalBalanceForType(type));
+  }
 
   if (name          !== undefined) { fields.push('name = ?');          values.push(name); }
   if (description   !== undefined) { fields.push('description = ?');   values.push(description); }
@@ -95,7 +121,7 @@ export function updateAccount(payload: UpdateAccountPayload): Account {
     .prepare(`UPDATE accounts SET ${fields.join(', ')} WHERE id = ?`)
     .run(...values, id);
 
-  return getDb().prepare('SELECT * FROM accounts WHERE id = ?').get(id) as Account;
+  return getDb().prepare(`${ACCOUNT_WITH_ENTRIES_SQL} WHERE a.id = ?`).get(id) as Account;
 }
 
 export function createAccount(payload: CreateAccountPayload): Account {
@@ -117,8 +143,20 @@ export function createAccount(payload: CreateAccountPayload): Account {
     .run(number, name, cls, type, normal_balance, description ?? null, account_group ?? null);
 
   return getDb()
-    .prepare('SELECT * FROM accounts WHERE id = ?')
+    .prepare(`${ACCOUNT_WITH_ENTRIES_SQL} WHERE a.id = ?`)
     .get(result.lastInsertRowid) as Account;
+}
+
+export function deleteAccount(id: number): void {
+  const account = getDb().prepare('SELECT id FROM accounts WHERE id = ?').get(id);
+  if (!account) throw new Error('Compte introuvable');
+
+  const hasEntries = (getDb()
+    .prepare('SELECT EXISTS(SELECT 1 FROM journal_entry_lines WHERE account_id = ?)')
+    .pluck().get(id) as number) === 1;
+  if (hasEntries) throw new Error('Impossible de supprimer ce compte : des écritures existent pour ce compte');
+
+  getDb().prepare('DELETE FROM accounts WHERE id = ?').run(id);
 }
 
 export function getAnalyticsData(fiscalYearId: number): AnalyticsData {

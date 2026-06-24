@@ -85,8 +85,23 @@
   display: flex;
   gap: 0.75rem;
   justify-content: flex-end;
+  align-items: center;
   margin-top: 1rem;
 }
+
+.deleteBtn {
+  padding: 0.45rem 1rem;
+  background: #fff;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #dc2626;
+  margin-right: auto;
+}
+
+.deleteBtn:hover    { background: #fee2e2; border-color: #f87171; }
+.deleteBtn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .cancelBtn {
   padding: 0.45rem 1rem;
