@@ -113,6 +113,19 @@ describe('listBackups', () => {
     expect(item.sizeBytes).toBeGreaterThan(0);
   });
 
+  it('retourne schemaVersion=-1 pour un fichier non-SQLite', () => {
+    createFakeBackup('mcy-compta-2025-03-08_14-30.db');
+    const [item] = listBackups(tmpDir);
+    expect(item.schemaVersion).toBe(-1);
+  });
+
+  it('retourne schemaVersion>=0 pour un fichier SQLite valide', async () => {
+    const backupDir = path.join(tmpDir, 'backups');
+    await performBackup(db, backupDir);
+    const [item] = listBackups(backupDir);
+    expect(item.schemaVersion).toBeGreaterThanOrEqual(0);
+  });
+
   it('ignore les fichiers qui ne correspondent pas au pattern', () => {
     createFakeBackup('random-file.db');
     createFakeBackup('mcy-compta-2025-03-08_14-30.db');

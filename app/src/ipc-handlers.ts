@@ -27,6 +27,11 @@ import { readSettings, writeSettings } from './settings';
 import { migrateDataDir } from './migrate';
 
 export function registerIpcHandlers(): void {
+  // ─── Schéma ──────────────────────────────────────────────────────────────────
+  ipcMain.handle('db:getSchemaVersion', () =>
+    getDb().pragma('user_version', { simple: true }) as number
+  );
+
   // ─── Comptes ────────────────────────────────────────────────────────────────
   ipcMain.handle('db:getAccounts',        () => getAllAccounts());
   ipcMain.handle('db:getActiveAccounts',  () => getActiveAccounts());

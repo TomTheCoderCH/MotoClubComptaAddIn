@@ -75,7 +75,7 @@ describe('registration des canaux backup', () => {
 describe('backup:list', () => {
   it('appelle listBackups avec le bon dossier et retourne le résultat', async () => {
     vi.mocked(getDbDir).mockReturnValue('/data');
-    const mockList = [{ filename: 'mcy-compta-2025-03-08_14-30.db', date: '2025-03-08T14:30:00.000Z', sizeBytes: 1000 }];
+    const mockList = [{ filename: 'mcy-compta-2025-03-08_14-30.db', date: '2025-03-08T14:30:00.000Z', sizeBytes: 1000, schemaVersion: 1 }];
     vi.mocked(listBackups).mockReturnValue(mockList);
     const result = await call('backup:list');
     expect(listBackups).toHaveBeenCalledWith(path.join('/data', 'backups'));
@@ -127,6 +127,16 @@ describe('backup:getDbPath', () => {
 describe('backup:restore — enregistrement', () => {
   it('enregistre le canal backup:restore', () => {
     expect(handlers.has('backup:restore')).toBe(true);
+  });
+});
+
+describe('db:getSchemaVersion', () => {
+  it('retourne user_version de la base courante', async () => {
+    const mockPragma = vi.fn().mockReturnValue(1);
+    vi.mocked(getDb).mockReturnValue({ pragma: mockPragma } as any);
+    const result = await call('db:getSchemaVersion');
+    expect(mockPragma).toHaveBeenCalledWith('user_version', { simple: true });
+    expect(result).toBe(1);
   });
 });
 

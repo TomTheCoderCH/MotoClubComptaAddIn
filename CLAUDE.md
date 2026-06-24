@@ -482,6 +482,7 @@ app/
 
 - [x] Migrations de schéma SQLite : `db/schema-migrations.ts` — `PRAGMA user_version` + tableau `MIGRATIONS[]`, appelé dans `openDatabase()` après `initSchema()`. Version actuelle : 1 (schéma initial). Pour ajouter une migration : ajouter `{ version: N, description: '...', sql: '...' }` au tableau — 339 tests
 - [x] Restauration depuis une sauvegarde — bouton dans SettingsPage, handler `backup:restore` (dialog natif, backup de sécurité préalable, `copyFileSync`, `app.relaunch()`) — 348 tests
+- [x] Version du schéma SQLite — `schemaVersion` dans `BackupInfo` (lecture header SQLite offset 60, sans connexion DB), handler `db:getSchemaVersion`, colonne "Ver." dans la liste des sauvegardes, version DB courante dans la section Base de données — 355 tests
 
 ### Notes techniques actives
 

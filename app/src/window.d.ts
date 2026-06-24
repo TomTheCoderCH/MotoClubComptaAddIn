@@ -37,6 +37,7 @@ declare global {
       changeDataDir:      () => Promise<boolean | null>;
       exportExcel:        (fiscalYearId: number) => Promise<{ path: string } | { error: string } | null>;
       restoreBackup:      () => Promise<null>;
+      getSchemaVersion:   () => Promise<number>;
     };
   }
 }

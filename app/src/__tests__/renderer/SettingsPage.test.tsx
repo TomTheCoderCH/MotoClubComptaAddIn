@@ -10,11 +10,13 @@ const mockBackups: BackupInfo[] = [
     filename: 'mcy-compta-2025-03-08_14-30.db',
     date: new Date(2025, 2, 8, 14, 30).toISOString(),
     sizeBytes: 1234567,
+    schemaVersion: 1,
   },
   {
     filename: 'mcy-compta-2025-03-07_09-15.db',
     date: new Date(2025, 2, 7, 9, 15).toISOString(),
     sizeBytes: 1100000,
+    schemaVersion: 0,
   },
 ];
 
@@ -27,8 +29,9 @@ function mockApi(overrides: Partial<Window['api']> = {}) {
     getFiscalYears: vi.fn().mockResolvedValue([
       { id: 1, year: 2025, start_date: '2025-01-01', end_date: '2025-12-31', is_closed: false, created_at: '', hasOpeningBalance: false },
     ]),
-    exportExcel:    vi.fn().mockResolvedValue(null),
-    restoreBackup:  vi.fn().mockResolvedValue(null),
+    exportExcel:       vi.fn().mockResolvedValue(null),
+    restoreBackup:     vi.fn().mockResolvedValue(null),
+    getSchemaVersion:  vi.fn().mockResolvedValue(1),
     ...overrides,
   });
 }
@@ -131,6 +134,29 @@ describe('SettingsPage — changer le dossier', () => {
     expect(await screen.findByRole('status')).toHaveTextContent('Dossier de données mis à jour');
     const input = await screen.findByLabelText('Chemin de la base de données');
     expect(input).toHaveValue('D:/NewFolder/mcy-compta.db');
+  });
+});
+
+describe('SettingsPage — version du schéma', () => {
+  it('affiche la version du schéma de la DB courante', async () => {
+    render(<SettingsPage />);
+    expect(await screen.findByText(/Version du schéma.*v1/)).toBeInTheDocument();
+  });
+
+  it('affiche la colonne "Ver." dans le tableau des sauvegardes', async () => {
+    render(<SettingsPage />);
+    expect(await screen.findByRole('columnheader', { name: 'Ver.' })).toBeInTheDocument();
+  });
+
+  it('affiche v1 pour la sauvegarde avec schemaVersion=1', async () => {
+    render(<SettingsPage />);
+    const cells = await screen.findAllByText('v1');
+    expect(cells.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('affiche v0 pour la sauvegarde avec schemaVersion=0', async () => {
+    render(<SettingsPage />);
+    expect(await screen.findByText('v0')).toBeInTheDocument();
   });
 });
 

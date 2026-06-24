@@ -17,7 +17,8 @@ function formatDate(isoDate: string): string {
 }
 
 export default function SettingsPage() {
-  const [dbPath,       setDbPath]       = useState<string>('');
+  const [dbPath,        setDbPath]        = useState<string>('');
+  const [schemaVersion, setSchemaVersion] = useState<number | null>(null);
   const [backups,      setBackups]      = useState<BackupInfo[]>([]);
   const [exportStatus, setExportStatus] = useState<ExportStatus>('idle');
   const [exportPath,   setExportPath]   = useState<string | null>(null);
@@ -33,6 +34,9 @@ export default function SettingsPage() {
     window.api.getDbPath()
       .then(setDbPath)
       .catch((e: Error) => setError(e.message));
+    window.api.getSchemaVersion()
+      .then(setSchemaVersion)
+      .catch(() => { /* non critique */ });
     window.api.listBackups()
       .then(setBackups)
       .catch((e: Error) => setError(e.message));
@@ -126,6 +130,9 @@ export default function SettingsPage() {
           aria-label="Chemin de la base de données"
           className={styles.dbPathInput}
         />
+        {schemaVersion !== null && (
+          <p className={styles.hint}>Version du schéma : v{schemaVersion}</p>
+        )}
         <button
           onClick={handleChangePath}
           disabled={changeStatus === 'loading'}
@@ -187,6 +194,7 @@ export default function SettingsPage() {
               <tr className={styles.theadRow}>
                 <th className={styles.th}>Date</th>
                 <th className={`${styles.th} ${styles.thRight}`}>Taille</th>
+                <th className={`${styles.th} ${styles.thRight}`}>Ver.</th>
               </tr>
             </thead>
             <tbody>
@@ -195,6 +203,9 @@ export default function SettingsPage() {
                   <td className={styles.td}>{formatDate(b.date)}</td>
                   <td className={`${styles.td} ${styles.tdRight}`}>
                     {formatSize(b.sizeBytes)}
+                  </td>
+                  <td className={`${styles.td} ${styles.tdRight}`}>
+                    {b.schemaVersion >= 0 ? `v${b.schemaVersion}` : '?'}
                   </td>
                 </tr>
               ))}

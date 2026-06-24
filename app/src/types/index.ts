@@ -101,8 +101,9 @@ export interface UpdateJournalEntryPayload {
 
 export interface BackupInfo {
   filename: string;
-  date: string;  // ISO 8601 extrait du nom de fichier
+  date: string;        // ISO 8601 extrait du nom de fichier
   sizeBytes: number;
+  schemaVersion: number;  // PRAGMA user_version (-1 si fichier illisible)
 }
 
 export interface OpeningBalanceSuggestion {

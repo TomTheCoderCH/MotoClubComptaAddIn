@@ -38,6 +38,23 @@ export function pruneBackups(backupDir: string, maxCount = 30): void {
   }
 }
 
+// Lit user_version (offset 60 du header SQLite) sans ouvrir de connexion DB.
+// Retourne -1 si le fichier n'est pas un fichier SQLite valide ou est illisible.
+function readSchemaVersion(filePath: string): number {
+  let fd: number | undefined;
+  try {
+    fd = fs.openSync(filePath, 'r');
+    const header = Buffer.alloc(64);
+    if (fs.readSync(fd, header, 0, 64, 0) < 64) return -1;
+    if (header.toString('ascii', 0, 15) !== 'SQLite format 3') return -1;
+    return header.readInt32BE(60);
+  } catch {
+    return -1;
+  } finally {
+    if (fd !== undefined) try { fs.closeSync(fd); } catch { /* ignore */ }
+  }
+}
+
 export function listBackups(backupDir: string): BackupInfo[] {
   if (!fs.existsSync(backupDir)) return [];
   const files = fs
@@ -58,6 +75,6 @@ export function listBackups(backupDir: string): BackupInfo[] {
       parseInt(m[4]),
       parseInt(m[5]),
     ).toISOString();
-    return { filename, date, sizeBytes: stat.size };
+    return { filename, date, sizeBytes: stat.size, schemaVersion: readSchemaVersion(fullPath) };
   });
 }
