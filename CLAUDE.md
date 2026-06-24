@@ -354,9 +354,11 @@ La configuration du chemin est stockée séparément dans `%APPDATA%\MCY Compta\
 
 ### Restauration
 
-- Bouton "Restaurer depuis une sauvegarde" dans les paramètres
-- L'utilisateur sélectionne un fichier `.db` à restaurer
-- L'app remplace la base active après confirmation et redémarre
+- Bouton "Restaurer depuis une sauvegarde…" dans les paramètres (dialog libre — tout fichier `.db`)
+- Bouton "Restaurer" par ligne dans le tableau des sauvegardes automatiques (passe le `filename` directement, saute le dialog de sélection)
+- Backup de sécurité créé avant remplacement
+- Après `copyFileSync` : `getDb().close()` → copie → `openDatabase(getDbDir())` → `BrowserWindow.getAllWindows()[0].webContents.reload()`
+- Pas de redémarrage du process (évite le problème Vite dev server / electron-forge)
 
 ### Vue utile — solde d'un compte sur un exercice
 
@@ -481,8 +483,8 @@ app/
 - [x] Système d'aide : Tooltip dynamique par ligne (EntryForm) + drawer latéral global (F1 / bouton sidebar) — 334 tests — spec : `docs/superpowers/specs/2026-06-24-help-system-design.md`
 
 - [x] Migrations de schéma SQLite : `db/schema-migrations.ts` — `PRAGMA user_version` + tableau `MIGRATIONS[]`, appelé dans `openDatabase()` après `initSchema()`. Version actuelle : 1 (schéma initial). Pour ajouter une migration : ajouter `{ version: N, description: '...', sql: '...' }` au tableau — 339 tests
-- [x] Restauration depuis une sauvegarde — bouton dans SettingsPage, handler `backup:restore` (dialog natif, backup de sécurité préalable, `copyFileSync`, `app.relaunch()`) — 348 tests
-- [x] Version du schéma SQLite — `schemaVersion` dans `BackupInfo` (lecture header SQLite offset 60, sans connexion DB), handler `db:getSchemaVersion`, colonne "Ver." dans la liste des sauvegardes, version DB courante dans la section Base de données — 355 tests
+- [x] Restauration depuis une sauvegarde — bouton dialog libre + bouton par ligne de sauvegarde automatique dans SettingsPage ; handler `backup:restore(filename?)` (backup de sécurité, `close()` + `copyFileSync` + `openDatabase()` + `webContents.reload()`) — 360 tests
+- [x] Version du schéma SQLite — `schemaVersion` dans `BackupInfo` (lecture header SQLite offset 60, sans connexion DB), handler `db:getSchemaVersion`, colonne "Ver." dans la liste des sauvegardes, version DB courante dans la section Base de données — 360 tests
 
 ### Notes techniques actives
 
