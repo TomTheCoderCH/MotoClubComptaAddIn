@@ -121,6 +121,8 @@ Le classeur contient 11 feuilles correspondant aux comptes suivants :
 
 - **Styles React :** **CSS Modules** (`.module.css` par composant, colocalisé) — séparation code/design, accès à toutes les features CSS (`:hover`, `:disabled`, media queries, variables CSS). Vite supporte nativement, zéro configuration. Les couleurs conditionnelles (valeurs négatives) utilisent `data-negative={val < 0 || undefined}` + sélecteur CSS `[data-negative]` — zéro `style={{}}` dans les composants.
 
+- **Système d'aide :** `HelpDrawer.tsx` contient l'aide intégrée (3 onglets : Démarrage rapide, Comptabilité, Application). **À chaque correction de bug ou ajout de fonctionnalité, vérifier si le contenu du drawer doit être mis à jour** — en particulier si des noms de boutons, pages ou raccourcis changent. `HelpContext.tsx` gère l'état ouvert/fermé (accessible via bouton `? Aide` en bas de sidebar et touche `F1`). `Tooltip.tsx` est le composant d'info-bulle réutilisable (CSS pur, `:hover`).
+
 - **Framework UI :** React (renderer Electron) — premier projet React, occasion de se former
 - **Plan comptable :** libre, adapté au club, plus détaillé que l'Excel actuel (voir section dédiée)
 - **Devises :** CHF uniquement — paiements EUR convertis automatiquement par la banque (carte VISA), montant CHF saisi directement
@@ -475,6 +477,8 @@ app/
 - [x] Refactoring settings : `app.getPath('userData')` à la place du chemin `APPDATA` manuel ; `app.setPath('userData')` dans `main.ts` pour l'isolation E2E — 318 tests
 
 - [x] Migration styles inline → CSS Modules — 14 composants/pages migrés, 318 tests — plan : `docs/superpowers/plans/2026-06-23-css-modules-migration.md`
+
+- [x] Système d'aide : Tooltip dynamique par ligne (EntryForm) + drawer latéral global (F1 / bouton sidebar) — 334 tests — spec : `docs/superpowers/specs/2026-06-24-help-system-design.md`
 
 ### Notes techniques actives
 
