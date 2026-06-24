@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Layout from '../../components/Layout';
 
@@ -43,5 +43,44 @@ describe('Layout — structure', () => {
     );
     await userEvent.click(screen.getByRole('button', { name: 'Soldes' }));
     expect(onNavigate).toHaveBeenCalledWith('balances');
+  });
+});
+
+describe('Layout — aide (F1 / Escape)', () => {
+  it('le drawer d\'aide est fermé par défaut', () => {
+    render(
+      <Layout currentPage="accounts" onNavigate={vi.fn()}>
+        <div />
+      </Layout>
+    );
+    expect(screen.queryByRole('dialog', { name: 'Aide' })).not.toBeInTheDocument();
+  });
+
+  it('F1 ouvre le drawer d\'aide', async () => {
+    render(
+      <Layout currentPage="accounts" onNavigate={vi.fn()}>
+        <div />
+      </Layout>
+    );
+    await act(async () => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'F1', bubbles: true }));
+    });
+    expect(screen.getByRole('dialog', { name: 'Aide' })).toBeInTheDocument();
+  });
+
+  it('Escape ferme le drawer d\'aide', async () => {
+    render(
+      <Layout currentPage="accounts" onNavigate={vi.fn()}>
+        <div />
+      </Layout>
+    );
+    await act(async () => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'F1', bubbles: true }));
+    });
+    expect(screen.getByRole('dialog', { name: 'Aide' })).toBeInTheDocument();
+    await act(async () => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    });
+    expect(screen.queryByRole('dialog', { name: 'Aide' })).not.toBeInTheDocument();
   });
 });
