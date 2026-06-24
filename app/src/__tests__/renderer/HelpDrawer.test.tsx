@@ -45,4 +45,9 @@ describe('HelpDrawer', () => {
     expect(screen.getByRole('tab', { name: 'Démarrage rapide' }))
       .toHaveAttribute('aria-selected', 'false');
   });
+
+  it('affiche le handle de redimensionnement', () => {
+    const { container } = renderDrawer(true);
+    expect(container.querySelector('[class*="resizeHandle"]')).toBeInTheDocument();
+  });
 });

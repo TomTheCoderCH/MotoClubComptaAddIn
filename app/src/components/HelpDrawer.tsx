@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useHelp } from './HelpContext';
 import styles from './HelpDrawer.module.css';
 
@@ -10,16 +10,35 @@ const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'app',        label: 'Application'      },
 ];
 
+const MIN_WIDTH = 260;
+const MAX_WIDTH = 700;
+
 export default function HelpDrawer() {
   const { isOpen, close } = useHelp();
-  const [tab, setTab] = useState<Tab>('quickstart');
+  const [tab,   setTab]   = useState<Tab>('quickstart');
+  const [width, setWidth] = useState(420);
+
+  const startResize = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const onMove = (ev: MouseEvent) => {
+      const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, window.innerWidth - ev.clientX));
+      setWidth(newWidth);
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup',   onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup',   onUp);
+  }, []);
 
   if (!isOpen) return null;
 
   return (
     <>
       <div className={styles.overlay} onClick={close} aria-hidden="true" />
-      <div className={styles.drawer} role="dialog" aria-modal="true" aria-label="Aide">
+      <div className={styles.drawer} role="dialog" aria-modal="true" aria-label="Aide" style={{ width }}>
+        <div className={styles.resizeHandle} onMouseDown={startResize} aria-hidden="true" />
         <div className={styles.header}>
           <h2 className={styles.title}>Aide MCY Compta</h2>
           <button onClick={close} className={styles.closeBtn} aria-label="Fermer l'aide">×</button>

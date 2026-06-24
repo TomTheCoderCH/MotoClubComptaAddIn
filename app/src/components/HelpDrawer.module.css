@@ -10,13 +10,30 @@
   top: 0;
   right: 0;
   bottom: 0;
-  width: 420px;
   background: #fff;
   box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
   z-index: 301;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-width: 260px;
+  max-width: 700px;
+}
+
+.resizeHandle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: ew-resize;
+  background: transparent;
+  z-index: 1;
+}
+
+.resizeHandle:hover {
+  background: #3b82f6;
+  opacity: 0.4;
 }
 
 .header {
