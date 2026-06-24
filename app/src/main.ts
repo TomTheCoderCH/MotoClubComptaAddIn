@@ -13,6 +13,10 @@ if (process.env['NODE_ENV'] === 'test' && process.env['APPDATA']) {
   app.setPath('userData', path.join(process.env['APPDATA'], app.getName()));
 }
 
+// Force le locale Chromium en fr-CH pour que les <input type="date"> affichent dd.MM.yyyy.
+// La valeur ISO (yyyy-MM-dd) transmise via e.target.value reste inchangée.
+app.commandLine.appendSwitch('lang', 'fr-CH');
+
 if (started) app.quit();
 
 let isQuitting = false;
