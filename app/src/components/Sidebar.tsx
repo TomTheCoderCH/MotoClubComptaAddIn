@@ -7,6 +7,7 @@ const NAV_ITEMS: Array<{ id: Page; label: string }> = [
   { id: 'journal',      label: 'Journal'        },
   { id: 'fiscal-years', label: 'Exercices'      },
   { id: 'balances',     label: 'Soldes'         },
+  { id: 'analytics',    label: 'Analytique'     },
   { id: 'settings',     label: 'Paramètres'     },
 ];
 

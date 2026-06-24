@@ -6,12 +6,14 @@ import Sidebar from '../../components/Sidebar';
 import { HelpContext } from '../../components/HelpContext';
 
 describe('Sidebar — affichage', () => {
-  it('affiche les 4 items de navigation', () => {
+  it('affiche les 6 items de navigation', () => {
     render(<Sidebar currentPage="accounts" onNavigate={vi.fn()} />);
     expect(screen.getByText('Plan comptable')).toBeInTheDocument();
     expect(screen.getByText('Journal')).toBeInTheDocument();
     expect(screen.getByText('Exercices')).toBeInTheDocument();
     expect(screen.getByText('Soldes')).toBeInTheDocument();
+    expect(screen.getByText('Analytique')).toBeInTheDocument();
+    expect(screen.getByText('Paramètres')).toBeInTheDocument();
   });
 
   it('affiche le nom de l\'application', () => {
