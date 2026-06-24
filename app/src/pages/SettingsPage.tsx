@@ -82,16 +82,20 @@ export default function SettingsPage() {
     }
   }
 
-  async function handleRestore() {
+  async function handleRestore(filename?: string) {
     setRestoring(true);
     setError(null);
     try {
-      await window.api.restoreBackup();
+      await window.api.restoreBackup(filename);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setRestoring(false);
     }
+  }
+
+  function handleRestoreFrom(filename: string) {
+    return handleRestore(filename);
   }
 
   async function handleExcelExport() {
@@ -195,6 +199,7 @@ export default function SettingsPage() {
                 <th className={styles.th}>Date</th>
                 <th className={`${styles.th} ${styles.thRight}`}>Taille</th>
                 <th className={`${styles.th} ${styles.thRight}`}>Ver.</th>
+                <th className={styles.th}></th>
               </tr>
             </thead>
             <tbody>
@@ -206,6 +211,15 @@ export default function SettingsPage() {
                   </td>
                   <td className={`${styles.td} ${styles.tdRight}`}>
                     {b.schemaVersion >= 0 ? `v${b.schemaVersion}` : '?'}
+                  </td>
+                  <td className={styles.td}>
+                    <button
+                      className={styles.btnRestore}
+                      disabled={restoring}
+                      onClick={() => handleRestoreFrom(b.filename)}
+                    >
+                      Restaurer
+                    </button>
                   </td>
                 </tr>
               ))}

@@ -71,15 +71,20 @@ export function registerIpcHandlers(): void {
     return path.join(getDbDir(), 'mcy-compta.db');
   });
 
-  ipcMain.handle('backup:restore', async () => {
-    const picked = await dialog.showOpenDialog({
-      title: 'Restaurer une sauvegarde',
-      filters: [{ name: 'Base de données SQLite', extensions: ['db'] }],
-      properties: ['openFile'],
-    });
-    if (picked.canceled || !picked.filePaths[0]) return null;
+  ipcMain.handle('backup:restore', async (_e, filename?: string) => {
+    let srcPath: string;
 
-    const srcPath = picked.filePaths[0];
+    if (filename) {
+      srcPath = path.join(getDbDir(), 'backups', filename);
+    } else {
+      const picked = await dialog.showOpenDialog({
+        title: 'Restaurer une sauvegarde',
+        filters: [{ name: 'Base de données SQLite', extensions: ['db'] }],
+        properties: ['openFile'],
+      });
+      if (picked.canceled || !picked.filePaths[0]) return null;
+      srcPath = picked.filePaths[0];
+    }
 
     const confirmed = await dialog.showMessageBox({
       type: 'warning',

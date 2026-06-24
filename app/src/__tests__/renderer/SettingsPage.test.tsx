@@ -185,6 +185,21 @@ describe('SettingsPage — restauration', () => {
     );
     expect(await screen.findByRole('alert')).toHaveTextContent('Copie impossible');
   });
+
+  it('affiche un bouton Restaurer par ligne de sauvegarde automatique', async () => {
+    render(<SettingsPage />);
+    const buttons = await screen.findAllByRole('button', { name: 'Restaurer' });
+    expect(buttons).toHaveLength(mockBackups.length);
+  });
+
+  it('appelle restoreBackup avec le filename au clic sur le bouton de ligne', async () => {
+    const restoreBackup = vi.fn().mockResolvedValue(null);
+    mockApi({ restoreBackup });
+    render(<SettingsPage />);
+    const buttons = await screen.findAllByRole('button', { name: 'Restaurer' });
+    await userEvent.click(buttons[0]);
+    expect(restoreBackup).toHaveBeenCalledWith(mockBackups[0].filename);
+  });
 });
 
 describe('SettingsPage — export Excel', () => {

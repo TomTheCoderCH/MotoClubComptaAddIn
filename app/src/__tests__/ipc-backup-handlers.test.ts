@@ -200,7 +200,7 @@ describe('backup:restore', () => {
     expect(callOrder).toEqual(['close', 'copy']);
   });
 
-  it('copie le fichier sélectionné sur la DB active', async () => {
+  it('copie le fichier sélectionné sur la DB active (via dialog)', async () => {
     mockDbWithClose();
     setupConfirmedRestore();
     await call('backup:restore');
@@ -216,5 +216,25 @@ describe('backup:restore', () => {
     await call('backup:restore');
     expect(openDatabase).toHaveBeenCalledWith('/data');
     expect(mockReload).toHaveBeenCalled();
+  });
+
+  it('saute le dialog si un filename est fourni et copie directement', async () => {
+    mockDbWithClose();
+    vi.mocked(getDbDir).mockReturnValue('/data');
+    vi.mocked(dialog.showMessageBox as ReturnType<typeof vi.fn>).mockResolvedValue({ response: 0 });
+    await call('backup:restore', 'mcy-compta-2025-01-01_00-00.db');
+    expect(dialog.showOpenDialog).not.toHaveBeenCalled();
+    expect(copyFileSync).toHaveBeenCalledWith(
+      path.join('/data', 'backups', 'mcy-compta-2025-01-01_00-00.db'),
+      path.join('/data', 'mcy-compta.db'),
+    );
+  });
+
+  it('retourne null si annulation de confirmation même avec filename fourni', async () => {
+    vi.mocked(getDbDir).mockReturnValue('/data');
+    vi.mocked(dialog.showMessageBox as ReturnType<typeof vi.fn>).mockResolvedValue({ response: 1 });
+    const result = await call('backup:restore', 'mcy-compta-2025-01-01_00-00.db');
+    expect(result).toBeNull();
+    expect(copyFileSync).not.toHaveBeenCalled();
   });
 });

@@ -48,7 +48,7 @@ contextBridge.exposeInMainWorld('api', {
   exportExcel: (fiscalYearId: number) => ipcRenderer.invoke('excel:export', fiscalYearId),
 
   // Restauration
-  restoreBackup: (): Promise<null> => ipcRenderer.invoke('backup:restore'),
+  restoreBackup: (filename?: string): Promise<null> => ipcRenderer.invoke('backup:restore', filename),
 
   // Version du schéma
   getSchemaVersion: (): Promise<number> => ipcRenderer.invoke('db:getSchemaVersion'),
@@ -77,6 +77,6 @@ export type ElectronAPI = {
   chooseDataDir:  () => Promise<boolean | null>;
   changeDataDir:  () => Promise<boolean | null>;
   exportExcel: (fiscalYearId: number) => Promise<{ path: string } | { error: string } | null>;
-  restoreBackup:    () => Promise<null>;
+  restoreBackup:    (filename?: string) => Promise<null>;
   getSchemaVersion: () => Promise<number>;
 };
