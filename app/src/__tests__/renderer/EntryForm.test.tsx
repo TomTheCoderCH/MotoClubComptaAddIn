@@ -226,3 +226,25 @@ describe('EntryForm — mode édition', () => {
     expect(screen.queryByRole('heading', { level: 2 })).not.toBeInTheDocument();
   });
 });
+
+describe('EntryForm — tooltips d\'aide par ligne', () => {
+  it('chaque ligne initiale a un tooltip', () => {
+    render(<EntryForm {...defaultProps} />);
+    const tooltips = screen.getAllByRole('tooltip');
+    expect(tooltips).toHaveLength(2);
+  });
+
+  it('sans compte sélectionné : invite à choisir un compte', () => {
+    render(<EntryForm {...defaultProps} />);
+    const tooltips = screen.getAllByRole('tooltip');
+    expect(tooltips[0]).toHaveTextContent("Sélectionnez un compte pour voir l'aide");
+  });
+
+  it('avec compte ACTIF sélectionné : affiche la règle débit/crédit', async () => {
+    render(<EntryForm {...defaultProps} />);
+    const selects = screen.getAllByRole('combobox');
+    await userEvent.selectOptions(selects[0], '1');
+    const tooltips = screen.getAllByRole('tooltip');
+    expect(tooltips[0]).toHaveTextContent('Actif — Débit ↑ augmente · Crédit ↓ diminue');
+  });
+});

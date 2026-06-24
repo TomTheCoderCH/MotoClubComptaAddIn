@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FiscalYear, Account, JournalEntry, JournalEntryLine } from '../types';
 import { parseAmount, formatAmount, validateEntryBalance } from '../lib/accounting';
+import Tooltip from './Tooltip';
 import styles from './EntryForm.module.css';
 
 interface Line {
@@ -24,6 +25,17 @@ function entryLinesToFormLines(lines: JournalEntryLine[]): Line[] {
     debit:  l.debit  != null ? formatAmount(l.debit)  : '',
     credit: l.credit != null ? formatAmount(l.credit) : '',
   }));
+}
+
+function helpForType(type: string | undefined): string {
+  switch (type) {
+    case 'ACTIF':         return 'Actif — Débit ↑ augmente · Crédit ↓ diminue';
+    case 'PASSIF':        return 'Passif — Crédit ↑ augmente · Débit ↓ diminue';
+    case 'FONDS_PROPRES': return 'Capital — Crédit ↑ augmente · Débit ↓ diminue';
+    case 'PRODUIT':       return 'Produit — Crédit ↑ recette · Débit ↓ contre-passation';
+    case 'CHARGE':        return 'Charge — Débit ↑ dépense · Crédit ↓ contre-passation';
+    default:              return "Sélectionnez un compte pour voir l'aide";
+  }
 }
 
 const emptyLine = (): Line => ({ account_id: '', debit: '', credit: '' });
@@ -166,58 +178,64 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
           <span className={styles.colAccount}>Compte</span>
           <span className={styles.colAmount}>Débit CHF</span>
           <span className={styles.colAmount}>Crédit CHF</span>
+          <span className={styles.colTooltipSpacer} />
           <span className={styles.colSpacer} />
         </div>
 
-        {lines.map((line, i) => (
-          <div key={i} className={styles.lineRow}>
-            <select
-              value={line.account_id}
-              onChange={e => updateLine(i, 'account_id', e.target.value)}
-              aria-label={`Compte ligne ${i + 1}`}
-              className={`${styles.input} ${styles.colAccount}`}
-            >
-              <option value="">— choisir un compte —</option>
-              {accounts.map(a => (
-                <option key={a.id} value={a.id}>
-                  {a.number} — {a.name}
-                </option>
-              ))}
-            </select>
+        {lines.map((line, i) => {
+          const acc = accounts.find(a => String(a.id) === line.account_id);
+          return (
+            <div key={i} className={styles.lineRow}>
+              <select
+                value={line.account_id}
+                onChange={e => updateLine(i, 'account_id', e.target.value)}
+                aria-label={`Compte ligne ${i + 1}`}
+                className={`${styles.input} ${styles.colAccount}`}
+              >
+                <option value="">— choisir un compte —</option>
+                {accounts.map(a => (
+                  <option key={a.id} value={a.id}>
+                    {a.number} — {a.name}
+                  </option>
+                ))}
+              </select>
 
-            <input
-              type="number"
-              value={line.debit}
-              onChange={e => updateLine(i, 'debit', e.target.value)}
-              min="0.01"
-              step="0.01"
-              placeholder="0.00"
-              aria-label={`Débit ligne ${i + 1}`}
-              className={`${styles.input} ${styles.colAmount}`}
-            />
+              <input
+                type="number"
+                value={line.debit}
+                onChange={e => updateLine(i, 'debit', e.target.value)}
+                min="0.01"
+                step="0.01"
+                placeholder="0.00"
+                aria-label={`Débit ligne ${i + 1}`}
+                className={`${styles.input} ${styles.colAmount}`}
+              />
 
-            <input
-              type="number"
-              value={line.credit}
-              onChange={e => updateLine(i, 'credit', e.target.value)}
-              min="0.01"
-              step="0.01"
-              placeholder="0.00"
-              aria-label={`Crédit ligne ${i + 1}`}
-              className={`${styles.input} ${styles.colAmount}`}
-            />
+              <input
+                type="number"
+                value={line.credit}
+                onChange={e => updateLine(i, 'credit', e.target.value)}
+                min="0.01"
+                step="0.01"
+                placeholder="0.00"
+                aria-label={`Crédit ligne ${i + 1}`}
+                className={`${styles.input} ${styles.colAmount}`}
+              />
 
-            <button
-              type="button"
-              onClick={() => removeLine(i)}
-              disabled={lines.length <= 2}
-              aria-label={`Supprimer ligne ${i + 1}`}
-              className={styles.removeBtn}
-            >
-              ×
-            </button>
-          </div>
-        ))}
+              <Tooltip content={helpForType(acc?.type)} />
+
+              <button
+                type="button"
+                onClick={() => removeLine(i)}
+                disabled={lines.length <= 2}
+                aria-label={`Supprimer ligne ${i + 1}`}
+                className={styles.removeBtn}
+              >
+                ×
+              </button>
+            </div>
+          );
+        })}
 
         <button type="button" onClick={addLine} className={styles.addLineBtn}>
           + Ajouter une ligne

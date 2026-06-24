@@ -82,6 +82,11 @@
   width: 32px;
 }
 
+.colTooltipSpacer {
+  width: 15px;
+  flex-shrink: 0;
+}
+
 .removeBtn {
   width: 32px;
   height: 32px;
