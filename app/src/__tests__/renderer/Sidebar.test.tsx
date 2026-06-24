@@ -3,6 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Sidebar from '../../components/Sidebar';
+import { HelpContext } from '../../components/HelpContext';
 
 describe('Sidebar — affichage', () => {
   it('affiche les 4 items de navigation', () => {
@@ -58,5 +59,23 @@ describe('Sidebar — navigation', () => {
     render(<Sidebar currentPage="accounts" onNavigate={onNavigate} />);
     await userEvent.click(screen.getByRole('button', { name: 'Journal' }));
     expect(onNavigate).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('Sidebar — bouton Aide', () => {
+  it('affiche le bouton Aide', () => {
+    render(<Sidebar currentPage="accounts" onNavigate={vi.fn()} />);
+    expect(screen.getByRole('button', { name: 'Aide' })).toBeInTheDocument();
+  });
+
+  it('appelle toggle() du contexte au clic sur Aide', async () => {
+    const toggle = vi.fn();
+    render(
+      <HelpContext.Provider value={{ isOpen: false, toggle, close: vi.fn() }}>
+        <Sidebar currentPage="accounts" onNavigate={vi.fn()} />
+      </HelpContext.Provider>
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Aide' }));
+    expect(toggle).toHaveBeenCalledOnce();
   });
 });

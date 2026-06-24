@@ -46,3 +46,30 @@
   color: #93c5fd;
   border-left-color: #3b82f6;
 }
+
+.helpSection {
+  margin-top: auto;
+  padding: 0.5rem 0;
+  border-top: 1px solid #334155;
+}
+
+.helpBtn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.65rem 1rem;
+  background: transparent;
+  color: #64748b;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.helpBtn:hover {
+  background: #253347;
+  color: #94a3b8;
+}
+
+.helpBtn[aria-expanded="true"] {
+  color: #93c5fd;
+}
