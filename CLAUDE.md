@@ -492,6 +492,10 @@ app/
 
 - [x] Vue analytique par groupe + gestion du plan comptable — migration schéma v2 (`account_group TEXT` sur `accounts`), `updateAccount` / `createAccount` / `getAnalyticsData`, page **Plan comptable** éditable (modale create/edit, groupe analytique avec autocomplétion), page **Analytique** (P&L par groupe + section Non groupés), navigation sidebar — 409 tests — plan : `docs/superpowers/plans/2026-06-24-analytics-accounts.md`
 
+- [x] Suppression et édition structurelle d'un compte (numéro/type) sans écritures — `deleteAccount`, `has_entries` via subquery EXISTS, garde côté DB + IPC ; `ConfirmDialog` obligatoire (jamais `window.confirm`)
+- [x] UX AccountsPage : hover sur lignes + séparateurs de classe (Classe 1 — Actifs, etc.)
+- [x] Tableau de bord (`DashboardPage`) — 4 cartes soldes 100/101/102 + résultat P&L hors clôture, sélecteur exercice, page d'accueil par défaut — 450 tests
+
 ### Notes techniques actives
 
 - `@vitejs/plugin-react` est en **v5.x** — ESM-only, compatible grâce au renommage de `vite.renderer.config.ts` → **`vite.renderer.config.mts`** (force le mode ESM dans esbuild). Sans le `.mts`, Vite 5 échoue avec `"ESM file cannot be loaded by require"`. Le `vitest.config.ts` n'est pas affecté car Vitest 4.x utilise son propre Vite 8.x en interne.
