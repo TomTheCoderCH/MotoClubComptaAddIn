@@ -45,8 +45,13 @@ vi.mock('node:fs', () => ({
   copyFileSync: vi.fn(),
 }));
 
+vi.mock('node:child_process', () => ({
+  spawn: vi.fn().mockReturnValue({ unref: vi.fn() }),
+}));
+
 import { dialog, app } from 'electron';
 import { copyFileSync } from 'node:fs';
+import { spawn } from 'node:child_process';
 import { getDb, getDbDir } from '../db';
 import { listBackups, formatBackupFilename, performBackup } from '../backup';
 import { registerIpcHandlers } from '../ipc-handlers';
@@ -54,6 +59,8 @@ import { registerIpcHandlers } from '../ipc-handlers';
 beforeEach(() => {
   handlers.clear();
   vi.resetAllMocks();
+  // resetAllMocks efface mockReturnValue — le rétablir pour spawn
+  vi.mocked(spawn).mockReturnValue({ unref: vi.fn() } as any);
   registerIpcHandlers();
 });
 
@@ -203,11 +210,15 @@ describe('backup:restore', () => {
     );
   });
 
-  it('appelle app.relaunch() et app.exit(0) après restauration réussie', async () => {
+  it('spawne une nouvelle instance et appelle app.exit(0)', async () => {
     mockDbWithClose();
     setupConfirmedRestore();
     await call('backup:restore');
-    expect(app.relaunch).toHaveBeenCalled();
+    expect(spawn).toHaveBeenCalledWith(
+      process.execPath,
+      process.argv.slice(1),
+      { detached: true, stdio: 'ignore' },
+    );
     expect(app.exit).toHaveBeenCalledWith(0);
   });
 });

@@ -1,5 +1,6 @@
 import { ipcMain, dialog, app } from 'electron';
 import { copyFileSync } from 'node:fs';
+import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { exportFiscalYearToExcel } from './excel/export';
 import {
@@ -87,7 +88,7 @@ export function registerIpcHandlers(): void {
       message: 'Remplacer la base de données actuelle et redémarrer ?',
       detail:
         `Fichier sélectionné : ${srcPath}\n\n` +
-        'Une sauvegarde de sécurité sera créée automatiquement avant la restauration.',
+        "Une sauvegarde de sécurité sera créée avant la restauration.",
       buttons: ['Restaurer et redémarrer', 'Annuler'],
       defaultId: 1,
       cancelId: 1,
@@ -104,7 +105,18 @@ export function registerIpcHandlers(): void {
 
     copyFileSync(srcPath, destPath);
 
-    app.relaunch();
+    if (app.isPackaged) {
+      // En production, app.relaunch() est l'API Electron idiomatique
+      app.relaunch();
+    } else {
+      // En développement, electron-forge tue le serveur Vite quand Electron
+      // quitte. Spawner AVANT app.exit(0) garantit que le nouveau process
+      // trouve Vite encore actif.
+      spawn(process.execPath, process.argv.slice(1), {
+        detached: true,
+        stdio: 'ignore',
+      }).unref();
+    }
     app.exit(0);
   });
 
