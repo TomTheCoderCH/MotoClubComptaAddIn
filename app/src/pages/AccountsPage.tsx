@@ -36,6 +36,20 @@ export default function AccountsPage() {
     accounts.map(a => a.account_group).filter((g): g is string => g !== null)
   )].sort();
 
+  const CLASS_LABELS: Record<number, string> = {
+    1: 'Classe 1 — Actifs',
+    2: 'Classe 2 — Passifs & fonds propres',
+    3: 'Classe 3 — Produits',
+    4: 'Classe 4 — Charges',
+    9: 'Classe 9 — Clôture',
+  };
+
+  const byClass = accounts.reduce<Record<number, Account[]>>((acc, a) => {
+    (acc[a.class] ??= []).push(a);
+    return acc;
+  }, {});
+  const classes = Object.keys(byClass).map(Number).sort((a, b) => a - b);
+
   return (
     <div>
       <div className={styles.topBar}>
@@ -59,27 +73,34 @@ export default function AccountsPage() {
           </tr>
         </thead>
         <tbody>
-          {accounts.map(a => (
-            <tr key={a.id} className={`${styles.row} ${!a.is_active ? styles.inactive : ''}`}>
-              <td className={styles.td}><code>{a.number}</code></td>
-              <td className={styles.td}>{a.name}</td>
-              <td className={styles.td}><span className={styles.badge}>{a.type}</span></td>
-              <td className={styles.td}><span className={styles.badge}>{a.normal_balance}</span></td>
-              <td className={styles.td}>
-                {a.account_group && (
-                  <span className={styles.groupTag}>{a.account_group}</span>
-                )}
-              </td>
-              <td className={styles.td}>
-                <button
-                  onClick={() => openEdit(a)}
-                  className={styles.editBtn}
-                  aria-label={`Modifier ${a.name}`}
-                >
-                  Modifier
-                </button>
-              </td>
-            </tr>
+          {classes.map(cls => (
+            <>
+              <tr key={`header-${cls}`} className={styles.groupHeader}>
+                <td colSpan={6}>{CLASS_LABELS[cls] ?? `Classe ${cls}`}</td>
+              </tr>
+              {byClass[cls].map(a => (
+                <tr key={a.id} className={`${styles.row} ${!a.is_active ? styles.inactive : ''}`}>
+                  <td className={styles.td}><code>{a.number}</code></td>
+                  <td className={styles.td}>{a.name}</td>
+                  <td className={styles.td}><span className={styles.badge}>{a.type}</span></td>
+                  <td className={styles.td}><span className={styles.badge}>{a.normal_balance}</span></td>
+                  <td className={styles.td}>
+                    {a.account_group && (
+                      <span className={styles.groupTag}>{a.account_group}</span>
+                    )}
+                  </td>
+                  <td className={styles.td}>
+                    <button
+                      onClick={() => openEdit(a)}
+                      className={styles.editBtn}
+                      aria-label={`Modifier ${a.name}`}
+                    >
+                      Modifier
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </>
           ))}
         </tbody>
       </table>

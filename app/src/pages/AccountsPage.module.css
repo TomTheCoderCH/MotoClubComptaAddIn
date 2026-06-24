@@ -45,6 +45,20 @@
   border-bottom: 1px solid #f1f5f9;
 }
 
+.row:hover { background: #f8fafc; }
+
+.groupHeader td {
+  padding: 0.35rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
 .td {
   padding: 0.5rem 1rem;
   color: #334155;
