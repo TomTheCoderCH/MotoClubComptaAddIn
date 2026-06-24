@@ -141,6 +141,22 @@ describe('db:getSchemaVersion', () => {
 });
 
 describe('backup:restore', () => {
+  function mockDbWithClose() {
+    const mockClose = vi.fn();
+    vi.mocked(getDb).mockReturnValue({ close: mockClose } as any);
+    return mockClose;
+  }
+
+  function setupConfirmedRestore() {
+    vi.mocked(getDbDir).mockReturnValue('/data');
+    vi.mocked(dialog.showOpenDialog as ReturnType<typeof vi.fn>).mockResolvedValue({
+      canceled: false, filePaths: ['/backups/mcy.db'],
+    });
+    vi.mocked(dialog.showMessageBox as ReturnType<typeof vi.fn>).mockResolvedValue({
+      response: 0,
+    });
+  }
+
   it('retourne null si le dialog de sélection est annulé', async () => {
     vi.mocked(dialog.showOpenDialog as ReturnType<typeof vi.fn>).mockResolvedValue({
       canceled: true, filePaths: [],
@@ -161,27 +177,25 @@ describe('backup:restore', () => {
   });
 
   it('effectue un backup de sécurité avant la restauration', async () => {
-    vi.mocked(getDbDir).mockReturnValue('/data');
-    vi.mocked(getDb).mockReturnValue({} as any);
-    vi.mocked(dialog.showOpenDialog as ReturnType<typeof vi.fn>).mockResolvedValue({
-      canceled: false, filePaths: ['/backups/mcy.db'],
-    });
-    vi.mocked(dialog.showMessageBox as ReturnType<typeof vi.fn>).mockResolvedValue({
-      response: 0,
-    });
+    mockDbWithClose();
+    setupConfirmedRestore();
     await call('backup:restore');
-    expect(performBackup).toHaveBeenCalledWith({}, path.join('/data', 'backups'));
+    expect(performBackup).toHaveBeenCalledWith({ close: expect.any(Function) }, path.join('/data', 'backups'));
+  });
+
+  it('ferme la DB avant de copier le fichier', async () => {
+    const mockClose = mockDbWithClose();
+    setupConfirmedRestore();
+    const callOrder: string[] = [];
+    mockClose.mockImplementation(() => callOrder.push('close'));
+    vi.mocked(copyFileSync).mockImplementation(() => { callOrder.push('copy'); });
+    await call('backup:restore');
+    expect(callOrder).toEqual(['close', 'copy']);
   });
 
   it('copie le fichier sélectionné sur la DB active', async () => {
-    vi.mocked(getDbDir).mockReturnValue('/data');
-    vi.mocked(getDb).mockReturnValue({} as any);
-    vi.mocked(dialog.showOpenDialog as ReturnType<typeof vi.fn>).mockResolvedValue({
-      canceled: false, filePaths: ['/backups/mcy.db'],
-    });
-    vi.mocked(dialog.showMessageBox as ReturnType<typeof vi.fn>).mockResolvedValue({
-      response: 0,
-    });
+    mockDbWithClose();
+    setupConfirmedRestore();
     await call('backup:restore');
     expect(copyFileSync).toHaveBeenCalledWith(
       '/backups/mcy.db',
@@ -190,14 +204,8 @@ describe('backup:restore', () => {
   });
 
   it('appelle app.relaunch() et app.exit(0) après restauration réussie', async () => {
-    vi.mocked(getDbDir).mockReturnValue('/data');
-    vi.mocked(getDb).mockReturnValue({} as any);
-    vi.mocked(dialog.showOpenDialog as ReturnType<typeof vi.fn>).mockResolvedValue({
-      canceled: false, filePaths: ['/backups/mcy.db'],
-    });
-    vi.mocked(dialog.showMessageBox as ReturnType<typeof vi.fn>).mockResolvedValue({
-      response: 0,
-    });
+    mockDbWithClose();
+    setupConfirmedRestore();
     await call('backup:restore');
     expect(app.relaunch).toHaveBeenCalled();
     expect(app.exit).toHaveBeenCalledWith(0);

@@ -98,6 +98,10 @@ export function registerIpcHandlers(): void {
     await performBackup(getDb(), backupDir);
 
     const destPath = path.join(getDbDir(), 'mcy-compta.db');
+
+    // Fermer la connexion avant d'écraser le fichier (sinon EPERM sur Windows)
+    getDb().close();
+
     copyFileSync(srcPath, destPath);
 
     app.relaunch();
