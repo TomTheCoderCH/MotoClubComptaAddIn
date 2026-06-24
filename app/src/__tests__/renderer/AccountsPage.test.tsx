@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Account } from '../../types';
 import AccountsPage from '../../pages/AccountsPage';
@@ -127,28 +127,33 @@ describe('AccountsPage — suppression et champs avancés', () => {
     expect(screen.queryByRole('button', { name: /Supprimer/ })).not.toBeInTheDocument();
   });
 
-  it('appelle deleteAccount après confirmation', async () => {
+  it('appelle deleteAccount après confirmation via ConfirmDialog', async () => {
     const deleteAccount = vi.fn().mockResolvedValue(undefined);
     mockApi({ deleteAccount });
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     const user = userEvent.setup();
     render(<AccountsPage />);
     const btns = await screen.findAllByRole('button', { name: /Modifier/ });
     await user.click(btns[1]);
     await user.click(screen.getByRole('button', { name: /Supprimer/ }));
+    // ConfirmDialog apparaît
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Confirmer/ }));
     await waitFor(() => expect(deleteAccount).toHaveBeenCalledWith(mockAccounts[1].id));
   });
 
-  it('ne supprime pas si l\'utilisateur annule la confirmation', async () => {
+  it('ne supprime pas si l\'utilisateur annule dans ConfirmDialog', async () => {
     const deleteAccount = vi.fn();
     mockApi({ deleteAccount });
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
     const user = userEvent.setup();
     render(<AccountsPage />);
     const btns = await screen.findAllByRole('button', { name: /Modifier/ });
     await user.click(btns[1]);
     await user.click(screen.getByRole('button', { name: /Supprimer/ }));
+    const dialog = screen.getByRole('alertdialog');
+    expect(dialog).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: /Annuler/ }));
     expect(deleteAccount).not.toHaveBeenCalled();
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
   it('affiche les champs numéro et type éditables quand has_entries = false', async () => {

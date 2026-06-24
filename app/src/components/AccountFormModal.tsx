@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Account, AccountType, UpdateAccountPayload, CreateAccountPayload } from '../types';
+import ConfirmDialog from './ConfirmDialog';
 import styles from './AccountFormModal.module.css';
 
 const ACCOUNT_TYPES: AccountType[] = ['ACTIF', 'PASSIF', 'FONDS_PROPRES', 'PRODUIT', 'CHARGE'];
@@ -26,9 +27,10 @@ export default function AccountFormModal({ account, existingGroups, onClose, onS
   const [description,  setDescription]  = useState(account?.description ?? '');
   const [accountGroup, setAccountGroup] = useState(account?.account_group ?? '');
   const [isActive,     setIsActive]     = useState(account?.is_active !== false);
-  const [submitting,   setSubmitting]   = useState(false);
-  const [deleting,     setDeleting]     = useState(false);
-  const [error,        setError]        = useState<string | null>(null);
+  const [submitting,        setSubmitting]        = useState(false);
+  const [deleting,          setDeleting]          = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [error,             setError]             = useState<string | null>(null);
 
   const canSubmit = name.trim() !== '' && number.trim() !== '' && !submitting && !deleting;
 
@@ -68,8 +70,8 @@ export default function AccountFormModal({ account, existingGroups, onClose, onS
     }
   }
 
-  async function handleDelete() {
-    if (!window.confirm(`Supprimer le compte ${account!.number} — ${account!.name} ? Cette action est irréversible.`)) return;
+  async function confirmDelete() {
+    setShowDeleteConfirm(false);
     setError(null);
     setDeleting(true);
     try {
@@ -86,6 +88,14 @@ export default function AccountFormModal({ account, existingGroups, onClose, onS
   const showTypeSelect  = !isEdit || canEditStructure;
 
   return (
+    <>
+    {showDeleteConfirm && (
+      <ConfirmDialog
+        message={`Supprimer le compte ${account!.number} — ${account!.name} ? Cette action est irréversible.`}
+        onConfirm={confirmDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
+    )}
     <div className={styles.overlay} role="dialog" aria-modal="true">
       <div className={styles.modal}>
         <h2 className={styles.h2}>
@@ -197,7 +207,7 @@ export default function AccountFormModal({ account, existingGroups, onClose, onS
             {canEditStructure && (
               <button
                 type="button"
-                onClick={handleDelete}
+                onClick={() => setShowDeleteConfirm(true)}
                 disabled={deleting || submitting}
                 className={styles.deleteBtn}
               >
@@ -214,5 +224,6 @@ export default function AccountFormModal({ account, existingGroups, onClose, onS
         </form>
       </div>
     </div>
+    </>
   );
 }
