@@ -482,6 +482,7 @@ app/
 - [x] Migration styles inline → CSS Modules — 14 composants/pages migrés, 318 tests — plan : `docs/superpowers/plans/2026-06-23-css-modules-migration.md`
 
 - [x] Système d'aide : Tooltip dynamique par ligne (EntryForm) + drawer latéral global (F1 / bouton sidebar) — 334 tests — spec : `docs/superpowers/specs/2026-06-24-help-system-design.md`
+- [x] Flèches ▲▼ colorées sur les inputs débit/crédit de l'EntryForm selon le type de compte — wrapper `.amountWrapper` avec `data-effect="increase|decrease"` + CSS `::after` (▲ vert / ▼ rouge) — 362 tests
 
 - [x] Migrations de schéma SQLite : `db/schema-migrations.ts` — `PRAGMA user_version` + tableau `MIGRATIONS[]`, appelé dans `openDatabase()` après `initSchema()`. Version actuelle : 1 (schéma initial). Pour ajouter une migration : ajouter `{ version: N, description: '...', sql: '...' }` au tableau — 339 tests
 - [x] Restauration depuis une sauvegarde — bouton dialog libre + bouton par ligne de sauvegarde automatique dans SettingsPage ; handler `backup:restore(filename?)` (backup de sécurité, `close()` + `copyFileSync` + `openDatabase()` + `webContents.reload()`) — 360 tests
