@@ -78,6 +78,42 @@
   text-align: right;
 }
 
+.amountWrapper {
+  position: relative;
+  width: 110px;
+}
+
+.amountWrapper input {
+  width: 100%;
+  box-sizing: border-box;
+  text-align: right;
+  padding-right: 1.4rem;
+}
+
+.amountWrapper[data-effect="increase"]::after {
+  content: '▲';
+  position: absolute;
+  right: 0.35rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #16a34a;
+  font-size: 0.6rem;
+  pointer-events: none;
+  line-height: 1;
+}
+
+.amountWrapper[data-effect="decrease"]::after {
+  content: '▼';
+  position: absolute;
+  right: 0.35rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #dc2626;
+  font-size: 0.6rem;
+  pointer-events: none;
+  line-height: 1;
+}
+
 .colSpacer {
   width: 32px;
 }

@@ -184,6 +184,8 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
 
         {lines.map((line, i) => {
           const acc = accounts.find(a => String(a.id) === line.account_id);
+          const debitEffect  = acc ? (acc.normal_balance === 'DEBIT'  ? 'increase' : 'decrease') : undefined;
+          const creditEffect = acc ? (acc.normal_balance === 'CREDIT' ? 'increase' : 'decrease') : undefined;
           return (
             <div key={i} className={styles.lineRow}>
               <select
@@ -200,27 +202,31 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
                 ))}
               </select>
 
-              <input
-                type="number"
-                value={line.debit}
-                onChange={e => updateLine(i, 'debit', e.target.value)}
-                min="0.01"
-                step="0.01"
-                placeholder="0.00"
-                aria-label={`Débit ligne ${i + 1}`}
-                className={`${styles.input} ${styles.colAmount}`}
-              />
+              <div className={styles.amountWrapper} data-effect={debitEffect}>
+                <input
+                  type="number"
+                  value={line.debit}
+                  onChange={e => updateLine(i, 'debit', e.target.value)}
+                  min="0.01"
+                  step="0.01"
+                  placeholder="0.00"
+                  aria-label={`Débit ligne ${i + 1}`}
+                  className={styles.input}
+                />
+              </div>
 
-              <input
-                type="number"
-                value={line.credit}
-                onChange={e => updateLine(i, 'credit', e.target.value)}
-                min="0.01"
-                step="0.01"
-                placeholder="0.00"
-                aria-label={`Crédit ligne ${i + 1}`}
-                className={`${styles.input} ${styles.colAmount}`}
-              />
+              <div className={styles.amountWrapper} data-effect={creditEffect}>
+                <input
+                  type="number"
+                  value={line.credit}
+                  onChange={e => updateLine(i, 'credit', e.target.value)}
+                  min="0.01"
+                  step="0.01"
+                  placeholder="0.00"
+                  aria-label={`Crédit ligne ${i + 1}`}
+                  className={styles.input}
+                />
+              </div>
 
               <Tooltip content={helpForType(acc?.type)} />
 
