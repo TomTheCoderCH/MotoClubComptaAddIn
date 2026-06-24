@@ -127,7 +127,7 @@ Le classeur contient 11 feuilles correspondant aux comptes suivants :
 - **Plan comptable :** libre, adapté au club, plus détaillé que l'Excel actuel (voir section dédiée)
 - **Devises :** CHF uniquement — paiements EUR convertis automatiquement par la banque (carte VISA), montant CHF saisi directement
 
-- **Sauvegarde :** backup automatique à chaque fermeture + bouton export manuel (voir section dédiée)
+- **Sauvegarde :** backup automatique à la fermeture **uniquement si des modifications ont eu lieu** (`total_changes()`) + bouton export manuel (voir section dédiée)
 
 ---
 
@@ -341,7 +341,8 @@ La configuration du chemin est stockée séparément dans `%APPDATA%\MCY Compta\
 
 ### Backup automatique
 
-- Déclenché à **chaque fermeture** de l'application
+- Déclenché à la fermeture **uniquement si la session a modifié la DB**
+- Détection via `total_changes()` (SQLite) : valeur capturée après `openDatabase()` (post-seed/migrations), comparée au moment du `before-quit` — si égale, aucun backup créé
 - Utilise l'API `backup()` de `better-sqlite3` (cohérent même base ouverte)
 - Fichiers nommés `mcy-compta-YYYY-MM-DD_HH-mm.db`
 - **30 dernières sauvegardes** conservées, les plus anciennes supprimées automatiquement
@@ -485,6 +486,7 @@ app/
 - [x] Migrations de schéma SQLite : `db/schema-migrations.ts` — `PRAGMA user_version` + tableau `MIGRATIONS[]`, appelé dans `openDatabase()` après `initSchema()`. Version actuelle : 1 (schéma initial). Pour ajouter une migration : ajouter `{ version: N, description: '...', sql: '...' }` au tableau — 339 tests
 - [x] Restauration depuis une sauvegarde — bouton dialog libre + bouton par ligne de sauvegarde automatique dans SettingsPage ; handler `backup:restore(filename?)` (backup de sécurité, `close()` + `copyFileSync` + `openDatabase()` + `webContents.reload()`) — 360 tests
 - [x] Version du schéma SQLite — `schemaVersion` dans `BackupInfo` (lecture header SQLite offset 60, sans connexion DB), handler `db:getSchemaVersion`, colonne "Ver." dans la liste des sauvegardes, version DB courante dans la section Base de données — 360 tests
+- [x] Backup automatique conditionnel — `hasDbChanges()` via `total_changes()` SQLite (snapshot post-`openDatabase()`, comparé dans `before-quit`) ; aucun backup si session en lecture seule — 362 tests
 
 ### Notes techniques actives
 
