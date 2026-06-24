@@ -480,6 +480,8 @@ app/
 
 - [x] Système d'aide : Tooltip dynamique par ligne (EntryForm) + drawer latéral global (F1 / bouton sidebar) — 334 tests — spec : `docs/superpowers/specs/2026-06-24-help-system-design.md`
 
+- [x] Migrations de schéma SQLite : `db/schema-migrations.ts` — `PRAGMA user_version` + tableau `MIGRATIONS[]`, appelé dans `openDatabase()` après `initSchema()`. Version actuelle : 1 (schéma initial). Pour ajouter une migration : ajouter `{ version: N, description: '...', sql: '...' }` au tableau — 339 tests
+
 ### Notes techniques actives
 
 - `@vitejs/plugin-react` est en **v5.x** — ESM-only, compatible grâce au renommage de `vite.renderer.config.ts` → **`vite.renderer.config.mts`** (force le mode ESM dans esbuild). Sans le `.mts`, Vite 5 échoue avec `"ESM file cannot be loaded by require"`. Le `vitest.config.ts` n'est pas affecté car Vitest 4.x utilise son propre Vite 8.x en interne.

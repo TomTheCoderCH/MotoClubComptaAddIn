@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import path from 'node:path';
 import { app } from 'electron';
 import { initSchema } from './schema';
+import { runSchemaMigrations } from './schema-migrations';
 import { seedAccountsIfEmpty } from './seed';
 import { validateEntryBalance } from '../lib/accounting';
 import type {
@@ -33,6 +34,7 @@ export function openDatabase(dataPath?: string): Database.Database {
   if (dataPath === ':memory:') {
     db = new Database(':memory:');
     initSchema(db);
+    runSchemaMigrations(db);
     seedAccountsIfEmpty(db);
     return db;
   }
@@ -47,6 +49,7 @@ export function openDatabase(dataPath?: string): Database.Database {
 
   db = new Database(dbPath);
   initSchema(db);
+  runSchemaMigrations(db);
   seedAccountsIfEmpty(db);
   return db;
 }
