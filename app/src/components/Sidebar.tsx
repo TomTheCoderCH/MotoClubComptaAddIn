@@ -41,7 +41,7 @@ export default function Sidebar({ currentPage, onNavigate }: SidebarProps) {
           aria-expanded={isOpen}
           className={styles.helpBtn}
         >
-          ? Aide
+          Aide
         </button>
       </div>
     </nav>
