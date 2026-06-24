@@ -3,6 +3,12 @@ import path from 'node:path';
 
 const handlers = new Map<string, (event: null, ...args: unknown[]) => unknown>();
 
+const { mockReload, mockGetAllWindows } = vi.hoisted(() => {
+  const mockReload = vi.fn();
+  const mockGetAllWindows = vi.fn(() => [{ webContents: { reload: mockReload } }]);
+  return { mockReload, mockGetAllWindows };
+});
+
 vi.mock('electron', () => ({
   ipcMain: {
     handle: (channel: string, fn: (event: null, ...args: unknown[]) => unknown) => {
@@ -14,9 +20,8 @@ vi.mock('electron', () => ({
     showOpenDialog:  vi.fn(),
     showMessageBox:  vi.fn(),
   },
-  app: {
-    relaunch: vi.fn(),
-    exit:     vi.fn(),
+  BrowserWindow: {
+    getAllWindows: mockGetAllWindows,
   },
 }));
 
@@ -30,8 +35,9 @@ vi.mock('../db', () => ({
   updateJournalEntry: vi.fn(),
   deleteJournalEntry: vi.fn(),
   getAccountBalances: vi.fn(),
-  getDb:    vi.fn(),
-  getDbDir: vi.fn(),
+  getDb:          vi.fn(),
+  getDbDir:       vi.fn(),
+  openDatabase:   vi.fn(),
 }));
 
 vi.mock('../backup', () => ({
@@ -45,22 +51,16 @@ vi.mock('node:fs', () => ({
   copyFileSync: vi.fn(),
 }));
 
-vi.mock('node:child_process', () => ({
-  spawn: vi.fn().mockReturnValue({ unref: vi.fn() }),
-}));
-
-import { dialog, app } from 'electron';
+import { dialog } from 'electron';
 import { copyFileSync } from 'node:fs';
-import { spawn } from 'node:child_process';
-import { getDb, getDbDir } from '../db';
+import { getDb, getDbDir, openDatabase } from '../db';
 import { listBackups, formatBackupFilename, performBackup } from '../backup';
 import { registerIpcHandlers } from '../ipc-handlers';
 
 beforeEach(() => {
   handlers.clear();
   vi.resetAllMocks();
-  // resetAllMocks efface mockReturnValue — le rétablir pour spawn
-  vi.mocked(spawn).mockReturnValue({ unref: vi.fn() } as any);
+  mockGetAllWindows.mockReturnValue([{ webContents: { reload: mockReload } }]);
   registerIpcHandlers();
 });
 
@@ -210,15 +210,11 @@ describe('backup:restore', () => {
     );
   });
 
-  it('spawne une nouvelle instance et appelle app.exit(0)', async () => {
+  it('réouvre la DB et recharge la fenêtre après la restauration', async () => {
     mockDbWithClose();
     setupConfirmedRestore();
     await call('backup:restore');
-    expect(spawn).toHaveBeenCalledWith(
-      process.execPath,
-      process.argv.slice(1),
-      { detached: true, stdio: 'ignore' },
-    );
-    expect(app.exit).toHaveBeenCalledWith(0);
+    expect(openDatabase).toHaveBeenCalledWith('/data');
+    expect(mockReload).toHaveBeenCalled();
   });
 });

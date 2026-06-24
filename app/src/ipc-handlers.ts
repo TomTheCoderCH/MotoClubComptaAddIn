@@ -1,6 +1,5 @@
-import { ipcMain, dialog, app } from 'electron';
+import { ipcMain, dialog, BrowserWindow } from 'electron';
 import { copyFileSync } from 'node:fs';
-import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { exportFiscalYearToExcel } from './excel/export';
 import {
@@ -105,19 +104,10 @@ export function registerIpcHandlers(): void {
 
     copyFileSync(srcPath, destPath);
 
-    if (app.isPackaged) {
-      // En production, app.relaunch() est l'API Electron idiomatique
-      app.relaunch();
-    } else {
-      // En développement, electron-forge tue le serveur Vite quand Electron
-      // quitte. Spawner AVANT app.exit(0) garantit que le nouveau process
-      // trouve Vite encore actif.
-      spawn(process.execPath, process.argv.slice(1), {
-        detached: true,
-        stdio: 'ignore',
-      }).unref();
-    }
-    app.exit(0);
+    // Réouvrir la DB depuis le fichier restauré, puis recharger le renderer —
+    // pas de redémarrage du process, fonctionne en dev et en production.
+    openDatabase(getDbDir());
+    BrowserWindow.getAllWindows()[0]?.webContents.reload();
   });
 
   // ─── Paramètres ──────────────────────────────────────────────────────────────
