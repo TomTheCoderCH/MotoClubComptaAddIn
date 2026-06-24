@@ -1,4 +1,5 @@
-import { ipcMain, dialog } from 'electron';
+import { ipcMain, dialog, app } from 'electron';
+import { copyFileSync } from 'node:fs';
 import path from 'node:path';
 import { exportFiscalYearToExcel } from './excel/export';
 import {
@@ -20,7 +21,7 @@ import {
   getDb,
   getDbDir,
 } from './db';
-import { listBackups, formatBackupFilename } from './backup';
+import { listBackups, formatBackupFilename, performBackup } from './backup';
 import type { CreateJournalEntryPayload, UpdateJournalEntryPayload, OpeningBalanceLine } from './types';
 import { readSettings, writeSettings } from './settings';
 import { migrateDataDir } from './migrate';
@@ -63,6 +64,39 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('backup:getDbPath', () => {
     return path.join(getDbDir(), 'mcy-compta.db');
+  });
+
+  ipcMain.handle('backup:restore', async () => {
+    const picked = await dialog.showOpenDialog({
+      title: 'Restaurer une sauvegarde',
+      filters: [{ name: 'Base de données SQLite', extensions: ['db'] }],
+      properties: ['openFile'],
+    });
+    if (picked.canceled || !picked.filePaths[0]) return null;
+
+    const srcPath = picked.filePaths[0];
+
+    const confirmed = await dialog.showMessageBox({
+      type: 'warning',
+      title: 'Restaurer une sauvegarde',
+      message: 'Remplacer la base de données actuelle et redémarrer ?',
+      detail:
+        `Fichier sélectionné : ${srcPath}\n\n` +
+        'Une sauvegarde de sécurité sera créée automatiquement avant la restauration.',
+      buttons: ['Restaurer et redémarrer', 'Annuler'],
+      defaultId: 1,
+      cancelId: 1,
+    });
+    if (confirmed.response !== 0) return null;
+
+    const backupDir = path.join(getDbDir(), 'backups');
+    await performBackup(getDb(), backupDir);
+
+    const destPath = path.join(getDbDir(), 'mcy-compta.db');
+    copyFileSync(srcPath, destPath);
+
+    app.relaunch();
+    app.exit(0);
   });
 
   // ─── Paramètres ──────────────────────────────────────────────────────────────

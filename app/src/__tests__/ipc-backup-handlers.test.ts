@@ -10,7 +10,13 @@ vi.mock('electron', () => ({
     },
   },
   dialog: {
-    showSaveDialog: vi.fn(),
+    showSaveDialog:  vi.fn(),
+    showOpenDialog:  vi.fn(),
+    showMessageBox:  vi.fn(),
+  },
+  app: {
+    relaunch: vi.fn(),
+    exit:     vi.fn(),
   },
 }));
 
@@ -29,13 +35,20 @@ vi.mock('../db', () => ({
 }));
 
 vi.mock('../backup', () => ({
-  listBackups:         vi.fn(),
+  listBackups:          vi.fn(),
   formatBackupFilename: vi.fn(),
+  performBackup:        vi.fn().mockResolvedValue('/data/backups/mcy-compta-2025-01-01_00-00.db'),
 }));
 
-import { dialog } from 'electron';
+vi.mock('node:fs', () => ({
+  default: { copyFileSync: vi.fn() },
+  copyFileSync: vi.fn(),
+}));
+
+import { dialog, app } from 'electron';
+import { copyFileSync } from 'node:fs';
 import { getDb, getDbDir } from '../db';
-import { listBackups, formatBackupFilename } from '../backup';
+import { listBackups, formatBackupFilename, performBackup } from '../backup';
 import { registerIpcHandlers } from '../ipc-handlers';
 
 beforeEach(() => {
@@ -108,5 +121,75 @@ describe('backup:getDbPath', () => {
   it('propage une erreur si getDbDir lance', async () => {
     vi.mocked(getDbDir).mockImplementation(() => { throw new Error('Non initialisé'); });
     await expect(call('backup:getDbPath')).rejects.toThrow('Non initialisé');
+  });
+});
+
+describe('backup:restore — enregistrement', () => {
+  it('enregistre le canal backup:restore', () => {
+    expect(handlers.has('backup:restore')).toBe(true);
+  });
+});
+
+describe('backup:restore', () => {
+  it('retourne null si le dialog de sélection est annulé', async () => {
+    vi.mocked(dialog.showOpenDialog as ReturnType<typeof vi.fn>).mockResolvedValue({
+      canceled: true, filePaths: [],
+    });
+    const result = await call('backup:restore');
+    expect(result).toBeNull();
+  });
+
+  it("retourne null si l'utilisateur annule la confirmation", async () => {
+    vi.mocked(dialog.showOpenDialog as ReturnType<typeof vi.fn>).mockResolvedValue({
+      canceled: false, filePaths: ['/backups/mcy.db'],
+    });
+    vi.mocked(dialog.showMessageBox as ReturnType<typeof vi.fn>).mockResolvedValue({
+      response: 1,
+    });
+    const result = await call('backup:restore');
+    expect(result).toBeNull();
+  });
+
+  it('effectue un backup de sécurité avant la restauration', async () => {
+    vi.mocked(getDbDir).mockReturnValue('/data');
+    vi.mocked(getDb).mockReturnValue({} as any);
+    vi.mocked(dialog.showOpenDialog as ReturnType<typeof vi.fn>).mockResolvedValue({
+      canceled: false, filePaths: ['/backups/mcy.db'],
+    });
+    vi.mocked(dialog.showMessageBox as ReturnType<typeof vi.fn>).mockResolvedValue({
+      response: 0,
+    });
+    await call('backup:restore');
+    expect(performBackup).toHaveBeenCalledWith({}, path.join('/data', 'backups'));
+  });
+
+  it('copie le fichier sélectionné sur la DB active', async () => {
+    vi.mocked(getDbDir).mockReturnValue('/data');
+    vi.mocked(getDb).mockReturnValue({} as any);
+    vi.mocked(dialog.showOpenDialog as ReturnType<typeof vi.fn>).mockResolvedValue({
+      canceled: false, filePaths: ['/backups/mcy.db'],
+    });
+    vi.mocked(dialog.showMessageBox as ReturnType<typeof vi.fn>).mockResolvedValue({
+      response: 0,
+    });
+    await call('backup:restore');
+    expect(copyFileSync).toHaveBeenCalledWith(
+      '/backups/mcy.db',
+      path.join('/data', 'mcy-compta.db'),
+    );
+  });
+
+  it('appelle app.relaunch() et app.exit(0) après restauration réussie', async () => {
+    vi.mocked(getDbDir).mockReturnValue('/data');
+    vi.mocked(getDb).mockReturnValue({} as any);
+    vi.mocked(dialog.showOpenDialog as ReturnType<typeof vi.fn>).mockResolvedValue({
+      canceled: false, filePaths: ['/backups/mcy.db'],
+    });
+    vi.mocked(dialog.showMessageBox as ReturnType<typeof vi.fn>).mockResolvedValue({
+      response: 0,
+    });
+    await call('backup:restore');
+    expect(app.relaunch).toHaveBeenCalled();
+    expect(app.exit).toHaveBeenCalledWith(0);
   });
 });
