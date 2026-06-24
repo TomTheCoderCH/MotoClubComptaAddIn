@@ -28,6 +28,7 @@ function mockApi(overrides: Partial<Window['api']> = {}) {
       { id: 1, year: 2025, start_date: '2025-01-01', end_date: '2025-12-31', is_closed: false, created_at: '', hasOpeningBalance: false },
     ]),
     exportExcel:    vi.fn().mockResolvedValue(null),
+    restoreBackup:  vi.fn().mockResolvedValue(null),
     ...overrides,
   });
 }
@@ -130,6 +131,33 @@ describe('SettingsPage — changer le dossier', () => {
     expect(await screen.findByRole('status')).toHaveTextContent('Dossier de données mis à jour');
     const input = await screen.findByLabelText('Chemin de la base de données');
     expect(input).toHaveValue('D:/NewFolder/mcy-compta.db');
+  });
+});
+
+describe('SettingsPage — restauration', () => {
+  it('affiche le bouton "Restaurer depuis une sauvegarde…"', async () => {
+    render(<SettingsPage />);
+    expect(
+      await screen.findByRole('button', { name: /Restaurer depuis une sauvegarde/ })
+    ).toBeInTheDocument();
+  });
+
+  it('appelle window.api.restoreBackup() au clic', async () => {
+    mockApi({ restoreBackup: vi.fn().mockResolvedValue(null) });
+    render(<SettingsPage />);
+    await userEvent.click(
+      await screen.findByRole('button', { name: /Restaurer depuis une sauvegarde/ })
+    );
+    expect(window.api.restoreBackup).toHaveBeenCalledOnce();
+  });
+
+  it("affiche un message d'erreur si restoreBackup() rejette", async () => {
+    mockApi({ restoreBackup: vi.fn().mockRejectedValue(new Error('Copie impossible')) });
+    render(<SettingsPage />);
+    await userEvent.click(
+      await screen.findByRole('button', { name: /Restaurer depuis une sauvegarde/ })
+    );
+    expect(await screen.findByRole('alert')).toHaveTextContent('Copie impossible');
   });
 });
 

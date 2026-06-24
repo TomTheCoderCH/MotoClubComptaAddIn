@@ -46,6 +46,9 @@ contextBridge.exposeInMainWorld('api', {
 
   // Export Excel
   exportExcel: (fiscalYearId: number) => ipcRenderer.invoke('excel:export', fiscalYearId),
+
+  // Restauration
+  restoreBackup: (): Promise<null> => ipcRenderer.invoke('backup:restore'),
 });
 
 // Déclaration TypeScript pour window.api dans le renderer
@@ -71,4 +74,5 @@ export type ElectronAPI = {
   chooseDataDir:  () => Promise<boolean | null>;
   changeDataDir:  () => Promise<boolean | null>;
   exportExcel: (fiscalYearId: number) => Promise<{ path: string } | { error: string } | null>;
+  restoreBackup: () => Promise<null>;
 };

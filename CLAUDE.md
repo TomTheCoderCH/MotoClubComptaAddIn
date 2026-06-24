@@ -481,6 +481,7 @@ app/
 - [x] Système d'aide : Tooltip dynamique par ligne (EntryForm) + drawer latéral global (F1 / bouton sidebar) — 334 tests — spec : `docs/superpowers/specs/2026-06-24-help-system-design.md`
 
 - [x] Migrations de schéma SQLite : `db/schema-migrations.ts` — `PRAGMA user_version` + tableau `MIGRATIONS[]`, appelé dans `openDatabase()` après `initSchema()`. Version actuelle : 1 (schéma initial). Pour ajouter une migration : ajouter `{ version: N, description: '...', sql: '...' }` au tableau — 339 tests
+- [x] Restauration depuis une sauvegarde — bouton dans SettingsPage, handler `backup:restore` (dialog natif, backup de sécurité préalable, `copyFileSync`, `app.relaunch()`) — 348 tests
 
 ### Notes techniques actives
 

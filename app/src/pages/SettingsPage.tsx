@@ -23,6 +23,7 @@ export default function SettingsPage() {
   const [exportPath,   setExportPath]   = useState<string | null>(null);
   const [error,        setError]        = useState<string | null>(null);
   const [changeStatus, setChangeStatus] = useState<ChangeStatus>('idle');
+  const [restoring,    setRestoring]    = useState(false);
   const [fiscalYears,  setFiscalYears]  = useState<FiscalYear[]>([]);
   const [selectedFyId, setSelectedFyId] = useState<number | null>(null);
   const [excelStatus,  setExcelStatus]  = useState<'idle' | 'loading' | 'success' | 'error' | 'cancelled'>('idle');
@@ -74,6 +75,18 @@ export default function SettingsPage() {
     } catch (e) {
       setChangeStatus('idle');
       setError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  async function handleRestore() {
+    setRestoring(true);
+    setError(null);
+    try {
+      await window.api.restoreBackup();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRestoring(false);
     }
   }
 
@@ -152,6 +165,14 @@ export default function SettingsPage() {
         {exportStatus === 'error' && (
           <p className={styles.errorText}>Erreur lors de l&apos;export.</p>
         )}
+
+        <button
+          onClick={handleRestore}
+          disabled={restoring}
+          className={styles.btnSecondary}
+        >
+          {restoring ? 'Restauration en cours…' : 'Restaurer depuis une sauvegarde…'}
+        </button>
 
         <h3 className={styles.h3}>
           Sauvegardes automatiques
