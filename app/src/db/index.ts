@@ -6,10 +6,12 @@ import { runSchemaMigrations } from './schema-migrations';
 import { seedAccountsIfEmpty } from './seed';
 import { validateEntryBalance } from '../lib/accounting';
 import type {
-  Account, FiscalYear, JournalEntry, JournalEntryLine, AccountBalance,
+  Account, AccountType, FiscalYear, JournalEntry, JournalEntryLine, AccountBalance,
   CreateJournalEntryPayload, UpdateJournalEntryPayload,
   OpeningBalanceSuggestion, OpeningBalanceLine,
   ClosingAccountLine, ClosingPreview,
+  UpdateAccountPayload, CreateAccountPayload,
+  AnalyticsAccountRow, AnalyticsGroup, AnalyticsData,
 } from '../types';
 
 let db: Database.Database;
@@ -65,12 +67,110 @@ export function openDatabase(dataPath?: string): Database.Database {
 
 // ─── Comptes ─────────────────────────────────────────────────────────────────
 
+function normalBalanceForType(type: AccountType): 'DEBIT' | 'CREDIT' {
+  return (type === 'ACTIF' || type === 'CHARGE') ? 'DEBIT' : 'CREDIT';
+}
+
 export function getAllAccounts(): Account[] {
   return getDb().prepare('SELECT * FROM accounts ORDER BY number').all() as Account[];
 }
 
 export function getActiveAccounts(): Account[] {
   return getDb().prepare('SELECT * FROM accounts WHERE is_active = 1 ORDER BY number').all() as Account[];
+}
+
+export function updateAccount(payload: UpdateAccountPayload): Account {
+  const { id, name, description, account_group, is_active } = payload;
+  const fields: string[]  = [];
+  const values: unknown[] = [];
+
+  if (name          !== undefined) { fields.push('name = ?');          values.push(name); }
+  if (description   !== undefined) { fields.push('description = ?');   values.push(description); }
+  if (account_group !== undefined) { fields.push('account_group = ?'); values.push(account_group); }
+  if (is_active     !== undefined) { fields.push('is_active = ?');     values.push(is_active ? 1 : 0); }
+
+  if (fields.length === 0) throw new Error('Aucun champ à mettre à jour');
+
+  getDb()
+    .prepare(`UPDATE accounts SET ${fields.join(', ')} WHERE id = ?`)
+    .run(...values, id);
+
+  return getDb().prepare('SELECT * FROM accounts WHERE id = ?').get(id) as Account;
+}
+
+export function createAccount(payload: CreateAccountPayload): Account {
+  const { number, name, type, description, account_group } = payload;
+
+  if (!/^\d/.test(number)) throw new Error(`Numéro de compte invalide : "${number}"`);
+
+  const existing = getDb().prepare('SELECT id FROM accounts WHERE number = ?').get(number);
+  if (existing) throw new Error(`Numéro de compte ${number} déjà utilisé`);
+
+  const cls            = parseInt(number[0], 10);
+  const normal_balance = normalBalanceForType(type);
+
+  const result = getDb()
+    .prepare(`
+      INSERT INTO accounts (number, name, class, type, normal_balance, description, account_group)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `)
+    .run(number, name, cls, type, normal_balance, description ?? null, account_group ?? null);
+
+  return getDb()
+    .prepare('SELECT * FROM accounts WHERE id = ?')
+    .get(result.lastInsertRowid) as Account;
+}
+
+export function getAnalyticsData(fiscalYearId: number): AnalyticsData {
+  type RawRow = {
+    id: number; number: string; name: string;
+    type: string; account_group: string | null;
+    total_debit: number; total_credit: number;
+  };
+
+  const rows = getDb().prepare(`
+    SELECT
+      a.id, a.number, a.name, a.type, a.account_group,
+      SUM(COALESCE(l.debit,  0)) AS total_debit,
+      SUM(COALESCE(l.credit, 0)) AS total_credit
+    FROM accounts a
+    JOIN journal_entry_lines l ON l.account_id = a.id
+    JOIN journal_entries e     ON e.id = l.journal_entry_id
+    WHERE e.fiscal_year_id = ? AND a.class IN (3, 4)
+    GROUP BY a.id
+    ORDER BY a.number
+  `).all(fiscalYearId) as RawRow[];
+
+  const toRow = (r: RawRow): AnalyticsAccountRow => ({
+    id:       r.id,
+    number:   r.number,
+    name:     r.name,
+    type:     r.type as 'PRODUIT' | 'CHARGE',
+    recettes: r.type === 'PRODUIT' ? r.total_credit - r.total_debit : 0,
+    charges:  r.type === 'CHARGE'  ? r.total_debit - r.total_credit : 0,
+  });
+
+  const grouped   = rows.filter(r => r.account_group);
+  const ungrouped = rows.filter(r => !r.account_group);
+
+  const groupMap = new Map<string, RawRow[]>();
+  for (const r of grouped) {
+    const key  = r.account_group!;
+    const list = groupMap.get(key) ?? [];
+    list.push(r);
+    groupMap.set(key, list);
+  }
+
+  const groups: AnalyticsGroup[] = Array.from(groupMap.entries())
+    .sort(([a], [b]) => a.localeCompare(b, 'fr'))
+    .map(([name, accs]) => {
+      const accounts      = accs.map(toRow);
+      const totalRecettes = accounts.reduce((s, r) => s + r.recettes, 0);
+      const totalCharges  = accounts.reduce((s, r) => s + r.charges,  0);
+      return { name, accounts, totalRecettes, totalCharges, resultat: totalRecettes - totalCharges };
+    });
+
+  return { groups, ungrouped: ungrouped.map(toRow) };
 }
 
 // ─── Exercices ────────────────────────────────────────────────────────────────

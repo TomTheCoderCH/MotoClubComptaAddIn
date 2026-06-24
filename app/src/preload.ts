@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { Account, FiscalYear, JournalEntry, JournalEntryLine, AccountBalance, CreateJournalEntryPayload, UpdateJournalEntryPayload, BackupInfo, OpeningBalanceSuggestion, OpeningBalanceLine, ClosingPreview } from './types';
+import type { Account, FiscalYear, JournalEntry, JournalEntryLine, AccountBalance, CreateJournalEntryPayload, UpdateJournalEntryPayload, BackupInfo, OpeningBalanceSuggestion, OpeningBalanceLine, ClosingPreview, UpdateAccountPayload, CreateAccountPayload, AnalyticsData } from './types';
 
 // API exposée au renderer via window.api
 contextBridge.exposeInMainWorld('api', {
@@ -52,6 +52,16 @@ contextBridge.exposeInMainWorld('api', {
 
   // Version du schéma
   getSchemaVersion: (): Promise<number> => ipcRenderer.invoke('db:getSchemaVersion'),
+
+  // Gestion du plan comptable
+  updateAccount: (payload: UpdateAccountPayload): Promise<Account> =>
+    ipcRenderer.invoke('accounts:update', payload),
+  createAccount: (payload: CreateAccountPayload): Promise<Account> =>
+    ipcRenderer.invoke('accounts:create', payload),
+
+  // Analytique
+  getAnalytics: (fiscalYearId: number): Promise<AnalyticsData> =>
+    ipcRenderer.invoke('analytics:get', fiscalYearId),
 });
 
 // Déclaration TypeScript pour window.api dans le renderer
@@ -79,4 +89,7 @@ export type ElectronAPI = {
   exportExcel: (fiscalYearId: number) => Promise<{ path: string } | { error: string } | null>;
   restoreBackup:    (filename?: string) => Promise<null>;
   getSchemaVersion: () => Promise<number>;
+  updateAccount:    (payload: UpdateAccountPayload) => Promise<Account>;
+  createAccount:    (payload: CreateAccountPayload) => Promise<Account>;
+  getAnalytics:     (fiscalYearId: number) => Promise<AnalyticsData>;
 };

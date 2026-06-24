@@ -21,6 +21,9 @@ vi.mock('../db', () => ({
   updateJournalEntry:  vi.fn(),
   deleteJournalEntry:  vi.fn(),
   getAccountBalances:  vi.fn(),
+  updateAccount:       vi.fn(),
+  createAccount:       vi.fn(),
+  getAnalyticsData:    vi.fn(),
 }));
 
 import {
@@ -33,6 +36,9 @@ import {
   updateJournalEntry,
   deleteJournalEntry,
   getAccountBalances,
+  updateAccount,
+  createAccount,
+  getAnalyticsData,
 } from '../db';
 import { registerIpcHandlers } from '../ipc-handlers';
 
@@ -241,5 +247,71 @@ describe('db:getAccountBalances', () => {
   it('propage une erreur de getAccountBalances', async () => {
     vi.mocked(getAccountBalances).mockImplementation(() => { throw new Error('DB indisponible'); });
     await expect(call('db:getAccountBalances', 1)).rejects.toThrow('DB indisponible');
+  });
+});
+
+// ─── accounts:update ────────────────────────────────────────────────────────
+
+describe('accounts:update', () => {
+  it('enregistre le canal accounts:update', () => {
+    expect(handlers.has('accounts:update')).toBe(true);
+  });
+
+  it('délègue à updateAccount et retourne le résultat', async () => {
+    const payload = { id: 1, name: 'Caisse principale' };
+    const updated = { id: 1, name: 'Caisse principale', number: '100' };
+    vi.mocked(updateAccount).mockReturnValue(updated as any);
+    const result = await call('accounts:update', payload);
+    expect(updateAccount).toHaveBeenCalledWith(payload);
+    expect(result).toBe(updated);
+  });
+
+  it('propage une erreur de updateAccount', async () => {
+    vi.mocked(updateAccount).mockImplementation(() => { throw new Error('Aucun champ'); });
+    await expect(call('accounts:update', { id: 1 })).rejects.toThrow('Aucun champ');
+  });
+});
+
+// ─── accounts:create ────────────────────────────────────────────────────────
+
+describe('accounts:create', () => {
+  it('enregistre le canal accounts:create', () => {
+    expect(handlers.has('accounts:create')).toBe(true);
+  });
+
+  it('délègue à createAccount et retourne le résultat', async () => {
+    const payload = { number: '395', name: 'Intérêts', type: 'PRODUIT' };
+    const created = { id: 30, number: '395', name: 'Intérêts' };
+    vi.mocked(createAccount).mockReturnValue(created as any);
+    const result = await call('accounts:create', payload);
+    expect(createAccount).toHaveBeenCalledWith(payload);
+    expect(result).toBe(created);
+  });
+
+  it('propage une erreur de createAccount', async () => {
+    vi.mocked(createAccount).mockImplementation(() => { throw new Error('déjà utilisé'); });
+    await expect(call('accounts:create', { number: '100', name: 'X', type: 'ACTIF' }))
+      .rejects.toThrow('déjà utilisé');
+  });
+});
+
+// ─── analytics:get ──────────────────────────────────────────────────────────
+
+describe('analytics:get', () => {
+  it('enregistre le canal analytics:get', () => {
+    expect(handlers.has('analytics:get')).toBe(true);
+  });
+
+  it('délègue à getAnalyticsData et retourne le résultat', async () => {
+    const data = { groups: [], ungrouped: [] };
+    vi.mocked(getAnalyticsData).mockReturnValue(data as any);
+    const result = await call('analytics:get', 1);
+    expect(getAnalyticsData).toHaveBeenCalledWith(1);
+    expect(result).toBe(data);
+  });
+
+  it('propage une erreur de getAnalyticsData', async () => {
+    vi.mocked(getAnalyticsData).mockImplementation(() => { throw new Error('Exercice introuvable'); });
+    await expect(call('analytics:get', 9999)).rejects.toThrow('Exercice introuvable');
   });
 });

@@ -18,6 +18,11 @@ const MIGRATIONS: Migration[] = [
     description: 'Schéma initial (fiscal_years, accounts, journal_entries, journal_entry_lines)',
     sql:         '',
   },
+  {
+    version:     2,
+    description: 'Ajout account_group sur accounts (groupes analytiques)',
+    sql:         'ALTER TABLE accounts ADD COLUMN account_group TEXT',
+  },
 ];
 
 export function runSchemaMigrations(db: Database.Database): void {

@@ -20,9 +20,12 @@ import {
   openDatabase,
   getDb,
   getDbDir,
+  updateAccount,
+  createAccount,
+  getAnalyticsData,
 } from './db';
 import { listBackups, formatBackupFilename, performBackup } from './backup';
-import type { CreateJournalEntryPayload, UpdateJournalEntryPayload, OpeningBalanceLine } from './types';
+import type { CreateJournalEntryPayload, UpdateJournalEntryPayload, OpeningBalanceLine, UpdateAccountPayload, CreateAccountPayload } from './types';
 import { readSettings, writeSettings } from './settings';
 import { migrateDataDir } from './migrate';
 
@@ -35,6 +38,11 @@ export function registerIpcHandlers(): void {
   // ─── Comptes ────────────────────────────────────────────────────────────────
   ipcMain.handle('db:getAccounts',        () => getAllAccounts());
   ipcMain.handle('db:getActiveAccounts',  () => getActiveAccounts());
+  ipcMain.handle('accounts:update', (_e, payload: UpdateAccountPayload) => updateAccount(payload));
+  ipcMain.handle('accounts:create', (_e, payload: CreateAccountPayload) => createAccount(payload));
+
+  // ─── Analytique ──────────────────────────────────────────────────────────────
+  ipcMain.handle('analytics:get', (_e, fiscalYearId: number) => getAnalyticsData(fiscalYearId));
 
   // ─── Exercices ───────────────────────────────────────────────────────────────
   ipcMain.handle('db:getFiscalYears',    () => getAllFiscalYears());

@@ -23,6 +23,9 @@ import {
   getClosingPreview,
   closeFiscalYear,
   reopenFiscalYear,
+  updateAccount,
+  createAccount,
+  getAnalyticsData,
 } from '../db';
 
 // Chaque describe repart d'une base SQLite en mémoire fraîche
@@ -726,5 +729,150 @@ describe('hasDbChanges', () => {
       ],
     });
     expect(hasDbChanges()).toBe(true);
+  });
+});
+
+describe('Migration v2 — account_group', () => {
+  it('la colonne account_group existe sur accounts', () => {
+    openDatabase(':memory:');
+    const cols = getDb()
+      .prepare('PRAGMA table_info(accounts)')
+      .all() as Array<{ name: string }>;
+    expect(cols.some(c => c.name === 'account_group')).toBe(true);
+  });
+
+  it('account_group vaut null par défaut', () => {
+    openDatabase(':memory:');
+    const acc = getDb()
+      .prepare("SELECT account_group FROM accounts WHERE number = '100'")
+      .get() as { account_group: string | null };
+    expect(acc.account_group).toBeNull();
+  });
+});
+
+describe('updateAccount', () => {
+  beforeEach(freshDb);
+
+  it('renomme un compte', () => {
+    const acc = getAllAccounts().find(a => a.number === '100')!;
+    const updated = updateAccount({ id: acc.id, name: 'Caisse principale' });
+    expect(updated.name).toBe('Caisse principale');
+  });
+
+  it('assigne un groupe analytique', () => {
+    const acc = getAllAccounts().find(a => a.number === '310')!;
+    const updated = updateAccount({ id: acc.id, account_group: 'boissons' });
+    expect(updated.account_group).toBe('boissons');
+  });
+
+  it('efface un groupe analytique (null)', () => {
+    const acc = getAllAccounts().find(a => a.number === '310')!;
+    updateAccount({ id: acc.id, account_group: 'boissons' });
+    const cleared = updateAccount({ id: acc.id, account_group: null });
+    expect(cleared.account_group).toBeNull();
+  });
+
+  it('désactive un compte', () => {
+    const acc = getAllAccounts().find(a => a.number === '490')!;
+    const updated = updateAccount({ id: acc.id, is_active: false });
+    expect(updated.is_active).toBeFalsy();
+  });
+
+  it('lève une erreur si aucun champ fourni', () => {
+    const acc = getAllAccounts().find(a => a.number === '100')!;
+    expect(() => updateAccount({ id: acc.id })).toThrow('Aucun champ');
+  });
+});
+
+describe('createAccount', () => {
+  beforeEach(freshDb);
+
+  it('crée un compte PRODUIT avec solde normal CREDIT déduit', () => {
+    const acc = createAccount({ number: '395', name: 'Intérêts bancaires', type: 'PRODUIT' });
+    expect(acc.number).toBe('395');
+    expect(acc.normal_balance).toBe('CREDIT');
+    expect(acc.class).toBe(3);
+  });
+
+  it('crée un compte CHARGE avec solde normal DEBIT déduit', () => {
+    const acc = createAccount({ number: '495', name: 'Frais divers', type: 'CHARGE' });
+    expect(acc.normal_balance).toBe('DEBIT');
+    expect(acc.class).toBe(4);
+  });
+
+  it('crée un compte avec groupe analytique', () => {
+    const acc = createAccount({
+      number: '312', name: 'Vente café', type: 'PRODUIT', account_group: 'boissons',
+    });
+    expect(acc.account_group).toBe('boissons');
+  });
+
+  it('lève une erreur si numéro déjà utilisé', () => {
+    expect(() => createAccount({ number: '100', name: 'Doublon', type: 'ACTIF' }))
+      .toThrow('déjà utilisé');
+  });
+
+  it('lève une erreur si numéro invalide (non numérique)', () => {
+    expect(() => createAccount({ number: 'ABC', name: 'Test', type: 'PRODUIT' }))
+      .toThrow('invalide');
+  });
+});
+
+describe('getAnalyticsData', () => {
+  beforeEach(freshDb);
+
+  it('retourne groups vide et ungrouped vide sans mouvement', () => {
+    const fy = createFiscalYear(2025);
+    const data = getAnalyticsData(fy.id);
+    expect(data.groups).toHaveLength(0);
+    expect(data.ungrouped).toHaveLength(0);
+  });
+
+  it('place les comptes sans groupe dans ungrouped', () => {
+    const fy = createFiscalYear(2025);
+    const caisse      = getAllAccounts().find(a => a.number === '100')!.id;
+    const cotisations = getAllAccounts().find(a => a.number === '300')!.id;
+    createJournalEntry({
+      fiscal_year_id: fy.id, date: '2025-03-01', description: 'Test',
+      lines: [
+        { account_id: caisse,      debit:  3000 },
+        { account_id: cotisations, credit: 3000 },
+      ],
+    });
+    const data = getAnalyticsData(fy.id);
+    expect(data.ungrouped).toHaveLength(1);
+    expect(data.ungrouped[0].number).toBe('300');
+    expect(data.ungrouped[0].recettes).toBe(3000);
+  });
+
+  it('regroupe les comptes par account_group', () => {
+    const fy = createFiscalYear(2025);
+    const comptes = getAllAccounts();
+    const prod   = comptes.find(a => a.number === '310')!;
+    const charge = comptes.find(a => a.number === '411')!;
+    const caisse = comptes.find(a => a.number === '100')!;
+    updateAccount({ id: prod.id,   account_group: 'boissons' });
+    updateAccount({ id: charge.id, account_group: 'boissons' });
+    createJournalEntry({
+      fiscal_year_id: fy.id, date: '2025-04-01', description: 'Vente boissons',
+      lines: [
+        { account_id: caisse.id, debit:  5000 },
+        { account_id: prod.id,   credit: 5000 },
+      ],
+    });
+    createJournalEntry({
+      fiscal_year_id: fy.id, date: '2025-04-15', description: 'Achat boissons',
+      lines: [
+        { account_id: charge.id, debit:  2000 },
+        { account_id: caisse.id, credit: 2000 },
+      ],
+    });
+    const data = getAnalyticsData(fy.id);
+    expect(data.groups).toHaveLength(1);
+    expect(data.groups[0].name).toBe('boissons');
+    expect(data.groups[0].totalRecettes).toBe(5000);
+    expect(data.groups[0].totalCharges).toBe(2000);
+    expect(data.groups[0].resultat).toBe(3000);
+    expect(data.ungrouped).toHaveLength(0);
   });
 });

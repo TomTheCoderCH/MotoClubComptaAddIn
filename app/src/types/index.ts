@@ -18,6 +18,7 @@ export interface Account {
   type: AccountType;
   normal_balance: NormalBalance;
   description: string | null;
+  account_group: string | null;
   must_be_zero_at_closing: boolean;
   is_closing_account: boolean;
   is_active: boolean;
@@ -132,4 +133,42 @@ export interface ClosingPreview {
   blockers: string[];
   accounts: ClosingAccountLine[];
   netResultCents: number;
+}
+
+export interface UpdateAccountPayload {
+  id: number;
+  name?: string;
+  description?: string;
+  account_group?: string | null;
+  is_active?: boolean;
+}
+
+export interface CreateAccountPayload {
+  number: string;
+  name: string;
+  type: AccountType;
+  description?: string;
+  account_group?: string | null;
+}
+
+export interface AnalyticsAccountRow {
+  id: number;
+  number: string;
+  name: string;
+  type: 'PRODUIT' | 'CHARGE';
+  recettes: number;
+  charges:  number;
+}
+
+export interface AnalyticsGroup {
+  name:           string;
+  accounts:       AnalyticsAccountRow[];
+  totalRecettes:  number;
+  totalCharges:   number;
+  resultat:       number;
+}
+
+export interface AnalyticsData {
+  groups:    AnalyticsGroup[];
+  ungrouped: AnalyticsAccountRow[];
 }

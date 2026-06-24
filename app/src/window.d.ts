@@ -10,6 +10,9 @@ import type {
   OpeningBalanceSuggestion,
   OpeningBalanceLine,
   ClosingPreview,
+  UpdateAccountPayload,
+  CreateAccountPayload,
+  AnalyticsData,
 } from './types';
 
 declare global {
@@ -38,6 +41,9 @@ declare global {
       exportExcel:        (fiscalYearId: number) => Promise<{ path: string } | { error: string } | null>;
       restoreBackup:      (filename?: string) => Promise<null>;
       getSchemaVersion:   () => Promise<number>;
+      updateAccount:      (payload: UpdateAccountPayload) => Promise<Account>;
+      createAccount:      (payload: CreateAccountPayload) => Promise<Account>;
+      getAnalytics:       (fiscalYearId: number) => Promise<AnalyticsData>;
     };
   }
 }
