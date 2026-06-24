@@ -1,0 +1,155 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  z-index: 300;
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 420px;
+  background: #fff;
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+  z-index: 301;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.25rem;
+  color: #64748b;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  line-height: 1;
+}
+
+.closeBtn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.tab {
+  flex: 1;
+  padding: 0.65rem 0.5rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.tab:hover {
+  color: #334155;
+  background: #f8fafc;
+}
+
+.tab[aria-selected="true"] {
+  color: #1d4ed8;
+  border-bottom-color: #3b82f6;
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.25rem;
+  font-size: 0.85rem;
+  color: #334155;
+  line-height: 1.6;
+}
+
+.sectionTitle {
+  margin: 1rem 0 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.sectionTitle:first-child {
+  margin-top: 0;
+}
+
+.para {
+  margin: 0 0 0.75rem;
+}
+
+.steps {
+  margin: 0 0 0.75rem;
+  padding-left: 1.25rem;
+}
+
+.steps li {
+  margin-bottom: 0.6rem;
+}
+
+.helpTable {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 1rem;
+  font-size: 0.8rem;
+}
+
+.helpTable th,
+.helpTable td {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #e2e8f0;
+  text-align: left;
+}
+
+.helpTable th {
+  background: #f1f5f9;
+  font-weight: 600;
+  color: #475569;
+}
+
+.helpTable td:nth-child(2),
+.helpTable td:nth-child(3) {
+  white-space: nowrap;
+  color: #1d4ed8;
+  font-weight: 500;
+}
+
+.glossary {
+  margin: 0 0 0.75rem;
+}
+
+.glossary dt {
+  font-weight: 600;
+  color: #1e293b;
+  margin-top: 0.5rem;
+}
+
+.glossary dd {
+  margin: 0.1rem 0 0 0.75rem;
+  color: #475569;
+}
