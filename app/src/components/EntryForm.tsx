@@ -42,7 +42,7 @@ function helpForType(type: string | undefined): string {
 const emptyLine = (): Line => ({ account_id: '', debit: '', credit: '' });
 
 export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, onCreated, onCancel }: EntryFormProps) {
-  const [date,        setDate]        = useState(editEntry?.date ?? today());
+  const [date,        setDate]        = useState(editEntry?.date ?? defaultDate(fiscalYear));
   const [description, setDescription] = useState(editEntry?.description ?? '');
   const [piece,       setPiece]       = useState(editEntry?.piece ?? '');
   const [lines,       setLines]       = useState<Line[]>(
@@ -53,6 +53,7 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
 
   const accountRefs      = useRef<(HTMLSelectElement | null)[]>([]);
   const focusLastLineRef = useRef(false);
+  const dateRef          = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (focusLastLineRef.current) {
@@ -60,6 +61,11 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
       accountRefs.current[lines.length - 1]?.focus();
     }
   }, [lines.length]);
+
+  const isCreating = !editEntry;
+  useEffect(() => {
+    if (isCreating) dateRef.current?.focus();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const totals = lines.reduce(
     (acc, l) => ({
@@ -160,6 +166,7 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
           <input
             id="entry-date"
             type="date"
+            ref={dateRef}
             value={date}
             onChange={e => setDate(e.target.value)}
             min={fiscalYear.start_date}
@@ -298,7 +305,16 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
   );
 }
 
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
+function defaultDate(fiscalYear: FiscalYear): string {
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  const candidate = yyyy === fiscalYear.year
+    ? `${yyyy}-${mm}-${dd}`
+    : `${fiscalYear.year}-${mm}-${dd}`;
+  if (candidate < fiscalYear.start_date) return fiscalYear.start_date;
+  if (candidate > fiscalYear.end_date)   return fiscalYear.end_date;
+  return candidate;
 }
 

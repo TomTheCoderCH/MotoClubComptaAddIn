@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, within, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, within, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { FiscalYear, Account } from '../../types';
 import EntryForm from '../../components/EntryForm';
@@ -317,5 +317,55 @@ describe('EntryForm — tooltips d\'aide par ligne', () => {
     await userEvent.selectOptions(selects[0], '1');
     const tooltips = screen.getAllByRole('tooltip');
     expect(tooltips[0]).toHaveTextContent('Actif — Débit ↑ augmente · Crédit ↓ diminue');
+  });
+});
+
+describe('EntryForm — date par défaut (defaultDate)', () => {
+  beforeEach(() => { vi.useFakeTimers(); });
+  afterEach(() => { vi.useRealTimers(); });
+
+  it("utilise la date du jour si l'exercice est l'année courante", () => {
+    vi.setSystemTime(new Date(2025, 5, 25, 12, 0, 0)); // 25 juin 2025 local
+    render(<EntryForm {...defaultProps} />);
+    expect(screen.getByLabelText('Date *')).toHaveValue('2025-06-25');
+  });
+
+  it("utilise le même jour/mois dans l'année de l'exercice si différent", () => {
+    vi.setSystemTime(new Date(2026, 5, 25, 12, 0, 0)); // 25 juin 2026 — fy.year = 2025
+    render(<EntryForm {...defaultProps} />);
+    expect(screen.getByLabelText('Date *')).toHaveValue('2025-06-25');
+  });
+
+  it('clamp à start_date si le candidat est antérieur au début de l\'exercice', () => {
+    vi.setSystemTime(new Date(2025, 4, 10, 12, 0, 0)); // 10 mai 2025
+    const fyLate: FiscalYear = { ...fy, start_date: '2025-06-01', end_date: '2025-12-31' };
+    render(<EntryForm {...defaultProps} fiscalYear={fyLate} />);
+    // candidat 2025-05-10 < 2025-06-01 → clamped
+    expect(screen.getByLabelText('Date *')).toHaveValue('2025-06-01');
+  });
+
+  it('clamp à end_date si le candidat est postérieur à la fin de l\'exercice', () => {
+    vi.setSystemTime(new Date(2025, 7, 15, 12, 0, 0)); // 15 août 2025
+    const fyEarly: FiscalYear = { ...fy, start_date: '2025-01-01', end_date: '2025-06-30' };
+    render(<EntryForm {...defaultProps} fiscalYear={fyEarly} />);
+    // candidat 2025-08-15 > 2025-06-30 → clamped
+    expect(screen.getByLabelText('Date *')).toHaveValue('2025-06-30');
+  });
+});
+
+describe('EntryForm — autofocus champ Date', () => {
+  it('le champ Date reçoit le focus au montage en mode création', async () => {
+    render(<EntryForm {...defaultProps} />);
+    await waitFor(() => {
+      expect(document.activeElement).toBe(screen.getByLabelText('Date *'));
+    });
+  });
+
+  it("le champ Date ne reçoit pas le focus au montage en mode édition", async () => {
+    render(<EntryForm {...defaultProps} editEntry={editEntry} />);
+    // Laisser passer un tick pour que l'effect ait pu s'exécuter
+    await waitFor(() => {
+      expect(document.activeElement).not.toBe(screen.getByLabelText('Date *'));
+    });
   });
 });
