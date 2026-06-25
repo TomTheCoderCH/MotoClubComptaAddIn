@@ -352,10 +352,18 @@ function defaultDate(fiscalYear: FiscalYear): string {
   const now = new Date();
   const yyyy = now.getFullYear();
   const mm = String(now.getMonth() + 1).padStart(2, '0');
-  const dd = String(now.getDate()).padStart(2, '0');
-  const candidate = yyyy === fiscalYear.year
-    ? `${yyyy}-${mm}-${dd}`
-    : `${fiscalYear.year}-${mm}-${dd}`;
+
+  let candidate: string;
+  if (yyyy === fiscalYear.year) {
+    candidate = `${yyyy}-${mm}-${String(now.getDate()).padStart(2, '0')}`;
+  } else {
+    // Clamp day to last valid day of the same month in the target year
+    // (handles Feb 29 on a leap year → non-leap fiscal year)
+    const lastDay = new Date(fiscalYear.year, now.getMonth() + 1, 0).getDate();
+    const dd = String(Math.min(now.getDate(), lastDay)).padStart(2, '0');
+    candidate = `${fiscalYear.year}-${mm}-${dd}`;
+  }
+
   if (candidate < fiscalYear.start_date) return fiscalYear.start_date;
   if (candidate > fiscalYear.end_date)   return fiscalYear.end_date;
   return candidate;

@@ -351,6 +351,13 @@ describe('EntryForm — date par défaut (defaultDate)', () => {
     // candidat 2025-08-15 > 2025-06-30 → clamped
     expect(screen.getByLabelText('Date *')).toHaveValue('2025-06-30');
   });
+
+  it('clamp le jour si le jour est invalide dans l\'exercice (ex: 29 fév → 28 fév)', () => {
+    vi.setSystemTime(new Date(2028, 1, 29, 12, 0, 0)); // 29 fév 2028 (bissextile)
+    // fy.year = 2025 (non-bissextile) → 2025-02-29 invalide → 2025-02-28
+    render(<EntryForm {...defaultProps} />);
+    expect(screen.getByLabelText('Date *')).toHaveValue('2025-02-28');
+  });
 });
 
 describe('EntryForm — autofocus champ Date', () => {
