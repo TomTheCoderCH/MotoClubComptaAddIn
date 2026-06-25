@@ -510,9 +510,9 @@ app/
 
 - [ ] **Vite 5→8 + `@vitejs/plugin-react` 5→6** — bloqué : `@electron-forge/plugin-vite` v8 encore en alpha. À revisiter quand une version stable est publiée.
 - [ ] Filtres / recherche sur la page Soldes (par classe, par compte)
-- [ ] Vue récapitulative avant clôture — aperçu des écritures automatiques qui seront générées (soldages 3xx/4xx → 900 → 290)
+- [ ] Page **Bilan complet** — vue instantanée de l'état des comptes à tout moment de l'exercice : soldes réels des comptes de bilan (1xx, 2xx) + résultat P&L simulé (3xx − 4xx agrégé) sans persister d'écritures de clôture ; utile pour communiquer l'état des finances au comité en cours d'année. Génération des écritures de clôture fictives en mémoire uniquement (côté main process, pas d'INSERT).
 - [ ] Tests E2E supplémentaires — clôture complète, analytics
-- [ ] Import initial depuis Excel — migrer les données de `Documents/MCY comptes 25.xlsx` pour démarrer sans ressaisie
+- [ ] Page **Compte** (grand-livre par compte) — détail de toutes les écritures d'un compte pour un exercice donné, colonnes Débit / Crédit / Solde courant (total running), total en pied de page ; total courant pertinent uniquement pour les comptes de bilan (1xx, 2xx)
 
 ### Notes techniques actives
 
