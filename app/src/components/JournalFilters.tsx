@@ -15,7 +15,7 @@ export default function JournalFilters({ filters, accounts, onChange }: JournalF
         type="text"
         value={filters.text}
         onChange={e => onChange({ ...filters, text: e.target.value })}
-        placeholder="Rechercher dans le libellé ou la pièce…"
+        placeholder="Libellé ou pièce…"
         aria-label="Recherche dans le libellé ou la pièce"
         className={styles.input}
       />
