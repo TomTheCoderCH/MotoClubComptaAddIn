@@ -91,13 +91,6 @@ export default function AccountFormModal({ account, existingGroups, onClose, onS
 
   return (
     <>
-    {showDeleteConfirm && (
-      <ConfirmDialog
-        message={`Supprimer le compte ${account!.number} — ${account!.name} ? Cette action est irréversible.`}
-        onConfirm={confirmDelete}
-        onCancel={() => setShowDeleteConfirm(false)}
-      />
-    )}
     <Modal onClose={onClose} className={styles.modal}>
       <div>
         <h2 className={styles.h2}>
@@ -228,6 +221,13 @@ export default function AccountFormModal({ account, existingGroups, onClose, onS
         </form>
       </div>
     </Modal>
+    {showDeleteConfirm && (
+      <ConfirmDialog
+        message={`Supprimer le compte ${account!.number} — ${account!.name} ? Cette action est irréversible.`}
+        onConfirm={confirmDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
+    )}
     </>
   );
 }
