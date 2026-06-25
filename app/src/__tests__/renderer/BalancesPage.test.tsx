@@ -92,4 +92,15 @@ describe('BalancesPage — affichage', () => {
       expect(window.api.getAccountBalances).toHaveBeenCalledWith(2);
     });
   });
+
+  it('appelle onOpenLedger avec accountId et fiscalYearId au clic sur une ligne', async () => {
+    const user = userEvent.setup();
+    const onOpenLedger = vi.fn();
+    mockApi([fy2025], balancesFixture);
+    render(<BalancesPage onOpenLedger={onOpenLedger} />);
+    await screen.findByText('Caisse');
+    await user.click(screen.getByText('Caisse'));
+    // balancesFixture[0] : id=1, fy2025.id=1
+    expect(onOpenLedger).toHaveBeenCalledWith(1, 1);
+  });
 });

@@ -20,6 +20,10 @@ type BalanceGroup = {
   totalSolde:  number;
 };
 
+interface BalancesPageProps {
+  onOpenLedger?: (accountId: number, fiscalYearId: number) => void;
+}
+
 function groupBalances(balances: AccountBalance[]): BalanceGroup[] {
   const map = new Map<number, AccountBalance[]>();
   for (const b of balances) {
@@ -39,7 +43,7 @@ function groupBalances(balances: AccountBalance[]): BalanceGroup[] {
     }));
 }
 
-export default function BalancesPage() {
+export default function BalancesPage({ onOpenLedger }: BalancesPageProps) {
   const [years,          setYears]          = useState<FiscalYear[]>([]);
   const [selectedYearId, setSelectedYearId] = useState<number | null>(null);
   const [balances,       setBalances]       = useState<AccountBalance[]>([]);
@@ -112,7 +116,12 @@ export default function BalancesPage() {
           </thead>
           <tbody>
             {groups.map(group => (
-              <GroupRows key={group.class} group={group} />
+              <GroupRows
+                key={group.class}
+                group={group}
+                selectedYearId={selectedYearId}
+                onOpenLedger={onOpenLedger}
+              />
             ))}
           </tbody>
         </table>
@@ -121,14 +130,27 @@ export default function BalancesPage() {
   );
 }
 
-function GroupRows({ group }: { group: BalanceGroup }) {
+function GroupRows({
+  group,
+  selectedYearId,
+  onOpenLedger,
+}: {
+  group: BalanceGroup;
+  selectedYearId: number | null;
+  onOpenLedger?: (accountId: number, fiscalYearId: number) => void;
+}) {
+  const clickable = !!onOpenLedger;
   return (
     <>
       <tr>
         <td colSpan={5} className={styles.groupCell}>{group.label}</td>
       </tr>
       {group.rows.map(row => (
-        <tr key={row.number} className={styles.dataRow}>
+        <tr
+          key={row.number}
+          className={`${styles.dataRow}${clickable ? ` ${styles.dataRowClickable}` : ''}`}
+          onClick={() => clickable && selectedYearId != null && onOpenLedger!(row.id, selectedYearId)}
+        >
           <td className={`${styles.td} ${styles.tdMono}`}>{row.number}</td>
           <td className={styles.td}>{row.name}</td>
           <td className={`${styles.td} ${styles.tdRight}`}>{fmt(row.total_debit)}</td>

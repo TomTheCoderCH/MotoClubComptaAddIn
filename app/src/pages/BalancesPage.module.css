@@ -122,3 +122,11 @@
 .subtotalCellRight[data-negative] {
   color: #dc2626;
 }
+
+.dataRowClickable {
+  cursor: pointer;
+}
+
+.dataRowClickable:hover {
+  background: #eff6ff;
+}
