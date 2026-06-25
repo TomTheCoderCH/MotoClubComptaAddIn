@@ -18,6 +18,7 @@ interface EntryFormProps {
   hideTitle?: boolean;
   onCreated:  () => void;
   onCancel:   () => void;
+  onSavedNew?: () => void;
 }
 
 function entryLinesToFormLines(lines: JournalEntryLine[]): Line[] {
@@ -41,7 +42,7 @@ function helpForType(type: string | undefined): string {
 
 const emptyLine = (): Line => ({ account_id: '', debit: '', credit: '' });
 
-export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, onCreated, onCancel }: EntryFormProps) {
+export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, onCreated, onCancel, onSavedNew }: EntryFormProps) {
   const [date,        setDate]        = useState(editEntry?.date ?? defaultDate(fiscalYear));
   const [description, setDescription] = useState(editEntry?.description ?? '');
   const [piece,       setPiece]       = useState(editEntry?.piece ?? '');
@@ -54,6 +55,9 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
   const accountRefs      = useRef<(HTMLSelectElement | null)[]>([]);
   const focusLastLineRef = useRef(false);
   const dateRef          = useRef<HTMLInputElement>(null);
+  const canSubmitRef     = useRef(false);
+  const onSavedNewRef    = useRef<(() => void) | undefined>(undefined);
+  const handleSaveRef    = useRef<(andNew: boolean) => void>(() => {});
 
   useEffect(() => {
     if (focusLastLineRef.current) {
@@ -65,6 +69,22 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
   const isCreating = !editEntry;
   useEffect(() => {
     if (isCreating) dateRef.current?.focus();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!e.ctrlKey) return;
+      if (e.key === 's' && canSubmitRef.current) {
+        e.preventDefault();
+        handleSaveRef.current(false);
+      }
+      if (e.key === 'Enter' && onSavedNewRef.current && canSubmitRef.current) {
+        e.preventDefault();
+        handleSaveRef.current(true);
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const totals = lines.reduce(
@@ -106,8 +126,7 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
     setLines(prev => prev.filter((_, idx) => idx !== i));
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSave(andNew: boolean) {
     setApiError(null);
 
     const payload = lines
@@ -144,16 +163,30 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
           lines:          payload,
         });
       }
-      onCreated();
+      if (andNew) {
+        setDate(defaultDate(fiscalYear));
+        setDescription('');
+        setPiece('');
+        setLines([emptyLine(), emptyLine()]);
+        setApiError(null);
+        setTimeout(() => dateRef.current?.focus(), 0);
+        onSavedNew!();
+      } else {
+        onCreated();
+      }
     } catch (e: unknown) {
       setApiError((e as Error).message);
     } finally {
       setSubmitting(false);
     }
   }
+  handleSaveRef.current = (andNew) => void handleSave(andNew);
+
+  canSubmitRef.current  = canSubmit;
+  onSavedNewRef.current = onSavedNew;
 
   return (
-    <form onSubmit={handleSubmit} aria-label="Formulaire de saisie d'écriture" noValidate className={styles.card}>
+    <form onSubmit={(e) => { e.preventDefault(); void handleSave(false); }} aria-label="Formulaire de saisie d'écriture" noValidate className={styles.card}>
       {!hideTitle && (
         <h2 className={styles.h2}>
           {editEntry ? 'Modifier l\'écriture' : 'Nouvelle écriture'} — exercice {fiscalYear.year}
@@ -293,6 +326,16 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
 
       <div className={styles.actions}>
         <button type="button" onClick={onCancel} className={styles.cancelBtn}>Annuler</button>
+        {!editEntry && onSavedNew && (
+          <button
+            type="button"
+            disabled={!canSubmit}
+            onClick={() => void handleSave(true)}
+            className={styles.submitBtn}
+          >
+            {submitting ? 'Enregistrement…' : 'Enregistrer + Nouveau'}
+          </button>
+        )}
         <button
           type="submit"
           disabled={!canSubmit}

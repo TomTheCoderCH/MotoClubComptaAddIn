@@ -4,14 +4,15 @@ import Modal from './Modal';
 import styles from './EntryFormModal.module.css';
 
 interface EntryFormModalProps {
-  fiscalYear: FiscalYear;
-  accounts:   Account[];
-  editEntry?: JournalEntry & { lines: JournalEntryLine[] };
-  onSaved:    () => void;
-  onClose:    () => void;
+  fiscalYear:  FiscalYear;
+  accounts:    Account[];
+  editEntry?:  JournalEntry & { lines: JournalEntryLine[] };
+  onSaved:     () => void;
+  onSavedNew?: () => void;
+  onClose:     () => void;
 }
 
-export default function EntryFormModal({ fiscalYear, accounts, editEntry, onSaved, onClose }: EntryFormModalProps) {
+export default function EntryFormModal({ fiscalYear, accounts, editEntry, onSaved, onSavedNew, onClose }: EntryFormModalProps) {
   const title = editEntry
     ? `Modifier l'écriture — exercice ${fiscalYear.year}`
     : `Nouvelle écriture — exercice ${fiscalYear.year}`;
@@ -34,6 +35,7 @@ export default function EntryFormModal({ fiscalYear, accounts, editEntry, onSave
         hideTitle
         onCreated={onSaved}
         onCancel={onClose}
+        onSavedNew={onSavedNew}
       />
     </Modal>
   );

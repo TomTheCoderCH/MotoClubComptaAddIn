@@ -369,3 +369,83 @@ describe('EntryForm — autofocus champ Date', () => {
     });
   });
 });
+
+/** Remplit le formulaire avec une écriture 30 CHF Caisse/Cotisations équilibrée. */
+async function fillValidForm() {
+  const user = userEvent.setup();
+  fireEvent.change(screen.getByLabelText('Date *'), { target: { value: '2025-06-15' } });
+  await user.type(screen.getByLabelText('Libellé *'), 'Test');
+  const s1 = screen.getByRole('combobox', { name: 'Compte ligne 1' });
+  await user.selectOptions(s1, within(s1).getByRole('option', { name: /Caisse/ }));
+  await user.type(screen.getByRole('spinbutton', { name: 'Débit ligne 1' }), '30');
+  const s2 = screen.getByRole('combobox', { name: 'Compte ligne 2' });
+  await user.selectOptions(s2, within(s2).getByRole('option', { name: /Cotisations/ }));
+  await user.type(screen.getByRole('spinbutton', { name: 'Crédit ligne 2' }), '30');
+}
+
+describe('EntryForm — bouton Enregistrer + Nouveau', () => {
+  it('est visible en mode création quand onSavedNew est défini', () => {
+    render(<EntryForm {...defaultProps} onSavedNew={vi.fn()} />);
+    expect(screen.getByRole('button', { name: /Enregistrer \+ Nouveau/ })).toBeInTheDocument();
+  });
+
+  it('est absent en mode édition même si onSavedNew est défini', () => {
+    render(<EntryForm {...defaultProps} editEntry={editEntry} onSavedNew={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: /Enregistrer \+ Nouveau/ })).not.toBeInTheDocument();
+  });
+
+  it("est absent en mode création si onSavedNew n'est pas fourni", () => {
+    render(<EntryForm {...defaultProps} />);
+    expect(screen.queryByRole('button', { name: /Enregistrer \+ Nouveau/ })).not.toBeInTheDocument();
+  });
+
+  it('appelle onSavedNew (pas onCreated) et réinitialise le formulaire', async () => {
+    const onSavedNew = vi.fn();
+    render(<EntryForm {...defaultProps} onSavedNew={onSavedNew} />);
+    await fillValidForm();
+    await userEvent.click(screen.getByRole('button', { name: /Enregistrer \+ Nouveau/ }));
+    await waitFor(() => expect(onSavedNew).toHaveBeenCalledOnce());
+    expect(defaultProps.onCreated).not.toHaveBeenCalled();
+    // formulaire réinitialisé
+    expect(screen.getByLabelText('Libellé *')).toHaveValue('');
+    expect(screen.getByLabelText('Pièce')).toHaveValue('');
+    expect(screen.getAllByRole('combobox')).toHaveLength(2);
+  });
+});
+
+describe('EntryForm — raccourcis Ctrl+S et Ctrl+Entrée', () => {
+  it('Ctrl+S soumet le formulaire si canSubmit est vrai', async () => {
+    render(<EntryForm {...defaultProps} />);
+    await fillValidForm();
+    fireEvent.keyDown(document, { key: 's', ctrlKey: true });
+    await waitFor(() => {
+      expect(window.api.createJournalEntry).toHaveBeenCalledOnce();
+    });
+  });
+
+  it('Ctrl+S ne soumet pas si le formulaire est incomplet', () => {
+    render(<EntryForm {...defaultProps} />);
+    // libellé vide, montants vides → canSubmit = false
+    fireEvent.keyDown(document, { key: 's', ctrlKey: true });
+    expect(window.api.createJournalEntry).not.toHaveBeenCalled();
+  });
+
+  it('Ctrl+Entrée appelle onSavedNew et réinitialise si onSavedNew est défini', async () => {
+    const onSavedNew = vi.fn();
+    render(<EntryForm {...defaultProps} onSavedNew={onSavedNew} />);
+    await fillValidForm();
+    fireEvent.keyDown(document, { key: 'Enter', ctrlKey: true });
+    await waitFor(() => expect(onSavedNew).toHaveBeenCalledOnce());
+    expect(defaultProps.onCreated).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Libellé *')).toHaveValue('');
+  });
+
+  it('Ctrl+Entrée ne soumet pas si onSavedNew est absent', async () => {
+    render(<EntryForm {...defaultProps} />);
+    await fillValidForm();
+    fireEvent.keyDown(document, { key: 'Enter', ctrlKey: true });
+    // la garde onSavedNewRef.current est undefined → pas d'appel
+    expect(window.api.createJournalEntry).not.toHaveBeenCalled();
+    expect(defaultProps.onCreated).not.toHaveBeenCalled();
+  });
+});
