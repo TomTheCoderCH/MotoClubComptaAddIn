@@ -391,4 +391,30 @@ describe('account:getLedger', () => {
     });
     await expect(call('account:getLedger', 1, 9999)).rejects.toThrow('Compte introuvable');
   });
+
+  it('passe les flags isOpeningBalance et isClosingEntry', async () => {
+    const mockData = {
+      account: { id: 1, number: '100', name: 'Caisse', type: 'ACTIF', normal_balance: 'DEBIT', class: 1 },
+      lines: [
+        {
+          entryId: 1, date: '2025-01-01', piece: null, description: 'Solde à nouveau',
+          isOpeningBalance: true, isClosingEntry: false,
+          debit: 500000, credit: null,
+          counterparts: [{ number: '290', name: 'Capital' }],
+        },
+        {
+          entryId: 99, date: '2025-12-31', piece: null, description: 'Clôture',
+          isOpeningBalance: false, isClosingEntry: true,
+          debit: null, credit: 33700,
+          counterparts: [{ number: '900', name: 'Profits et Pertes' }],
+        },
+      ],
+    };
+    vi.mocked(getAccountLedger).mockReturnValue(mockData as any);
+    const result = await call('account:getLedger', 1, 1);
+    expect(result.lines[0].isOpeningBalance).toBe(true);
+    expect(result.lines[0].isClosingEntry).toBe(false);
+    expect(result.lines[1].isOpeningBalance).toBe(false);
+    expect(result.lines[1].isClosingEntry).toBe(true);
+  });
 });

@@ -16,11 +16,13 @@ export default function AccountLedgerPage({ accountId, fiscalYearId, onBack }: A
   const [error,   setError]   = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
     window.api.getAccountLedger(fiscalYearId, accountId)
-      .then(setData)
-      .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false));
+      .then(d => { if (!cancelled) setData(d); })
+      .catch((e: Error) => { if (!cancelled) setError(e.message); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [fiscalYearId, accountId]);
 
   const isBilan = data ? data.account.class <= 2 : false;

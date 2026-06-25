@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Layout from './components/Layout';
 import DashboardPage   from './pages/DashboardPage';
 import AccountsPage    from './pages/AccountsPage';
@@ -23,13 +23,13 @@ export default function App() {
       .catch(() => setCurrentPage('welcome'));
   }, []);
 
-  if (currentPage === null) return null;
-  if (currentPage === 'welcome') return <WelcomePage onReady={() => setCurrentPage('accounts')} />;
-
-  function openLedger(accountId: number, fiscalYearId: number) {
+  const openLedger = useCallback((accountId: number, fiscalYearId: number) => {
     setLedgerParams({ accountId, fiscalYearId });
     setCurrentPage('ledger');
-  }
+  }, []);
+
+  if (currentPage === null) return null;
+  if (currentPage === 'welcome') return <WelcomePage onReady={() => setCurrentPage('accounts')} />;
 
   const renderPage = () => {
     switch (currentPage) {
