@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Account, AccountType, UpdateAccountPayload, CreateAccountPayload } from '../types';
 import ConfirmDialog from './ConfirmDialog';
+import Modal from './Modal';
 import styles from './AccountFormModal.module.css';
 
 const ACCOUNT_TYPES: AccountType[] = ['ACTIF', 'PASSIF', 'FONDS_PROPRES', 'PRODUIT', 'CHARGE'];
@@ -96,8 +97,8 @@ export default function AccountFormModal({ account, existingGroups, onClose, onS
         onCancel={() => setShowDeleteConfirm(false)}
       />
     )}
-    <div className={styles.overlay} role="dialog" aria-modal="true">
-      <div className={styles.modal}>
+    <Modal onClose={onClose} className={styles.modal}>
+      <div>
         <h2 className={styles.h2}>
           {isEdit
             ? `Modifier — ${account!.number} ${account!.name}`
@@ -223,7 +224,7 @@ export default function AccountFormModal({ account, existingGroups, onClose, onS
           </div>
         </form>
       </div>
-    </div>
+    </Modal>
     </>
   );
 }

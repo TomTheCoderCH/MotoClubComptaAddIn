@@ -55,3 +55,12 @@
 .wrapper:hover .bubble {
   display: block;
 }
+
+/* Variante numéro de compte dans le journal */
+.acctNumber {
+  font-family: monospace;
+  font-size: 0.78rem;
+  color: #64748b;
+  border-bottom: 1px dashed #94a3b8;
+  cursor: default;
+}

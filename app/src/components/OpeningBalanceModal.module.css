@@ -1,20 +1,7 @@
-.overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
 .modal {
-  background: #fff;
-  border-radius: 10px;
   padding: 2rem;
   min-width: 480px;
   max-width: 640px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
 }
 
 .h2 {

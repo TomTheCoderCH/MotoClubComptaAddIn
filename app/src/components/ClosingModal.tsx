@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { ClosingPreview } from '../types';
+import Modal from './Modal';
 import styles from './ClosingModal.module.css';
 
 interface ClosingModalProps {
@@ -32,8 +33,8 @@ export default function ClosingModal({ fiscalYearId, year, preview, onClose, onS
   const isProfit = preview.netResultCents >= 0;
 
   return (
-    <div className={styles.overlay}>
-      <div className={styles.card} role="dialog" aria-modal="true" aria-labelledby="closing-title">
+    <Modal ariaLabelledby="closing-title" onClose={onClose} className={styles.card}>
+      <div>
         <h2 id="closing-title" className={styles.title}>Clôture de l&apos;exercice {year}</h2>
 
         {error && <div role="alert" className={styles.alertError}>{error}</div>}
@@ -88,6 +89,6 @@ export default function ClosingModal({ fiscalYearId, year, preview, onClose, onS
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

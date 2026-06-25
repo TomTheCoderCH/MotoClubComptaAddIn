@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { OpeningBalanceSuggestion, OpeningBalanceLine } from '../types';
+import Modal from './Modal';
 import styles from './OpeningBalanceModal.module.css';
 
 export interface OpeningBalanceModalProps {
@@ -56,8 +57,8 @@ export default function OpeningBalanceModal({
   const passifAccounts = suggestions.filter(s => s.type === 'PASSIF');
 
   return (
-    <div className={styles.overlay} role="dialog" aria-modal="true" aria-labelledby="ob-title">
-      <div className={styles.modal}>
+    <Modal ariaLabelledby="ob-title" onClose={onClose} className={styles.modal}>
+      <div>
         <h2 id="ob-title" className={styles.h2}>Soldes à nouveau — Exercice {year}</h2>
 
         {error && <div role="alert" className={styles.alert}>{error}</div>}
@@ -120,7 +121,7 @@ export default function OpeningBalanceModal({
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 

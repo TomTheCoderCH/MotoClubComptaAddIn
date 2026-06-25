@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Account, DashboardCardConfig } from '../types';
+import Modal from './Modal';
 import styles from './AddCardModal.module.css';
 
 const FIXED_NUMBERS = new Set(['100', '101', '102']);
@@ -51,8 +52,8 @@ export default function AddCardModal({ existingCards, onAdd, onCancel }: Props) 
   }
 
   return (
-    <div className={styles.overlay} role="dialog" aria-modal="true" aria-label="Ajouter une carte">
-      <div className={styles.modal}>
+    <Modal ariaLabel="Ajouter une carte" onClose={onCancel} className={styles.modal}>
+      <div>
         <h2 className={styles.title}>Ajouter une carte</h2>
 
         <div className={styles.radios}>
@@ -111,6 +112,6 @@ export default function AddCardModal({ existingCards, onAdd, onCancel }: Props) 
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

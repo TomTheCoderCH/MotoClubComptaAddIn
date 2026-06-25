@@ -6,6 +6,8 @@ import type { EntryWithLines } from '../lib/journalFilters';
 import JournalFiltersBar from '../components/JournalFilters';
 import EntryFormModal from '../components/EntryFormModal';
 import ConfirmDialog from '../components/ConfirmDialog';
+import Tooltip from '../components/Tooltip';
+import tooltipStyles from '../components/Tooltip.module.css';
 import styles from './JournalPage.module.css';
 
 type ModalState =
@@ -134,11 +136,19 @@ export default function JournalPage() {
                         <td className={styles.td}>{i === 0 ? (entry.piece ?? '') : ''}</td>
                         <td className={`${styles.td} ${styles.tdRight}`}>
                           {line.debit != null ? formatCHF(line.debit) : ''}
-                          {line.debit != null && acc ? <span className={styles.acctLabel}> {acc.number}</span> : ''}
+                          {line.debit != null && acc && (
+                            <Tooltip content={acc.name}>
+                              <span className={tooltipStyles.acctNumber}> {acc.number}</span>
+                            </Tooltip>
+                          )}
                         </td>
                         <td className={`${styles.td} ${styles.tdRight}`}>
                           {line.credit != null ? formatCHF(line.credit) : ''}
-                          {line.credit != null && acc ? <span className={styles.acctLabel}> {acc.number}</span> : ''}
+                          {line.credit != null && acc && (
+                            <Tooltip content={acc.name}>
+                              <span className={tooltipStyles.acctNumber}> {acc.number}</span>
+                            </Tooltip>
+                          )}
                         </td>
                         {!currentFiscalYear?.is_closed && (
                           <td className={styles.td}>
