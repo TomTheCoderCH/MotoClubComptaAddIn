@@ -134,3 +134,6 @@ dist
 
 # Test results
 app/test-results
+
+# Excel temp files
+Documents/~*.xlsx
