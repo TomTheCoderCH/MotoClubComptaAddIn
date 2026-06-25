@@ -123,6 +123,8 @@ Le classeur contient 11 feuilles correspondant aux comptes suivants :
 
 - **Système d'aide :** `HelpDrawer.tsx` contient l'aide intégrée (3 onglets : Démarrage rapide, Comptabilité, Application). **À chaque correction de bug ou ajout de fonctionnalité, vérifier si le contenu du drawer doit être mis à jour** — en particulier si des noms de boutons, pages ou raccourcis changent. `HelpContext.tsx` gère l'état ouvert/fermé (accessible via bouton `? Aide` en bas de sidebar et touche `F1`). `Tooltip.tsx` est le composant d'info-bulle réutilisable (CSS pur, `:hover`).
 
+- **Modales :** **toujours utiliser `Modal.tsx`** (`app/src/components/Modal.tsx`) comme racine de toute nouvelle boîte de dialogue modale. Ce composant centralise l'overlay, le backdrop, le centrage, le `z-index` et la fermeture sur `Escape`. Ne jamais recréer de règle `.overlay` dans un module CSS propre à une modale. Passer la classe de contenu via la prop `className`. Voir `ConfirmDialog.tsx`, `EntryFormModal.tsx` ou `AddCardModal.tsx` comme exemples. `window.confirm` est également banni — utiliser `ConfirmDialog` à la place.
+
 - **Framework UI :** React (renderer Electron) — premier projet React, occasion de se former
 - **Plan comptable :** libre, adapté au club, plus détaillé que l'Excel actuel (voir section dédiée)
 - **Devises :** CHF uniquement — paiements EUR convertis automatiquement par la banque (carte VISA), montant CHF saisi directement
