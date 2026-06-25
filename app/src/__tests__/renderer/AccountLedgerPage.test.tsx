@@ -81,7 +81,7 @@ describe('AccountLedgerPage — affichage', () => {
   it('affiche les montants débit et crédit', async () => {
     render(<AccountLedgerPage accountId={1} fiscalYearId={1} onBack={vi.fn()} />);
     await screen.findByRole('heading', { level: 1 });
-    expect(screen.getAllByText('1410.00')).toHaveLength(2);
+    expect(screen.getAllByText("1'410.00")).toHaveLength(2);
     expect(screen.getAllByText('450.00')).toHaveLength(2);
   });
 

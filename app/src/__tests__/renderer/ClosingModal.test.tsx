@@ -35,7 +35,7 @@ describe('ClosingModal', () => {
 
   it('affiche le résultat net (bénéfice)', () => {
     render(<ClosingModal fiscalYearId={1} year={2025} preview={mockPreview} onClose={vi.fn()} onSuccess={vi.fn()} />);
-    expect(screen.getByText(/Bénéfice CHF 1060\.00/)).toBeInTheDocument();
+    expect(screen.getByText(/Bénéfice CHF 1'060\.00/)).toBeInTheDocument();
   });
 
   it('affiche les blockers et désactive le bouton Confirmer', () => {

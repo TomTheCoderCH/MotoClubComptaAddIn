@@ -66,9 +66,9 @@ describe('BalancesPage — affichage', () => {
     mockApi([fy2025], balancesFixture);
     render(<BalancesPage />);
     await screen.findByText('Classe 1 — Actifs');
-    // Sous-total classe 1 : débit 1200.00, solde 400.00
+    // Sous-total classe 1 : débit 1'200.00, solde 400.00
     // Ces valeurs apparaissent aussi sur la ligne Caisse → getAllByText
-    expect(screen.getAllByText('1200.00')).toHaveLength(2); // ligne + sous-total
+    expect(screen.getAllByText("1'200.00")).toHaveLength(2); // ligne + sous-total
     expect(screen.getAllByText('400.00')).toHaveLength(2);
   });
 

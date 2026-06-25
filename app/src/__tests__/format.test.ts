@@ -11,11 +11,17 @@ describe('formatCHF', () => {
   it('formate un montant avec centimes', () => {
     expect(formatCHF(3045)).toBe('30.45');
   });
-  it('formate un grand montant', () => {
-    expect(formatCHF(1244380)).toBe('12443.80');
+  it('formate un grand montant avec séparateur de milliers', () => {
+    expect(formatCHF(1244380)).toBe('12\'443.80');
   });
-  it('formate un montant négatif', () => {
+  it('formate un montant > 1 million', () => {
+    expect(formatCHF(123456789)).toBe('1\'234\'567.89');
+  });
+  it('formate un montant négatif avec séparateur', () => {
     expect(formatCHF(-5000)).toBe('-50.00');
+  });
+  it('formate un montant négatif > 1000', () => {
+    expect(formatCHF(-150000)).toBe('-1\'500.00');
   });
 });
 

@@ -14,12 +14,12 @@ describe('formatAmount', () => {
     expect(formatAmount(3045)).toBe('30.45');
   });
 
-  it('formate 161800 centimes → 1618.00 (bénéfice Marché Villageois)', () => {
-    expect(formatAmount(161800)).toBe('1618.00');
+  it("formate 161800 centimes → 1'618.00 (bénéfice Marché Villageois)", () => {
+    expect(formatAmount(161800)).toBe("1'618.00");
   });
 
-  it('formate 1244380 centimes → 12443.80 (capital exercice)', () => {
-    expect(formatAmount(1244380)).toBe('12443.80');
+  it("formate 1244380 centimes → 12'443.80 (capital exercice)", () => {
+    expect(formatAmount(1244380)).toBe("12'443.80");
   });
 });
 

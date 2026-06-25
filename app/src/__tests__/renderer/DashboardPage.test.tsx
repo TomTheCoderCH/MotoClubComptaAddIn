@@ -88,7 +88,7 @@ describe('DashboardPage — affichage', () => {
   it('affiche le solde Caisse correctement formaté', async () => {
     mockApi(dashData);
     render(<DashboardPage />);
-    expect(await screen.findByText('CHF 1234.56')).toBeInTheDocument();
+    expect(await screen.findByText("CHF 1'234.56")).toBeInTheDocument();
   });
 
   it('affiche le résultat avec signe + si positif', async () => {
@@ -178,7 +178,7 @@ describe('DashboardPage — cartes personnalisées', () => {
     mockApi(data, [{ type: 'group', groupName: 'Marché' }]);
     render(<DashboardPage />);
     expect(await screen.findByText('Marché')).toBeInTheDocument();
-    expect(await screen.findByText(/\+ CHF 1618\.00/)).toBeInTheDocument();
+    expect(await screen.findByText(/\+ CHF 1'618\.00/)).toBeInTheDocument();
   });
 
   it('affiche le bouton "+" pour ajouter une carte', async () => {

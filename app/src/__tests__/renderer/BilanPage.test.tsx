@@ -93,9 +93,9 @@ describe('BilanPage — affichage', () => {
 
   it('affiche le résultat net correctement', async () => {
     render(<BilanPage />);
-    // net result = 161000 - 60000 = 101000 centimes = 1010.00 CHF
+    // net result = 161000 - 60000 = 101000 centimes = 1'010.00 CHF
     expect(await screen.findByText(/BÉNÉFICE/)).toBeInTheDocument();
-    expect(screen.getByText(/\+1010\.00 CHF/)).toBeInTheDocument();
+    expect(screen.getByText(/\+1'010\.00 CHF/)).toBeInTheDocument();
   });
 
   it('affiche "Résultat provisoire" pour un exercice ouvert', async () => {

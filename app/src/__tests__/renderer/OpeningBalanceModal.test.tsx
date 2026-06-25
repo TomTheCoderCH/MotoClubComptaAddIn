@@ -51,7 +51,7 @@ describe('OpeningBalanceModal — affichage', () => {
 
   it('pré-remplit les montants suggérés en CHF', () => {
     render(<OpeningBalanceModal {...defaultProps} />);
-    expect(screen.getByRole('textbox', { name: /Solde Caisse/ })).toHaveValue('1000.00');
+    expect(screen.getByRole('textbox', { name: /Solde Caisse/ })).toHaveValue("1'000.00");
     expect(screen.getByRole('textbox', { name: /Solde Raiffeisen/ })).toHaveValue('500.00');
   });
 });
@@ -60,7 +60,7 @@ describe('OpeningBalanceModal — calcul Capital', () => {
   it('Capital affiche la différence Actifs − Passifs initiale', () => {
     render(<OpeningBalanceModal {...defaultProps} />);
     // Actifs = 1000 + 500 = 1500, Passifs = 0 → Capital = 1500
-    expect(screen.getByRole('textbox', { name: /Solde Capital/ })).toHaveValue('1500.00');
+    expect(screen.getByRole('textbox', { name: /Solde Capital/ })).toHaveValue("1'500.00");
   });
 
   it('Capital se recalcule quand un actif change', async () => {

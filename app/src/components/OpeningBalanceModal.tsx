@@ -127,7 +127,7 @@ export default function OpeningBalanceModal({
 }
 
 function parseCHF(str: string): number {
-  const n = parseFloat(str.replace(',', '.'));
+  const n = parseFloat(str.replace(/'/g, '').replace(',', '.'));
   return isNaN(n) || n < 0 ? 0 : Math.round(n * 100);
 }
 

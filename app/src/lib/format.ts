@@ -1,6 +1,8 @@
-/** Centimes → "X.XX" (sans préfixe ni signe) */
+/** Centimes → "X'XXX.XX" (séparateur de milliers apostrophe suisse, sans préfixe ni signe) */
 export function formatCHF(centimes: number): string {
-  return (centimes / 100).toFixed(2);
+  const [int, dec] = (Math.abs(centimes) / 100).toFixed(2).split('.');
+  const grouped = int.replace(/\B(?=(\d{3})+(?!\d))/g, "'");
+  return centimes < 0 ? `-${grouped}.${dec}` : `${grouped}.${dec}`;
 }
 
 /** ISO date YYYY-MM-DD → DD.MM.YYYY */
