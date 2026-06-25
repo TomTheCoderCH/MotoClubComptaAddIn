@@ -39,9 +39,9 @@ function mockApi(overrides: Partial<Window['api']> = {}) {
 beforeEach(() => mockApi());
 
 describe('SettingsPage — affichage', () => {
-  it('affiche le titre Paramètres', () => {
+  it('affiche le titre Paramètres', async () => {
     render(<SettingsPage />);
-    expect(screen.getByRole('heading', { level: 1, name: 'Paramètres' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Paramètres' })).toBeInTheDocument();
   });
 
   it('affiche le chemin de la DB dans un champ lecture seule', async () => {

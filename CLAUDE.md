@@ -503,6 +503,8 @@ app/
 - [x] Validation inline date hors exercice — message rouge sous le champ Date si date < `start_date` ou > `end_date` de l'exercice ; bouton Enregistrer désactivé — 477 tests
 - [x] HelpDrawer mis à jour — Tableau de bord, Analytique, Plan comptable éditable, groupes analytiques, raccourci `Entrée`, avertissement date — 477 tests
 - [x] Toast de confirmation (`Toast.tsx`) — "Écriture enregistrée" après création / "Écriture modifiée" après édition ; auto-dismiss 2,5 s — 482 tests
+- [x] Icônes Lucide React (`lucide-react`) — tous les boutons d'action (créer, modifier, supprimer, exporter, restaurer…) : icône + texte via `display: inline-flex; align-items: center; gap` sur chaque classe bouton CSS — pages : JournalPage, AccountsPage, AccountFormModal, FiscalYearsPage, DashboardPage, SettingsPage — 482 tests
+- [x] Corrections qualité tests — React key warning (AccountsPage : `<>` → `<React.Fragment key={cls}>`) ; 4 warnings `act(...)` éliminés (SettingsPage, FiscalYearsPage ×2, BalancesPage : `getBy*` → `await findBy*`) — 482 tests
 
 #### Idées futures (non planifiées)
 

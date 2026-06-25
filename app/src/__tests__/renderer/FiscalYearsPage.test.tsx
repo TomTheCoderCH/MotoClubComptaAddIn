@@ -41,12 +41,12 @@ beforeEach(() => mockApi());
 describe('FiscalYearsPage — affichage', () => {
   it('affiche le titre Exercices', async () => {
     render(<FiscalYearsPage />);
-    expect(screen.getByRole('heading', { level: 1, name: 'Exercices' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Exercices' })).toBeInTheDocument();
   });
 
   it('affiche le formulaire de création', async () => {
     render(<FiscalYearsPage />);
-    expect(screen.getByLabelText('Année')).toBeInTheDocument();
+    expect(await screen.findByLabelText('Année')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Créer l'exercice/ })).toBeInTheDocument();
   });
 

@@ -31,9 +31,9 @@ function mockApi(years: FiscalYear[] = [], balances: AccountBalance[] = []) {
 beforeEach(() => mockApi());
 
 describe('BalancesPage — affichage', () => {
-  it('affiche le titre Soldes', () => {
+  it('affiche le titre Soldes', async () => {
     render(<BalancesPage />);
-    expect(screen.getByRole('heading', { level: 1, name: 'Soldes' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Soldes' })).toBeInTheDocument();
   });
 
   it('affiche le message vide sans exercice', async () => {
