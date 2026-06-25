@@ -6,6 +6,7 @@ import type { EntryWithLines } from '../lib/journalFilters';
 import JournalFiltersBar from '../components/JournalFilters';
 import EntryFormModal from '../components/EntryFormModal';
 import ConfirmDialog from '../components/ConfirmDialog';
+import Toast from '../components/Toast';
 import Tooltip from '../components/Tooltip';
 import tooltipStyles from '../components/Tooltip.module.css';
 import styles from './JournalPage.module.css';
@@ -24,6 +25,7 @@ export default function JournalPage() {
   const [modal,        setModal]        = useState<ModalState>(null);
   const [confirmEntry, setConfirmEntry] = useState<EntryWithLines | null>(null);
   const [error,        setError]        = useState<string | null>(null);
+  const [toast,        setToast]        = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -187,7 +189,12 @@ export default function JournalPage() {
           fiscalYear={currentFiscalYear}
           accounts={accounts}
           editEntry={modal.mode === 'edit' ? modal.entry : undefined}
-          onSaved={async () => { setModal(null); await reloadEntries(); }}
+          onSaved={async () => {
+            const isEdit = modal?.mode === 'edit';
+            setModal(null);
+            await reloadEntries();
+            setToast(isEdit ? 'Écriture modifiée' : 'Écriture enregistrée');
+          }}
           onClose={() => setModal(null)}
         />
       )}
@@ -199,6 +206,8 @@ export default function JournalPage() {
           onCancel={() => setConfirmEntry(null)}
         />
       )}
+
+      {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
     </div>
   );
 }

@@ -40,11 +40,12 @@ const entry2: Entry = {
 
 function mockApi(entries: Entry[] = [entry1, entry2]) {
   vi.stubGlobal('api', {
-    getFiscalYears:     vi.fn().mockResolvedValue([fy]),
-    getActiveAccounts:  vi.fn().mockResolvedValue(accounts),
-    getJournalEntries:  vi.fn().mockResolvedValue(entries),
-    updateJournalEntry: vi.fn().mockResolvedValue({ id: 1 }),
-    deleteJournalEntry: vi.fn().mockResolvedValue(undefined),
+    getFiscalYears:      vi.fn().mockResolvedValue([fy]),
+    getActiveAccounts:   vi.fn().mockResolvedValue(accounts),
+    getJournalEntries:   vi.fn().mockResolvedValue(entries),
+    updateJournalEntry:  vi.fn().mockResolvedValue({ id: 1 }),
+    deleteJournalEntry:  vi.fn().mockResolvedValue(undefined),
+    createJournalEntry:  vi.fn().mockResolvedValue({ id: 99 }),
   });
 }
 
@@ -137,5 +138,33 @@ describe('JournalPage — bouton + Nouvelle écriture', () => {
     await userEvent.click(screen.getByRole('button', { name: /Nouvelle écriture/ }));
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(/Nouvelle écriture/);
+  });
+});
+
+describe('JournalPage — toast de confirmation', () => {
+  it('affiche "Écriture modifiée" après enregistrement en mode édition', async () => {
+    render(<JournalPage />);
+    await screen.findByText('Cotisation membre');
+    await userEvent.click(screen.getAllByRole('button', { name: 'Modifier' })[0]);
+    await userEvent.click(screen.getByRole('button', { name: /Enregistrer/ }));
+    await screen.findByRole('status');
+    expect(screen.getByRole('status')).toHaveTextContent('Écriture modifiée');
+  });
+
+  it('affiche "Écriture enregistrée" après création', async () => {
+    render(<JournalPage />);
+    await screen.findByText('Cotisation membre');
+    await userEvent.click(screen.getByRole('button', { name: /Nouvelle écriture/ }));
+    const dateInput = screen.getByLabelText('Date *');
+    await userEvent.clear(dateInput);
+    await userEvent.type(dateInput, '2025-06-15');
+    await userEvent.type(screen.getByLabelText('Libellé *'), 'Test écriture');
+    await userEvent.type(screen.getByLabelText('Débit ligne 1'), '30.00');
+    await userEvent.type(screen.getByLabelText('Crédit ligne 2'), '30.00');
+    await userEvent.selectOptions(screen.getByLabelText('Compte ligne 1'), '1');
+    await userEvent.selectOptions(screen.getByLabelText('Compte ligne 2'), '2');
+    await userEvent.click(screen.getByRole('button', { name: /Enregistrer/ }));
+    await screen.findByRole('status');
+    expect(screen.getByRole('status')).toHaveTextContent('Écriture enregistrée');
   });
 });
