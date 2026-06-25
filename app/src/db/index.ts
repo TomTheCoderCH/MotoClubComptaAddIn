@@ -14,6 +14,7 @@ import type {
   UpdateAccountPayload, CreateAccountPayload,
   AnalyticsAccountRow, AnalyticsGroup, AnalyticsData,
   DashboardCashBalance, DashboardData, DashboardCardConfig, DashboardCustomCard,
+  LedgerLine, AccountLedgerData,
 } from '../types';
 
 let db: Database.Database;
@@ -386,6 +387,7 @@ export function createJournalEntry(payload: CreateJournalEntryPayload): JournalE
 export function getAccountBalances(fiscalYearId: number): AccountBalance[] {
   return getDb().prepare(`
     SELECT
+      a.id,
       a.number,
       a.name,
       a.class,
@@ -402,6 +404,62 @@ export function getAccountBalances(fiscalYearId: number): AccountBalance[] {
     GROUP BY a.id
     ORDER BY a.number
   `).all(fiscalYearId) as AccountBalance[];
+}
+
+export function getAccountLedger(fiscalYearId: number, accountId: number): AccountLedgerData {
+  const account = getDb().prepare(`
+    SELECT id, number, name, type, normal_balance, class
+    FROM accounts WHERE id = ?
+  `).get(accountId) as AccountLedgerData['account'] | undefined;
+
+  if (!account) throw new Error('Compte introuvable');
+
+  const rows = getDb().prepare(`
+    SELECT
+      e.id   AS entry_id,
+      e.date,
+      e.piece,
+      e.description,
+      e.is_opening_balance,
+      e.is_closing_entry,
+      l.debit,
+      l.credit
+    FROM journal_entry_lines l
+    JOIN journal_entries e ON e.id = l.journal_entry_id
+    WHERE l.account_id = ? AND e.fiscal_year_id = ?
+    ORDER BY e.date, e.id
+  `).all(accountId, fiscalYearId) as Array<{
+    entry_id: number;
+    date: string;
+    piece: string | null;
+    description: string;
+    is_opening_balance: number;
+    is_closing_entry: number;
+    debit: number | null;
+    credit: number | null;
+  }>;
+
+  const cpStmt = getDb().prepare(`
+    SELECT a.number, a.name
+    FROM journal_entry_lines l
+    JOIN accounts a ON a.id = l.account_id
+    WHERE l.journal_entry_id = ? AND l.account_id != ?
+    ORDER BY a.number
+  `);
+
+  const lines: LedgerLine[] = rows.map(r => ({
+    entryId:          r.entry_id,
+    date:             r.date,
+    piece:            r.piece,
+    description:      r.description,
+    isOpeningBalance: r.is_opening_balance === 1,
+    isClosingEntry:   r.is_closing_entry   === 1,
+    debit:            r.debit,
+    credit:           r.credit,
+    counterparts:     cpStmt.all(r.entry_id, accountId) as Array<{ number: string; name: string }>,
+  }));
+
+  return { account, lines };
 }
 
 export function getOpeningBalanceSuggestions(fiscalYearId: number): OpeningBalanceSuggestion[] {

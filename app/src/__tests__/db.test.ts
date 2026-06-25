@@ -28,6 +28,7 @@ import {
   deleteAccount,
   getAnalyticsData,
   getDashboardData,
+  getAccountLedger,
 } from '../db';
 
 // Chaque describe repart d'une base SQLite en mémoire fraîche
@@ -1144,5 +1145,84 @@ describe('getDashboardData', () => {
       expect(card.label).toBe('Marché');
       expect(card.subLabel).toBe('Analytique');
     });
+  });
+});
+
+describe('getAccountLedger', () => {
+  beforeEach(freshDb);
+
+  it('retourne les infos du compte et une liste vide sans écriture', () => {
+    const fy = createFiscalYear(2025);
+    const caisse = getAllAccounts().find(a => a.number === '100')!;
+    const result = getAccountLedger(fy.id, caisse.id);
+    expect(result.account.number).toBe('100');
+    expect(result.account.name).toBe('Caisse');
+    expect(result.lines).toHaveLength(0);
+  });
+
+  it('retourne la ligne avec contrepartie unique et flags corrects', () => {
+    const fy = createFiscalYear(2025);
+    const accounts = getAllAccounts();
+    const caisse = accounts.find(a => a.number === '100')!;
+    const cotis  = accounts.find(a => a.number === '300')!;
+    createJournalEntry({
+      fiscal_year_id: fy.id, date: '2025-03-08', description: 'Cotisations',
+      lines: [
+        { account_id: caisse.id, debit: 141000 },
+        { account_id: cotis.id,  credit: 141000 },
+      ],
+    });
+    const result = getAccountLedger(fy.id, caisse.id);
+    expect(result.lines).toHaveLength(1);
+    expect(result.lines[0].debit).toBe(141000);
+    expect(result.lines[0].credit).toBeNull();
+    expect(result.lines[0].description).toBe('Cotisations');
+    expect(result.lines[0].isOpeningBalance).toBe(false);
+    expect(result.lines[0].isClosingEntry).toBe(false);
+    expect(result.lines[0].counterparts).toHaveLength(1);
+    expect(result.lines[0].counterparts[0].number).toBe('300');
+  });
+
+  it('retourne plusieurs contreparties pour écriture multi-lignes', () => {
+    const fy = createFiscalYear(2025);
+    const accounts = getAllAccounts();
+    const caisse = accounts.find(a => a.number === '100')!;
+    const assur  = accounts.find(a => a.number === '400')!;
+    const elect  = accounts.find(a => a.number === '410')!;
+    createJournalEntry({
+      fiscal_year_id: fy.id, date: '2025-04-01', description: 'Charges diverses',
+      lines: [
+        { account_id: assur.id,  debit: 30000  },
+        { account_id: elect.id,  debit: 20000  },
+        { account_id: caisse.id, credit: 50000 },
+      ],
+    });
+    const result = getAccountLedger(fy.id, caisse.id);
+    expect(result.lines[0].counterparts).toHaveLength(2);
+    const nums = result.lines[0].counterparts.map(c => c.number).sort();
+    expect(nums).toEqual(['400', '410']);
+  });
+
+  it('retourne les lignes en ordre chronologique', () => {
+    const fy = createFiscalYear(2025);
+    const accounts = getAllAccounts();
+    const caisse = accounts.find(a => a.number === '100')!;
+    const raiff  = accounts.find(a => a.number === '101')!;
+    createJournalEntry({
+      fiscal_year_id: fy.id, date: '2025-05-01', description: 'Retrait',
+      lines: [{ account_id: caisse.id, debit: 10000 }, { account_id: raiff.id, credit: 10000 }],
+    });
+    createJournalEntry({
+      fiscal_year_id: fy.id, date: '2025-03-01', description: 'Dépôt',
+      lines: [{ account_id: caisse.id, credit: 20000 }, { account_id: raiff.id, debit: 20000 }],
+    });
+    const result = getAccountLedger(fy.id, caisse.id);
+    expect(result.lines[0].description).toBe('Dépôt');
+    expect(result.lines[1].description).toBe('Retrait');
+  });
+
+  it('lève une erreur si le compte est introuvable', () => {
+    const fy = createFiscalYear(2025);
+    expect(() => getAccountLedger(fy.id, 9999)).toThrow('Compte introuvable');
   });
 });
