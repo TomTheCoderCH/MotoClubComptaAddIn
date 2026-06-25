@@ -13,7 +13,7 @@ type Fixtures = {
 // → l'app démarre directement sur AccountsPage (WelcomePage bypassée)
 // → DB temporaire fraîche, aucune pollution entre tests
 export const test = base.extend<Fixtures>({
-  electronApp: async ({}, use) => {
+  electronApp: async (_fixtures, use) => {
     const tempAppData = fs.mkdtempSync(path.join(os.tmpdir(), 'mcy-e2e-'));
     const dataDir = path.join(tempAppData, 'data');
     fs.mkdirSync(dataDir, { recursive: true });

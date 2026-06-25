@@ -1,7 +1,7 @@
 import ExcelJS from 'exceljs';
 import type Database from 'better-sqlite3';
 
-const EXCEL_FORBIDDEN = /[*?:\\/\[\]]/g;
+const EXCEL_FORBIDDEN = /[*?:\\/[\]]/g;
 
 function sanitizeSheetName(
   accountNumber: string,

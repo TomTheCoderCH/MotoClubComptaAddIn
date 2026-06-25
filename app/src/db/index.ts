@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3';
+import fs from 'node:fs';
 import path from 'node:path';
 import { app } from 'electron';
 import { initSchema } from './schema';
@@ -55,7 +56,6 @@ export function openDatabase(dataPath?: string): Database.Database {
   const dbPath = path.join(dir, 'mcy-compta.db');
 
   // Créer le dossier si nécessaire
-  const fs = require('node:fs');
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
   db = new Database(dbPath);

@@ -415,7 +415,7 @@ describe('getOpeningBalanceSuggestions + createOpeningBalanceEntry', () => {
   let caisseId: number;
   let raiffeisenId: number;
   let capitalId: number;
-  let passifsId: number;
+  let _passifsId: number;
 
   beforeEach(() => {
     freshDb();
@@ -423,7 +423,7 @@ describe('getOpeningBalanceSuggestions + createOpeningBalanceEntry', () => {
     caisseId     = accounts.find(a => a.number === '100')!.id;
     raiffeisenId = accounts.find(a => a.number === '101')!.id;
     capitalId    = accounts.find(a => a.number === '290')!.id;
-    passifsId    = accounts.find(a => a.number === '200')!.id;
+    _passifsId   = accounts.find(a => a.number === '200')!.id;
 
     // Exercice 2025 avec quelques soldes
     const fy2025 = createFiscalYear(2025);
@@ -990,7 +990,7 @@ describe('getDashboardData', () => {
   let raiffeisenId: number;
   let cotisationsId: number;
   let assurancesId: number;
-  let capitalId: number;
+  let _capitalId: number;
   let avancesCaissierId: number;
   let marcheProduitId: number;
   let marcheChargeId: number;
@@ -1004,7 +1004,7 @@ describe('getDashboardData', () => {
     raiffeisenId       = accounts.find(a => a.number === '101')!.id;
     cotisationsId      = accounts.find(a => a.number === '300')!.id;
     assurancesId       = accounts.find(a => a.number === '400')!.id;
-    capitalId          = accounts.find(a => a.number === '290')!.id;
+    _capitalId         = accounts.find(a => a.number === '290')!.id;
     avancesCaissierId  = accounts.find(a => a.number === '103')!.id;
     marcheProduitId    = accounts.find(a => a.number === '330')!.id;
     marcheChargeId     = accounts.find(a => a.number === '430')!.id;

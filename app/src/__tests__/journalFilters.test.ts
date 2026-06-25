@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest';
-import type { JournalEntry, JournalEntryLine } from '../types';
 import { DEFAULT_FILTERS, applyFilters } from '../lib/journalFilters';
 import type { EntryWithLines } from '../lib/journalFilters';
 
