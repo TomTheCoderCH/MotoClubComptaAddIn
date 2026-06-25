@@ -9,6 +9,7 @@ const NAV_ITEMS: Array<{ id: Page; label: string }> = [
   { id: 'fiscal-years', label: 'Exercices'      },
   { id: 'balances',     label: 'Soldes'         },
   { id: 'analytics',    label: 'Analytique'     },
+  { id: 'bilan',        label: 'Bilan complet'  },
   { id: 'settings',     label: 'Paramètres'     },
 ];
 

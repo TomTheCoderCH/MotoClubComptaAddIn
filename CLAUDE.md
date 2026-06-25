@@ -505,12 +505,12 @@ app/
 - [x] Toast de confirmation (`Toast.tsx`) — "Écriture enregistrée" après création / "Écriture modifiée" après édition ; auto-dismiss 2,5 s — 482 tests
 - [x] Icônes Lucide React (`lucide-react`) — tous les boutons d'action (créer, modifier, supprimer, exporter, restaurer…) : icône + texte via `display: inline-flex; align-items: center; gap` sur chaque classe bouton CSS — pages : JournalPage, AccountsPage, AccountFormModal, FiscalYearsPage, DashboardPage, SettingsPage — 482 tests
 - [x] Corrections qualité tests — React key warning (AccountsPage : `<>` → `<React.Fragment key={cls}>`) ; 4 warnings `act(...)` éliminés (SettingsPage, FiscalYearsPage ×2, BalancesPage : `getBy*` → `await findBy*`) — 482 tests
+- [x] Page **Bilan complet** (`BilanPage`) — deux colonnes (Actif / Passif & FP + Résultat / Charges), résultat net P&L calculé en renderer depuis `getAccountBalances`, aucune écriture persistée ; mention "Résultat provisoire *" si exercice ouvert, "clôturé" si fermé ; contrôle d'équilibre bilan ; entrée sidebar "Bilan complet" — 494 tests
 
 #### Idées futures (non planifiées)
 
 - [ ] **Vite 5→8 + `@vitejs/plugin-react` 5→6** — bloqué : `@electron-forge/plugin-vite` v8 encore en alpha. À revisiter quand une version stable est publiée.
 - [ ] Filtres / recherche sur la page Soldes (par classe, par compte)
-- [ ] Page **Bilan complet** — vue instantanée de l'état des comptes à tout moment de l'exercice : soldes réels des comptes de bilan (1xx, 2xx) + résultat P&L simulé (3xx − 4xx agrégé) sans persister d'écritures de clôture ; utile pour communiquer l'état des finances au comité en cours d'année. Génération des écritures de clôture fictives en mémoire uniquement (côté main process, pas d'INSERT).
 - [ ] Tests E2E supplémentaires — clôture complète, analytics
 - [ ] Page **Compte** (grand-livre par compte) — détail de toutes les écritures d'un compte pour un exercice donné, colonnes Débit / Crédit / Solde courant (total running), total en pied de page ; total courant pertinent uniquement pour les comptes de bilan (1xx, 2xx)
 

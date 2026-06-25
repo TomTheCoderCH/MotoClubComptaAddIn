@@ -6,10 +6,11 @@ import JournalPage     from './pages/JournalPage';
 import FiscalYearsPage from './pages/FiscalYearsPage';
 import BalancesPage    from './pages/BalancesPage';
 import AnalyticsPage   from './pages/AnalyticsPage';
+import BilanPage       from './pages/BilanPage';
 import SettingsPage    from './pages/SettingsPage';
 import WelcomePage     from './pages/WelcomePage';
 
-export type Page = 'dashboard' | 'accounts' | 'journal' | 'fiscal-years' | 'balances' | 'analytics' | 'settings' | 'welcome';
+export type Page = 'dashboard' | 'accounts' | 'journal' | 'fiscal-years' | 'balances' | 'analytics' | 'bilan' | 'settings' | 'welcome';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page | null>(null);
@@ -31,6 +32,7 @@ export default function App() {
       case 'fiscal-years': return <FiscalYearsPage />;
       case 'balances':     return <BalancesPage />;
       case 'analytics':    return <AnalyticsPage />;
+      case 'bilan':        return <BilanPage />;
       case 'settings':     return <SettingsPage />;
       default:             return <DashboardPage />;
     }

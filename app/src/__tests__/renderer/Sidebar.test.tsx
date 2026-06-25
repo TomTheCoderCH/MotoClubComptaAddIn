@@ -6,7 +6,7 @@ import Sidebar from '../../components/Sidebar';
 import { HelpContext } from '../../components/HelpContext';
 
 describe('Sidebar — affichage', () => {
-  it('affiche les 7 items de navigation', () => {
+  it('affiche les 8 items de navigation', () => {
     render(<Sidebar currentPage="accounts" onNavigate={vi.fn()} />);
     expect(screen.getByText('Accueil')).toBeInTheDocument();
     expect(screen.getByText('Plan comptable')).toBeInTheDocument();
@@ -14,6 +14,7 @@ describe('Sidebar — affichage', () => {
     expect(screen.getByText('Exercices')).toBeInTheDocument();
     expect(screen.getByText('Soldes')).toBeInTheDocument();
     expect(screen.getByText('Analytique')).toBeInTheDocument();
+    expect(screen.getByText('Bilan complet')).toBeInTheDocument();
     expect(screen.getByText('Paramètres')).toBeInTheDocument();
   });
 

@@ -1,0 +1,177 @@
+.header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #0f172a;
+}
+
+.yearSelector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.label {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: #475569;
+}
+
+.select {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.875rem;
+  color: #0f172a;
+  background: #fff;
+}
+
+.error {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 1.25rem;
+  color: #dc2626;
+  font-size: 0.875rem;
+}
+
+.empty {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.section {
+  margin-bottom: 2rem;
+}
+
+.sectionTitle {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Deux colonnes côte-à-côte */
+.twoCol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 720px) {
+  .twoCol { grid-template-columns: 1fr; }
+}
+
+.table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.875rem;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.theadRow {
+  background: #1e3a5f;
+}
+
+.thSide {
+  padding: 0.55rem 1rem;
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  color: #fff;
+  text-align: left;
+}
+
+.dataRow {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.td {
+  padding: 0.4rem 1rem;
+  color: #334155;
+}
+
+.tdRight {
+  text-align: right;
+  font-family: monospace;
+  white-space: nowrap;
+}
+
+.tdEmpty {
+  padding: 0.4rem 1rem;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* Ligne résultat provisoire dans le passif */
+.resultRow {
+  border-bottom: 1px solid #f1f5f9;
+  background: #f8fafc;
+  font-style: italic;
+}
+
+.totalCell {
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  color: #0f172a;
+  background: #e2e8f0;
+  border-top: 2px solid #94a3b8;
+}
+
+/* Couleurs négatives */
+.tdRight[data-negative],
+.totalCell[data-negative] {
+  color: #dc2626;
+}
+
+/* Ligne d'équilibre du bilan */
+.balanceCheck {
+  margin-top: 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #dc2626;
+}
+
+.balanceCheck[data-ok] {
+  color: #16a34a;
+}
+
+.note {
+  margin: 0.4rem 0 0;
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+/* Bandeau résultat net */
+.netResult {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #15803d;
+}
+
+.netResult[data-negative] {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
