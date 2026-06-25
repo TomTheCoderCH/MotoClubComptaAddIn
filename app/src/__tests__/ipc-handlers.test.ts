@@ -26,6 +26,7 @@ vi.mock('../db', () => ({
   deleteAccount:       vi.fn(),
   getDashboardData:    vi.fn(),
   getAnalyticsData:    vi.fn(),
+  getAccountLedger:    vi.fn(),
 }));
 
 import {
@@ -43,6 +44,7 @@ import {
   deleteAccount,
   getDashboardData,
   getAnalyticsData,
+  getAccountLedger,
 } from '../db';
 import { registerIpcHandlers } from '../ipc-handlers';
 
@@ -366,5 +368,27 @@ describe('accounts:delete', () => {
   it('propage une erreur de deleteAccount', async () => {
     vi.mocked(deleteAccount).mockImplementation(() => { throw new Error('des écritures existent'); });
     await expect(call('accounts:delete', 1)).rejects.toThrow('des écritures existent');
+  });
+});
+
+// ─── account:getLedger ──────────────────────────────────────────────────────
+
+describe('account:getLedger', () => {
+  it('délègue à getAccountLedger avec fiscalYearId et accountId', async () => {
+    const mockData = {
+      account: { id: 1, number: '100', name: 'Caisse', type: 'ACTIF', normal_balance: 'DEBIT', class: 1 },
+      lines: [],
+    };
+    vi.mocked(getAccountLedger).mockReturnValue(mockData as any);
+    const result = await call('account:getLedger', 1, 42);
+    expect(getAccountLedger).toHaveBeenCalledWith(1, 42);
+    expect(result).toBe(mockData);
+  });
+
+  it('propage une erreur de getAccountLedger', async () => {
+    vi.mocked(getAccountLedger).mockImplementation(() => {
+      throw new Error('Compte introuvable');
+    });
+    await expect(call('account:getLedger', 1, 9999)).rejects.toThrow('Compte introuvable');
   });
 });

@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { Account, FiscalYear, JournalEntry, JournalEntryLine, AccountBalance, CreateJournalEntryPayload, UpdateJournalEntryPayload, BackupInfo, OpeningBalanceSuggestion, OpeningBalanceLine, ClosingPreview, UpdateAccountPayload, CreateAccountPayload, AnalyticsData, DashboardData, DashboardCardConfig } from './types';
+import type { Account, FiscalYear, JournalEntry, JournalEntryLine, AccountBalance, CreateJournalEntryPayload, UpdateJournalEntryPayload, BackupInfo, OpeningBalanceSuggestion, OpeningBalanceLine, ClosingPreview, UpdateAccountPayload, CreateAccountPayload, AnalyticsData, DashboardData, DashboardCardConfig, AccountLedgerData } from './types';
 
 // API exposée au renderer via window.api
 contextBridge.exposeInMainWorld('api', {
@@ -70,6 +70,10 @@ contextBridge.exposeInMainWorld('api', {
   // Analytique
   getAnalytics: (fiscalYearId: number): Promise<AnalyticsData> =>
     ipcRenderer.invoke('analytics:get', fiscalYearId),
+
+  // Grand-livre
+  getAccountLedger: (fiscalYearId: number, accountId: number): Promise<AccountLedgerData> =>
+    ipcRenderer.invoke('account:getLedger', fiscalYearId, accountId),
 });
 
 // Déclaration TypeScript pour window.api dans le renderer
@@ -103,4 +107,5 @@ export type ElectronAPI = {
   getDashboardData:   (fiscalYearId: number, cards: DashboardCardConfig[]) => Promise<DashboardData>;
   saveDashboardCards: (cards: DashboardCardConfig[]) => Promise<void>;
   getAnalytics:       (fiscalYearId: number) => Promise<AnalyticsData>;
+  getAccountLedger:   (fiscalYearId: number, accountId: number) => Promise<AccountLedgerData>;
 };

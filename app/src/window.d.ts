@@ -15,6 +15,7 @@ import type {
   AnalyticsData,
   DashboardData,
   DashboardCardConfig,
+  AccountLedgerData,
 } from './types';
 
 declare global {
@@ -49,6 +50,7 @@ declare global {
       getDashboardData:    (fiscalYearId: number, cards: DashboardCardConfig[]) => Promise<DashboardData>;
       saveDashboardCards:  (cards: DashboardCardConfig[]) => Promise<void>;
       getAnalytics:        (fiscalYearId: number) => Promise<AnalyticsData>;
+      getAccountLedger:    (fiscalYearId: number, accountId: number) => Promise<AccountLedgerData>;
     };
   }
 }
