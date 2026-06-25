@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Plus, Pencil } from 'lucide-react';
 import type { Account } from '../types';
 import AccountFormModal from '../components/AccountFormModal';
@@ -75,8 +75,8 @@ export default function AccountsPage() {
         </thead>
         <tbody>
           {classes.map(cls => (
-            <>
-              <tr key={`header-${cls}`} className={styles.groupHeader}>
+            <React.Fragment key={cls}>
+              <tr className={styles.groupHeader}>
                 <td colSpan={6}>{CLASS_LABELS[cls] ?? `Classe ${cls}`}</td>
               </tr>
               {byClass[cls].map(a => (
@@ -101,7 +101,7 @@ export default function AccountsPage() {
                   </td>
                 </tr>
               ))}
-            </>
+            </React.Fragment>
           ))}
         </tbody>
       </table>
