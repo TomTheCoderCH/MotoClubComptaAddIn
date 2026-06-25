@@ -498,6 +498,20 @@ app/
 - [x] UX AccountsPage : hover sur lignes + séparateurs de classe (Classe 1 — Actifs, etc.)
 - [x] Tableau de bord (`DashboardPage`) — 4 cartes soldes 100/101/102 + résultat P&L hors clôture, sélecteur exercice, page d'accueil par défaut — 450 tests
 
+- [x] Mise à jour dépendances : TypeScript 4 → 6, ESLint 8 → 9 (flat config `eslint.config.mjs`), `typescript-eslint` v8, `@electron/fuses` v1 → v2, electron 42.4 → 42.5, Playwright 1.61.0 → 1.61.1 — 477 tests
+- [x] Navigation clavier EntryForm — `Enter` sur le dernier champ montant ajoute une ligne et y place le focus (`useRef` + `useEffect`) — 477 tests
+- [x] Validation inline date hors exercice — message rouge sous le champ Date si date < `start_date` ou > `end_date` de l'exercice ; bouton Enregistrer désactivé — 477 tests
+- [x] HelpDrawer mis à jour — Tableau de bord, Analytique, Plan comptable éditable, groupes analytiques, raccourci `Entrée`, avertissement date — 477 tests
+- [x] Toast de confirmation (`Toast.tsx`) — "Écriture enregistrée" après création / "Écriture modifiée" après édition ; auto-dismiss 2,5 s — 482 tests
+
+#### Idées futures (non planifiées)
+
+- [ ] **Vite 5→8 + `@vitejs/plugin-react` 5→6** — bloqué : `@electron-forge/plugin-vite` v8 encore en alpha. À revisiter quand une version stable est publiée.
+- [ ] Filtres / recherche sur la page Soldes (par classe, par compte)
+- [ ] Vue récapitulative avant clôture — aperçu des écritures automatiques qui seront générées (soldages 3xx/4xx → 900 → 290)
+- [ ] Tests E2E supplémentaires — clôture complète, analytics
+- [ ] Import initial depuis Excel — migrer les données de `Documents/MCY comptes 25.xlsx` pour démarrer sans ressaisie
+
 ### Notes techniques actives
 
 - `@vitejs/plugin-react` est en **v5.x** — ESM-only, compatible grâce au renommage de `vite.renderer.config.ts` → **`vite.renderer.config.mts`** (force le mode ESM dans esbuild). Sans le `.mts`, Vite 5 échoue avec `"ESM file cannot be loaded by require"`. Le `vitest.config.ts` n'est pas affecté car Vitest 4.x utilise son propre Vite 8.x en interne.
