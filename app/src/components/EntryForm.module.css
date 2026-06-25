@@ -175,6 +175,12 @@
   color: #92400e;
 }
 
+.fieldError {
+  font-size: 0.75rem;
+  color: #dc2626;
+  margin-top: 0.15rem;
+}
+
 .error {
   background: #fee2e2;
   border: 1px solid #fca5a5;

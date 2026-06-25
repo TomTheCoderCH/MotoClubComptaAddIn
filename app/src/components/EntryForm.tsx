@@ -68,8 +68,9 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
     { debit: 0, credit: 0 },
   );
 
-  const balanced   = totals.debit > 0 && Math.abs(totals.debit - totals.credit) < 0.001;
-  const canSubmit  = description.trim() !== '' && date !== '' && balanced && !submitting;
+  const balanced       = totals.debit > 0 && Math.abs(totals.debit - totals.credit) < 0.001;
+  const dateOutOfRange = date !== '' && (date < fiscalYear.start_date || date > fiscalYear.end_date);
+  const canSubmit      = description.trim() !== '' && date !== '' && !dateOutOfRange && balanced && !submitting;
 
   function updateLine(i: number, field: keyof Line, value: string) {
     setLines(prev => {
@@ -165,6 +166,11 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
             required
             className={styles.input}
           />
+          {dateOutOfRange && (
+            <span className={styles.fieldError}>
+              Date hors de l'exercice {fiscalYear.year} ({formatDate(fiscalYear.start_date)} – {formatDate(fiscalYear.end_date)})
+            </span>
+          )}
         </div>
         <div className={`${styles.field} ${styles.fieldWide}`}>
           <label htmlFor="entry-desc" className={styles.label}>Libellé *</label>
@@ -293,4 +299,9 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+function formatDate(iso: string): string {
+  const [y, m, d] = iso.split('-');
+  return `${d}.${m}.${y}`;
 }

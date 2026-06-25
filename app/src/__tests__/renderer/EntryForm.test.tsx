@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { FiscalYear, Account } from '../../types';
 import EntryForm from '../../components/EntryForm';
@@ -101,6 +101,7 @@ describe('EntryForm — validation équilibre D/C', () => {
 
   it('active le bouton Enregistrer quand tout est valide', async () => {
     render(<EntryForm {...defaultProps} />);
+    fireEvent.change(screen.getByLabelText('Date *'), { target: { value: '2025-06-15' } });
     await userEvent.type(screen.getByLabelText('Libellé *'), 'Cotisation membre');
     await fillLine(1, 'Caisse',             '30', undefined);
     await fillLine(2, 'Cotisations membres', undefined, '30');
@@ -113,6 +114,7 @@ describe('EntryForm — soumission', () => {
     const user = userEvent.setup();
     render(<EntryForm {...defaultProps} />);
 
+    fireEvent.change(screen.getByLabelText('Date *'), { target: { value: '2025-06-15' } });
     await user.type(screen.getByLabelText('Libellé *'), 'Cotisation membre');
     const sel1 = screen.getByRole('combobox', { name: 'Compte ligne 1' });
     await user.selectOptions(sel1, within(sel1).getByRole('option', { name: /Caisse/ }));
@@ -153,6 +155,7 @@ describe('EntryForm — soumission', () => {
       createJournalEntry: vi.fn().mockRejectedValue(new Error('Exercice clôturé')),
     });
     render(<EntryForm {...defaultProps} />);
+    fireEvent.change(screen.getByLabelText('Date *'), { target: { value: '2025-06-15' } });
     await userEvent.type(screen.getByLabelText('Libellé *'), 'Test');
     const s1 = screen.getByRole('combobox', { name: 'Compte ligne 1' });
     await userEvent.selectOptions(s1, within(s1).getByRole('option', { name: /Caisse/ }));
@@ -224,6 +227,42 @@ describe('EntryForm — mode édition', () => {
   it('masque le titre quand hideTitle est true', () => {
     render(<EntryForm {...defaultProps} hideTitle />);
     expect(screen.queryByRole('heading', { level: 2 })).not.toBeInTheDocument();
+  });
+});
+
+describe('EntryForm — validation de date', () => {
+  it('pas d\'avertissement pour une date dans l\'exercice', () => {
+    render(<EntryForm {...defaultProps} />);
+    fireEvent.change(screen.getByLabelText('Date *'), { target: { value: '2025-06-15' } });
+    expect(screen.queryByText(/hors de l'exercice/)).not.toBeInTheDocument();
+  });
+
+  it('affiche un avertissement pour une date avant le début de l\'exercice', () => {
+    render(<EntryForm {...defaultProps} />);
+    fireEvent.change(screen.getByLabelText('Date *'), { target: { value: '2024-12-31' } });
+    expect(screen.getByText(/hors de l'exercice 2025/)).toBeInTheDocument();
+  });
+
+  it('affiche un avertissement pour une date après la fin de l\'exercice', () => {
+    render(<EntryForm {...defaultProps} />);
+    fireEvent.change(screen.getByLabelText('Date *'), { target: { value: '2026-01-01' } });
+    expect(screen.getByText(/hors de l'exercice 2025/)).toBeInTheDocument();
+  });
+
+  it('désactive le bouton Enregistrer quand la date est hors exercice', async () => {
+    render(<EntryForm {...defaultProps} />);
+    fireEvent.change(screen.getByLabelText('Date *'), { target: { value: '2025-06-15' } });
+    await userEvent.type(screen.getByLabelText('Libellé *'), 'Test');
+    const s1 = screen.getByRole('combobox', { name: 'Compte ligne 1' });
+    await userEvent.selectOptions(s1, within(s1).getByRole('option', { name: /Caisse/ }));
+    await userEvent.type(screen.getByRole('spinbutton', { name: 'Débit ligne 1' }), '30');
+    const s2 = screen.getByRole('combobox', { name: 'Compte ligne 2' });
+    await userEvent.selectOptions(s2, within(s2).getByRole('option', { name: /Cotisations/ }));
+    await userEvent.type(screen.getByRole('spinbutton', { name: 'Crédit ligne 2' }), '30');
+    expect(screen.getByRole('button', { name: /Enregistrer/ })).not.toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText('Date *'), { target: { value: '2026-01-01' } });
+    expect(screen.getByRole('button', { name: /Enregistrer/ })).toBeDisabled();
   });
 });
 
