@@ -53,6 +53,9 @@
 }
 
 .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   padding: 0.45rem 1rem;
   background: #3b82f6;
   color: #fff;
@@ -73,6 +76,9 @@
 }
 
 .btnSmall {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   padding: 0.25rem 0.6rem;
   background: #eff6ff;
   color: #1d4ed8;
@@ -87,6 +93,9 @@
 }
 
 .btnReopen {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   padding: 0.25rem 0.6rem;
   background: #fff7ed;
   color: #c2410c;
@@ -101,6 +110,9 @@
 }
 
 .btnExport {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   padding: 0.25rem 0.6rem;
   background: #f0fdf4;
   color: #15803d;

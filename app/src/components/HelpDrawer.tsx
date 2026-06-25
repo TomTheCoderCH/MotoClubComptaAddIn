@@ -156,7 +156,7 @@ function AccountingTab() {
         Un groupe analytique est une étiquette libre assignée à un ou plusieurs comptes
         (ex. "Marché Villageois", "Broche"). La page <em>Analytique</em> regroupe ensuite
         les produits et charges par groupe pour visualiser le résultat de chaque événement.
-        Assigner un groupe : <em>Plan comptable</em> → crayon → champ "Groupe analytique".
+        Assigner un groupe : <em>Plan comptable</em> → bouton <em>Modifier</em> → champ "Groupe analytique".
       </p>
 
       <h3 className={styles.sectionTitle}>Glossaire</h3>

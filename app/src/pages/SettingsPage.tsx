@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { FolderOpen, Download, RotateCcw, FileSpreadsheet } from 'lucide-react';
 import type { BackupInfo, FiscalYear } from '../types';
 import styles from './SettingsPage.module.css';
 
@@ -142,7 +143,7 @@ export default function SettingsPage() {
           disabled={changeStatus === 'loading'}
           className={styles.btnSecondary}
         >
-          {changeStatus === 'loading' ? 'Migration en cours…' : 'Changer le dossier de données…'}
+          <FolderOpen size={14} />{changeStatus === 'loading' ? 'Migration en cours…' : 'Changer le dossier de données…'}
         </button>
         {changeStatus === 'cancelled' && (
           <p className={styles.hint} role="status">Opération annulée.</p>
@@ -160,9 +161,7 @@ export default function SettingsPage() {
           disabled={exportStatus === 'loading'}
           className={styles.btn}
         >
-          {exportStatus === 'loading'
-            ? 'Export en cours…'
-            : 'Exporter une sauvegarde maintenant'}
+          <Download size={14} />{exportStatus === 'loading' ? 'Export en cours…' : 'Exporter une sauvegarde'}
         </button>
 
         {exportStatus === 'success' && exportPath && (
@@ -182,7 +181,7 @@ export default function SettingsPage() {
           disabled={restoring}
           className={styles.btnSecondary}
         >
-          {restoring ? 'Restauration en cours…' : 'Restaurer depuis une sauvegarde…'}
+          <RotateCcw size={14} />{restoring ? 'Restauration en cours…' : 'Restaurer depuis une sauvegarde…'}
         </button>
 
         <h3 className={styles.h3}>
@@ -218,7 +217,7 @@ export default function SettingsPage() {
                       disabled={restoring}
                       onClick={() => handleRestoreFrom(b.filename)}
                     >
-                      Restaurer
+                      <RotateCcw size={12} />Restaurer
                     </button>
                   </td>
                 </tr>
@@ -250,7 +249,7 @@ export default function SettingsPage() {
             disabled={excelStatus === 'loading' || selectedFyId === null}
             className={styles.btn}
           >
-            {excelStatus === 'loading' ? 'Export en cours…' : 'Exporter en Excel'}
+            <FileSpreadsheet size={14} />{excelStatus === 'loading' ? 'Export en cours…' : 'Exporter en Excel'}
           </button>
         </div>
         {excelStatus === 'success' && excelPath && (

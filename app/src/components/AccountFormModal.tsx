@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Trash2, Save, Plus } from 'lucide-react';
 import type { Account, AccountType, UpdateAccountPayload, CreateAccountPayload } from '../types';
 import ConfirmDialog from './ConfirmDialog';
 import Modal from './Modal';
@@ -212,14 +213,16 @@ export default function AccountFormModal({ account, existingGroups, onClose, onS
                 disabled={deleting || submitting}
                 className={styles.deleteBtn}
               >
-                {deleting ? 'Suppression…' : 'Supprimer'}
+                <Trash2 size={14} />{deleting ? 'Suppression…' : 'Supprimer'}
               </button>
             )}
             <button type="button" onClick={onClose} className={styles.cancelBtn}>
               Annuler
             </button>
             <button type="submit" disabled={!canSubmit} className={styles.submitBtn}>
-              {submitting ? 'Enregistrement…' : isEdit ? 'Enregistrer' : 'Créer'}
+              {isEdit
+                ? <><Save size={14} />{submitting ? 'Enregistrement…' : 'Enregistrer'}</>
+                : <><Plus size={14} />{submitting ? 'Création…' : 'Créer'}</>}
             </button>
           </div>
         </form>

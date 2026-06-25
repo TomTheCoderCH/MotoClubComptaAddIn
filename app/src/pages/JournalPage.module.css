@@ -53,6 +53,9 @@
 }
 
 .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   padding: 0.45rem 1rem;
   background: #3b82f6;
   color: #fff;
@@ -113,6 +116,9 @@
 }
 
 .actionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   padding: 0.2rem 0.5rem;
   background: none;
   border: 1px solid #e2e8f0;

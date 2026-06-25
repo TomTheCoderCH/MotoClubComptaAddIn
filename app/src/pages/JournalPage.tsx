@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Plus, Pencil, Trash2 } from 'lucide-react';
 import type { FiscalYear, Account, JournalFilters } from '../types';
 import { DEFAULT_FILTERS } from '../types';
 import { applyFilters } from '../lib/journalFilters';
@@ -104,7 +105,7 @@ export default function JournalPage() {
           {!currentFiscalYear?.is_closed && (
             <div className={styles.newEntryBar}>
               <button onClick={() => setModal({ mode: 'create' })} className={styles.btn}>
-                + Nouvelle écriture
+                <Plus size={15} />Nouvelle écriture
               </button>
             </div>
           )}
@@ -161,14 +162,14 @@ export default function JournalPage() {
                                   className={styles.actionBtn}
                                   aria-label="Modifier"
                                 >
-                                  Modifier
+                                  <Pencil size={12} />Modifier
                                 </button>
                                 <button
                                   onClick={() => setConfirmEntry(entry)}
                                   className={`${styles.actionBtn} ${styles.actionBtnDelete}`}
                                   aria-label="Supprimer"
                                 >
-                                  Supprimer
+                                  <Trash2 size={12} />Supprimer
                                 </button>
                               </div>
                             )}

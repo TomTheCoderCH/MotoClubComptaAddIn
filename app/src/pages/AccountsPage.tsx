@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Plus, Pencil } from 'lucide-react';
 import type { Account } from '../types';
 import AccountFormModal from '../components/AccountFormModal';
 import styles from './AccountsPage.module.css';
@@ -54,7 +55,7 @@ export default function AccountsPage() {
     <div>
       <div className={styles.topBar}>
         <h1 className={styles.heading}>Plan comptable</h1>
-        <button onClick={openCreate} className={styles.newBtn}>+ Nouveau compte</button>
+        <button onClick={openCreate} className={styles.newBtn}><Plus size={15} />Nouveau compte</button>
       </div>
 
       {error && <div className={styles.error}>Erreur : {error}</div>}
@@ -95,7 +96,7 @@ export default function AccountsPage() {
                       className={styles.editBtn}
                       aria-label={`Modifier ${a.name}`}
                     >
-                      Modifier
+                      <Pencil size={13} />Modifier
                     </button>
                   </td>
                 </tr>

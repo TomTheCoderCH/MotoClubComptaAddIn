@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Plus } from 'lucide-react';
 import type { FiscalYear, DashboardData, DashboardCardConfig } from '../types';
 import AddCardModal from '../components/AddCardModal';
 import styles from './DashboardPage.module.css';
@@ -167,7 +168,7 @@ export default function DashboardPage() {
               onClick={() => setShowAddModal(true)}
               aria-label="Ajouter une carte"
             >
-              + Ajouter
+              <Plus size={16} />Ajouter
             </button>
           </div>
         </>

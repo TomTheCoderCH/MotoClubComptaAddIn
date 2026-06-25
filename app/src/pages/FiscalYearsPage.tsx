@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Plus, ClipboardList, Lock, LockOpen, FileSpreadsheet } from 'lucide-react';
 import type { FiscalYear, OpeningBalanceSuggestion, ClosingPreview } from '../types';
 import OpeningBalanceModal from '../components/OpeningBalanceModal';
 import ClosingModal from '../components/ClosingModal';
@@ -146,7 +147,7 @@ export default function FiscalYearsPage() {
             disabled={creating || yearAlreadyExists}
             className={styles.btn}
           >
-            {creating ? 'Création…' : `Créer l'exercice ${newYear}`}
+            <Plus size={15} />{creating ? 'Création…' : `Créer l'exercice ${newYear}`}
           </button>
         </form>
       </section>
@@ -186,7 +187,7 @@ export default function FiscalYearsPage() {
                         onClick={() => handleOpenModal(y)}
                         className={styles.btnSmall}
                       >
-                        Saisir les soldes à nouveau
+                        <ClipboardList size={13} />Saisir les soldes à nouveau
                       </button>
                     ) : null}
                   </td>
@@ -196,14 +197,14 @@ export default function FiscalYearsPage() {
                         onClick={() => handleCloseExercise(y)}
                         className={styles.btnSmall}
                       >
-                        Clôturer l&apos;exercice
+                        <Lock size={13} />Clôturer l&apos;exercice
                       </button>
                     ) : (
                       <button
                         onClick={() => handleReopenClick(y)}
                         className={styles.btnReopen}
                       >
-                        Rouvrir
+                        <LockOpen size={13} />Rouvrir
                       </button>
                     )}
                     {' '}
@@ -211,7 +212,7 @@ export default function FiscalYearsPage() {
                       onClick={() => handleExportExcel(y)}
                       className={styles.btnExport}
                     >
-                      Exporter Excel
+                      <FileSpreadsheet size={13} />Exporter Excel
                     </button>
                     {exportStatus?.id === y.id && (
                       <p role="status" className={styles.exportSuccess}>{exportStatus.msg}</p>

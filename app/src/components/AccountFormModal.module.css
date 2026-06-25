@@ -77,6 +77,9 @@
 }
 
 .deleteBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   padding: 0.45rem 1rem;
   background: #fff;
   border: 1px solid #fca5a5;
@@ -103,6 +106,9 @@
 .cancelBtn:hover { background: #f1f5f9; }
 
 .submitBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   padding: 0.45rem 1rem;
   background: #3b82f6;
   color: #fff;

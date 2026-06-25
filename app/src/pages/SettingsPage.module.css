@@ -45,6 +45,9 @@
 }
 
 .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   padding: 0.5rem 1rem;
   background: #3b82f6;
   color: #fff;
@@ -65,6 +68,9 @@
 }
 
 .btnSecondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   margin-top: 0.5rem;
   padding: 0.4rem 0.9rem;
   background: #f1f5f9;
@@ -148,6 +154,9 @@
 }
 
 .btnRestore {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   padding: 0.2rem 0.6rem;
   background: #f1f5f9;
   color: #334155;
