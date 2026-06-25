@@ -17,8 +17,8 @@ const fy2024: FiscalYear = {
 };
 
 const balancesFixture: AccountBalance[] = [
-  { number: '100', name: 'Caisse',              class: 1, total_debit: 120000, total_credit: 80000, solde: 40000 },
-  { number: '300', name: 'Cotisations membres', class: 3, total_debit: 0,      total_credit: 141000, solde: 141000 },
+  { id: 1, number: '100', name: 'Caisse',              class: 1, total_debit: 120000, total_credit: 80000, solde: 40000 },
+  { id: 5, number: '300', name: 'Cotisations membres', class: 3, total_debit: 0,      total_credit: 141000, solde: 141000 },
 ];
 
 function mockApi(years: FiscalYear[] = [], balances: AccountBalance[] = []) {

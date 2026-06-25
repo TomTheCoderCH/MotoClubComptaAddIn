@@ -58,12 +58,37 @@ export interface JournalEntryLine {
 }
 
 export interface AccountBalance {
+  id: number;
   number: string;
   name: string;
   class: number;
   total_debit: number;
   total_credit: number;
   solde: number;
+}
+
+export interface LedgerLine {
+  entryId: number;
+  date: string;
+  piece: string | null;
+  description: string;
+  isOpeningBalance: boolean;
+  isClosingEntry: boolean;
+  debit: number | null;   // centimes CHF, null si ligne au crédit
+  credit: number | null;  // centimes CHF, null si ligne au débit
+  counterparts: Array<{ number: string; name: string }>;
+}
+
+export interface AccountLedgerData {
+  account: {
+    id: number;
+    number: string;
+    name: string;
+    type: AccountType;
+    normal_balance: NormalBalance;
+    class: number;
+  };
+  lines: LedgerLine[];
 }
 
 // Payloads IPC

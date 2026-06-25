@@ -16,17 +16,17 @@ const fy2024: FiscalYear = {
 
 const balancesFixture: AccountBalance[] = [
   // Actif
-  { number: '100', name: 'Caisse',              class: 1, total_debit: 150000, total_credit: 110000, solde: 40000 },
-  { number: '101', name: 'Raiffeisen',          class: 1, total_debit: 500000, total_credit: 300000, solde: 200000 },
+  { id: 1, number: '100', name: 'Caisse',              class: 1, total_debit: 150000, total_credit: 110000, solde: 40000 },
+  { id: 2, number: '101', name: 'Raiffeisen',          class: 1, total_debit: 500000, total_credit: 300000, solde: 200000 },
   // Passif
-  { number: '200', name: 'Passifs transitoires', class: 2, total_debit: 0,      total_credit: 10000,  solde: 10000 },
-  { number: '290', name: 'Capital',              class: 2, total_debit: 0,      total_credit: 200000, solde: 200000 },
+  { id: 3, number: '200', name: 'Passifs transitoires', class: 2, total_debit: 0,      total_credit: 10000,  solde: 10000 },
+  { id: 4, number: '290', name: 'Capital',              class: 2, total_debit: 0,      total_credit: 200000, solde: 200000 },
   // Produits
-  { number: '300', name: 'Cotisations membres',  class: 3, total_debit: 0,      total_credit: 141000, solde: 141000 },
-  { number: '310', name: 'Vente boissons',       class: 3, total_debit: 0,      total_credit: 20000,  solde: 20000 },
+  { id: 5, number: '300', name: 'Cotisations membres',  class: 3, total_debit: 0,      total_credit: 141000, solde: 141000 },
+  { id: 6, number: '310', name: 'Vente boissons',       class: 3, total_debit: 0,      total_credit: 20000,  solde: 20000 },
   // Charges
-  { number: '400', name: 'Assurances',           class: 4, total_debit: 50000,  total_credit: 0,      solde: 50000 },
-  { number: '401', name: 'Frais bancaires',      class: 4, total_debit: 10000,  total_credit: 0,      solde: 10000 },
+  { id: 7, number: '400', name: 'Assurances',           class: 4, total_debit: 50000,  total_credit: 0,      solde: 50000 },
+  { id: 8, number: '401', name: 'Frais bancaires',      class: 4, total_debit: 10000,  total_credit: 0,      solde: 10000 },
 ];
 // Actif: 40000 + 200000 = 240000
 // Passif: 10000 + 200000 = 210000
