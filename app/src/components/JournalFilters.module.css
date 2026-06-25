@@ -1,7 +1,7 @@
 .bar {
   display: flex;
   gap: 0.5rem;
-  align-items: center;
+  align-items: flex-end;
   flex-wrap: wrap;
   margin-bottom: 1rem;
   padding: 0.75rem;
