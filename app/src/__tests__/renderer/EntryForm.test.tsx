@@ -227,6 +227,38 @@ describe('EntryForm — mode édition', () => {
   });
 });
 
+describe('EntryForm — navigation clavier', () => {
+  it('Enter sur Débit de la dernière ligne ajoute une ligne', async () => {
+    render(<EntryForm {...defaultProps} />);
+    const debit2 = screen.getByRole('spinbutton', { name: 'Débit ligne 2' });
+    await userEvent.type(debit2, '{Enter}');
+    expect(screen.getAllByRole('combobox')).toHaveLength(3);
+  });
+
+  it('Enter sur Crédit de la dernière ligne ajoute une ligne', async () => {
+    render(<EntryForm {...defaultProps} />);
+    const credit2 = screen.getByRole('spinbutton', { name: 'Crédit ligne 2' });
+    await userEvent.type(credit2, '{Enter}');
+    expect(screen.getAllByRole('combobox')).toHaveLength(3);
+  });
+
+  it('Enter sur une ligne non-dernière n\'ajoute pas de ligne', async () => {
+    render(<EntryForm {...defaultProps} />);
+    await userEvent.click(screen.getByRole('button', { name: /Ajouter une ligne/ }));
+    expect(screen.getAllByRole('combobox')).toHaveLength(3);
+    const debit1 = screen.getByRole('spinbutton', { name: 'Débit ligne 1' });
+    await userEvent.type(debit1, '{Enter}');
+    expect(screen.getAllByRole('combobox')).toHaveLength(3);
+  });
+
+  it('Enter sur la dernière ligne place le focus sur le compte de la nouvelle ligne', async () => {
+    render(<EntryForm {...defaultProps} />);
+    const debit2 = screen.getByRole('spinbutton', { name: 'Débit ligne 2' });
+    await userEvent.type(debit2, '{Enter}');
+    expect(document.activeElement).toBe(screen.getByRole('combobox', { name: 'Compte ligne 3' }));
+  });
+});
+
 describe('EntryForm — tooltips d\'aide par ligne', () => {
   it('chaque ligne initiale a un tooltip', () => {
     render(<EntryForm {...defaultProps} />);

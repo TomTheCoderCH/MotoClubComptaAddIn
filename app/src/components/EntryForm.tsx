@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { FiscalYear, Account, JournalEntry, JournalEntryLine } from '../types';
 import { parseAmount, formatAmount, validateEntryBalance } from '../lib/accounting';
 import Tooltip from './Tooltip';
@@ -50,6 +50,16 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
   const [submitting,  setSubmitting]  = useState(false);
   const [apiError,    setApiError]    = useState<string | null>(null);
 
+  const accountRefs      = useRef<(HTMLSelectElement | null)[]>([]);
+  const focusLastLineRef = useRef(false);
+
+  useEffect(() => {
+    if (focusLastLineRef.current) {
+      focusLastLineRef.current = false;
+      accountRefs.current[lines.length - 1]?.focus();
+    }
+  }, [lines.length]);
+
   const totals = lines.reduce(
     (acc, l) => ({
       debit:  acc.debit  + (parseFloat(l.debit)  || 0),
@@ -73,6 +83,14 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
 
   function addLine() {
     setLines(prev => [...prev, emptyLine()]);
+  }
+
+  function handleAmountKeyDown(e: React.KeyboardEvent<HTMLInputElement>, isLastLine: boolean) {
+    if (e.key === 'Enter' && isLastLine) {
+      e.preventDefault();
+      focusLastLineRef.current = true;
+      setLines(prev => [...prev, emptyLine()]);
+    }
   }
 
   function removeLine(i: number) {
@@ -189,6 +207,7 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
           return (
             <div key={i} className={styles.lineRow}>
               <select
+                ref={el => { accountRefs.current[i] = el; }}
                 value={line.account_id}
                 onChange={e => updateLine(i, 'account_id', e.target.value)}
                 aria-label={`Compte ligne ${i + 1}`}
@@ -207,6 +226,7 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
                   type="number"
                   value={line.debit}
                   onChange={e => updateLine(i, 'debit', e.target.value)}
+                  onKeyDown={e => handleAmountKeyDown(e, i === lines.length - 1)}
                   min="0.01"
                   step="0.01"
                   placeholder="0.00"
@@ -220,6 +240,7 @@ export default function EntryForm({ fiscalYear, accounts, editEntry, hideTitle, 
                   type="number"
                   value={line.credit}
                   onChange={e => updateLine(i, 'credit', e.target.value)}
+                  onKeyDown={e => handleAmountKeyDown(e, i === lines.length - 1)}
                   min="0.01"
                   step="0.01"
                   placeholder="0.00"
