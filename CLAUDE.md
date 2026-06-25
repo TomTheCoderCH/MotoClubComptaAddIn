@@ -506,6 +506,7 @@ app/
 - [x] Icônes Lucide React (`lucide-react`) — tous les boutons d'action (créer, modifier, supprimer, exporter, restaurer…) : icône + texte via `display: inline-flex; align-items: center; gap` sur chaque classe bouton CSS — pages : JournalPage, AccountsPage, AccountFormModal, FiscalYearsPage, DashboardPage, SettingsPage — 482 tests
 - [x] Corrections qualité tests — React key warning (AccountsPage : `<>` → `<React.Fragment key={cls}>`) ; 4 warnings `act(...)` éliminés (SettingsPage, FiscalYearsPage ×2, BalancesPage : `getBy*` → `await findBy*`) — 482 tests
 - [x] Page **Bilan complet** (`BilanPage`) — deux colonnes (Actif / Passif & FP + Résultat / Charges), résultat net P&L calculé en renderer depuis `getAccountBalances`, aucune écriture persistée ; mention "Résultat provisoire *" si exercice ouvert, "clôturé" si fermé ; contrôle d'équilibre bilan ; entrée sidebar "Bilan complet" — 494 tests
+- [x] Utilitaires de formatage centralisés (`lib/format.ts`) — `formatCHF`, `formatDate`, `formatDateTime`, `formatSize` ; `accounting.ts` réexporte `formatAmount` via `formatCHF` ; 10 fichiers migrés (suppression des fonctions locales dupliquées) — 506 tests
 
 #### Idées futures (non planifiées)
 

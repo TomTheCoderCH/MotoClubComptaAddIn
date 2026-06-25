@@ -4,6 +4,7 @@ import type { FiscalYear, OpeningBalanceSuggestion, ClosingPreview } from '../ty
 import OpeningBalanceModal from '../components/OpeningBalanceModal';
 import ClosingModal from '../components/ClosingModal';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { formatDate } from '../lib/format';
 import styles from './FiscalYearsPage.module.css';
 
 export default function FiscalYearsPage() {
@@ -254,7 +255,3 @@ export default function FiscalYearsPage() {
   );
 }
 
-function formatDate(iso: string): string {
-  const [y, m, d] = iso.split('-');
-  return `${d}.${m}.${y}`;
-}

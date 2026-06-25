@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { ClosingPreview } from '../types';
+import { formatCHF } from '../lib/format';
 import Modal from './Modal';
 import styles from './ClosingModal.module.css';
 
@@ -29,7 +30,7 @@ export default function ClosingModal({ fiscalYearId, year, preview, onClose, onS
     }
   }
 
-  const netCHF   = (Math.abs(preview.netResultCents) / 100).toFixed(2);
+  const netCHF   = formatCHF(Math.abs(preview.netResultCents));
   const isProfit = preview.netResultCents >= 0;
 
   return (
@@ -62,7 +63,7 @@ export default function ClosingModal({ fiscalYearId, year, preview, onClose, onS
                         <td className={styles.tdNum}>{a.accountNumber}</td>
                         <td className={styles.tdName}>{a.accountName}</td>
                         <td className={styles.tdType}>{a.type === 'PRODUIT' ? 'Produit' : 'Charge'}</td>
-                        <td className={styles.tdAmount}>{(Math.abs(a.soldeCents) / 100).toFixed(2)}</td>
+                        <td className={styles.tdAmount}>{formatCHF(Math.abs(a.soldeCents))}</td>
                       </tr>
                     ))}
                   </tbody>

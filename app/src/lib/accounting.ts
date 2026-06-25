@@ -1,6 +1,4 @@
-export function formatAmount(centimes: number): string {
-  return (centimes / 100).toFixed(2);
-}
+export { formatCHF as formatAmount } from './format';
 
 export function parseAmount(input: string): number {
   const n = parseFloat(input.replace(',', '.'));

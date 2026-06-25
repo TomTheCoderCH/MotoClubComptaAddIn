@@ -1,10 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { FiscalYear, AccountBalance } from '../types';
+import { formatCHF as fmt } from '../lib/format';
 import styles from './BilanPage.module.css';
-
-function fmt(centimes: number): string {
-  return (centimes / 100).toFixed(2);
-}
 
 function sign(n: number): string {
   return n >= 0 ? `+${fmt(n)}` : `−${fmt(Math.abs(n))}`;

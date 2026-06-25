@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { OpeningBalanceSuggestion, OpeningBalanceLine } from '../types';
+import { formatCHF } from '../lib/format';
 import Modal from './Modal';
 import styles from './OpeningBalanceModal.module.css';
 
@@ -130,6 +131,3 @@ function parseCHF(str: string): number {
   return isNaN(n) || n < 0 ? 0 : Math.round(n * 100);
 }
 
-function formatCHF(cents: number): string {
-  return (cents / 100).toFixed(2);
-}

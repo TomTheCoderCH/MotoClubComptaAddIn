@@ -4,6 +4,7 @@ import type { FiscalYear, Account, JournalFilters } from '../types';
 import { DEFAULT_FILTERS } from '../types';
 import { applyFilters } from '../lib/journalFilters';
 import type { EntryWithLines } from '../lib/journalFilters';
+import { formatCHF, formatDate } from '../lib/format';
 import JournalFiltersBar from '../components/JournalFilters';
 import EntryFormModal from '../components/EntryFormModal';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -213,11 +214,3 @@ export default function JournalPage() {
   );
 }
 
-function formatDate(iso: string): string {
-  const [y, m, d] = iso.split('-');
-  return `${d}.${m}.${y}`;
-}
-
-function formatCHF(centimes: number): string {
-  return (centimes / 100).toFixed(2);
-}

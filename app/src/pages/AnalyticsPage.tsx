@@ -1,10 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { FiscalYear, AnalyticsData, AnalyticsGroup, AnalyticsAccountRow } from '../types';
+import { formatCHF as fmt } from '../lib/format';
 import styles from './AnalyticsPage.module.css';
-
-function fmt(centimes: number): string {
-  return (centimes / 100).toFixed(2);
-}
 
 export default function AnalyticsPage() {
   const [years,          setYears]          = useState<FiscalYear[]>([]);

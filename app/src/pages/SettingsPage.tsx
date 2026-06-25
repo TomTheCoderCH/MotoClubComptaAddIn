@@ -1,21 +1,11 @@
 import { useEffect, useState } from 'react';
 import { FolderOpen, Download, RotateCcw, FileSpreadsheet } from 'lucide-react';
 import type { BackupInfo, FiscalYear } from '../types';
+import { formatSize, formatDateTime as formatDate } from '../lib/format';
 import styles from './SettingsPage.module.css';
 
 type ExportStatus = 'idle' | 'loading' | 'success' | 'error' | 'cancelled';
 type ChangeStatus = 'idle' | 'loading' | 'success' | 'cancelled';
-
-function formatSize(bytes: number): string {
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} Ko`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
-}
-
-function formatDate(isoDate: string): string {
-  const d = new Date(isoDate);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
 
 export default function SettingsPage() {
   const [dbPath,        setDbPath]        = useState<string>('');

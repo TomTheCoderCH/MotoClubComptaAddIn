@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type { FiscalYear, Account, JournalEntry, JournalEntryLine } from '../types';
 import { parseAmount, formatAmount, validateEntryBalance } from '../lib/accounting';
+import { formatDate } from '../lib/format';
 import Tooltip from './Tooltip';
 import styles from './EntryForm.module.css';
 
@@ -301,7 +302,3 @@ function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function formatDate(iso: string): string {
-  const [y, m, d] = iso.split('-');
-  return `${d}.${m}.${y}`;
-}

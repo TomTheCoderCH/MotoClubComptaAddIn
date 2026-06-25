@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { FiscalYear, AccountBalance } from '../types';
+import { formatCHF as fmt } from '../lib/format';
 import styles from './BalancesPage.module.css';
 
 const CLASS_LABELS: Record<number, string> = {
@@ -36,10 +37,6 @@ function groupBalances(balances: AccountBalance[]): BalanceGroup[] {
       totalCredit: rows.reduce((sum, r) => sum + r.total_credit, 0),
       totalSolde:  rows.reduce((sum, r) => sum + r.solde,        0),
     }));
-}
-
-function fmt(centimes: number): string {
-  return (centimes / 100).toFixed(2);
 }
 
 export default function BalancesPage() {

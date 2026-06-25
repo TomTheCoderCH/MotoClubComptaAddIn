@@ -1,18 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
 import type { FiscalYear, DashboardData, DashboardCardConfig } from '../types';
+import { formatCHF } from '../lib/format';
 import AddCardModal from '../components/AddCardModal';
 import styles from './DashboardPage.module.css';
 
-function fmt(centimes: number): string {
-  if (centimes === 0) return 'CHF 0.00';
-  const sign   = centimes < 0 ? '−' : '+';
-  const amount = (Math.abs(centimes) / 100).toFixed(2);
-  return `${sign} CHF ${amount}`;
+function fmtBalance(centimes: number): string {
+  return `CHF ${formatCHF(centimes)}`;
 }
 
-function fmtBalance(centimes: number): string {
-  return `CHF ${(centimes / 100).toFixed(2)}`;
+function fmt(centimes: number): string {
+  if (centimes === 0) return `CHF ${formatCHF(0)}`;
+  const sign   = centimes < 0 ? '−' : '+';
+  return `${sign} CHF ${formatCHF(Math.abs(centimes))}`;
 }
 
 const FIXED_ACCOUNTS = [
