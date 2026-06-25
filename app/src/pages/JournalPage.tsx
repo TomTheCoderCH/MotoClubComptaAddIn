@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import type { FiscalYear, Account, JournalFilters } from '../types';
 import { DEFAULT_FILTERS } from '../types';
@@ -29,6 +29,9 @@ export default function JournalPage() {
   const [error,        setError]        = useState<string | null>(null);
   const [toast,        setToast]        = useState<string | null>(null);
 
+  const modalRef             = useRef<ModalState>(null);
+  const currentFiscalYearRef = useRef<FiscalYear | undefined>(undefined);
+
   useEffect(() => {
     Promise.all([
       window.api.getFiscalYears(),
@@ -48,6 +51,19 @@ export default function JournalPage() {
       .then(setEntries)
       .catch((e: Error) => setError(e.message));
   }, [selectedYear, years]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === 'n') {
+        e.preventDefault();
+        if (!currentFiscalYearRef.current?.is_closed && modalRef.current === null) {
+          setModal({ mode: 'create' });
+        }
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function reloadEntries() {
     const fy = years.find(y => y.year === selectedYear);
@@ -73,6 +89,9 @@ export default function JournalPage() {
 
   const currentFiscalYear = years.find(y => y.year === selectedYear);
   const filtered = applyFilters(entries, filters);
+
+  modalRef.current             = modal;
+  currentFiscalYearRef.current = currentFiscalYear;
 
   return (
     <div>
@@ -197,6 +216,10 @@ export default function JournalPage() {
             await reloadEntries();
             setToast(isEdit ? 'Écriture modifiée' : 'Écriture enregistrée');
           }}
+          onSavedNew={modal.mode === 'create' ? async () => {
+            await reloadEntries();
+            setToast('Écriture enregistrée');
+          } : undefined}
           onClose={() => setModal(null)}
         />
       )}

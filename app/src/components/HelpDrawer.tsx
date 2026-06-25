@@ -217,6 +217,9 @@ function AppTab() {
           <tr><td><kbd>F1</kbd></td><td>Ouvrir / fermer l'aide</td></tr>
           <tr><td><kbd>Escape</kbd></td><td>Fermer l'aide ou les modales</td></tr>
           <tr><td><kbd>Entrée</kbd></td><td>Dans le dernier champ montant d'une écriture — ajouter une ligne</td></tr>
+          <tr><td><kbd>Ctrl+N</kbd></td><td>Journal — ouvrir le formulaire Nouvelle écriture</td></tr>
+          <tr><td><kbd>Ctrl+S</kbd></td><td>Formulaire écriture — enregistrer et fermer</td></tr>
+          <tr><td><kbd>Ctrl+Entrée</kbd></td><td>Formulaire écriture — enregistrer et créer une nouvelle écriture</td></tr>
         </tbody>
       </table>
 

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { FiscalYear, Account, JournalEntry, JournalEntryLine } from '../../types';
 import JournalPage from '../../pages/JournalPage';
@@ -163,8 +163,44 @@ describe('JournalPage — toast de confirmation', () => {
     await userEvent.type(screen.getByLabelText('Crédit ligne 2'), '30.00');
     await userEvent.selectOptions(screen.getByLabelText('Compte ligne 1'), '1');
     await userEvent.selectOptions(screen.getByLabelText('Compte ligne 2'), '2');
-    await userEvent.click(screen.getByRole('button', { name: /Enregistrer/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Enregistrer l'écriture/ }));
     await screen.findByRole('status');
     expect(screen.getByRole('status')).toHaveTextContent('Écriture enregistrée');
+  });
+});
+
+describe('JournalPage — raccourci Ctrl+N', () => {
+  it('ouvre le formulaire si exercice ouvert et aucune modale', async () => {
+    render(<JournalPage />);
+    await screen.findByText('Cotisation membre');
+    fireEvent.keyDown(document, { key: 'n', ctrlKey: true });
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('ne fait rien si exercice clôturé', async () => {
+    vi.stubGlobal('api', {
+      getFiscalYears:    vi.fn().mockResolvedValue([fyClosed]),
+      getActiveAccounts: vi.fn().mockResolvedValue(accounts),
+      getJournalEntries: vi.fn().mockResolvedValue([]),
+    });
+    render(<JournalPage />);
+    // attendre que la page charge avec le FY clôturé (le bouton "Nouvelle écriture" est absent)
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: /Nouvelle écriture/ })).not.toBeInTheDocument()
+    );
+    fireEvent.keyDown(document, { key: 'n', ctrlKey: true });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('ne fait rien si une modale est déjà ouverte', async () => {
+    render(<JournalPage />);
+    await screen.findByText('Cotisation membre');
+    // ouvrir la modale via le bouton
+    await userEvent.click(screen.getByRole('button', { name: /Nouvelle écriture/ }));
+    await screen.findByRole('dialog');
+    // Ctrl+N avec modale déjà ouverte
+    fireEvent.keyDown(document, { key: 'n', ctrlKey: true });
+    // toujours une seule modale
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
   });
 });

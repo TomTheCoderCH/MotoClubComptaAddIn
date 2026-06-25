@@ -509,6 +509,7 @@ app/
 - [x] Utilitaires de formatage centralisés (`lib/format.ts`) — `formatCHF`, `formatDate`, `formatDateTime`, `formatSize` ; `accounting.ts` réexporte `formatAmount` via `formatCHF` ; 10 fichiers migrés (suppression des fonctions locales dupliquées) — 506 tests
 
 - [x] Page **Grand-livre** (`AccountLedgerPage`) — grand-livre par compte accessible depuis Soldes, colonnes Date/Pièce/Libellé/Contrepartie/Débit/Crédit/Solde courant (bilan uniquement), tooltip "Divers" pour contreparties multiples — 525 tests
+- [x] Journal UX — raccourcis `Ctrl+N` (JournalPage), `Ctrl+S` et `Ctrl+Entrée` (EntryForm), bouton "Enregistrer + Nouveau", autofocus champ Date, `defaultDate(fiscalYear)` — 545 tests
 
 #### Idées futures (non planifiées)
 
