@@ -85,11 +85,13 @@ function QuickStartTab() {
         <li>
           <strong>Saisir les écritures</strong><br />
           Page <em>Journal</em> → "Nouvelle écriture". Chaque écriture doit être équilibrée
-          (total Débit = total Crédit).
+          (total Débit = total Crédit). Appuyez sur <kbd>Entrée</kbd> dans le dernier champ
+          montant pour ajouter rapidement une ligne supplémentaire.
         </li>
         <li>
           <strong>Consulter les soldes</strong><br />
           Page <em>Soldes</em> — affichage en temps réel par classe de compte.
+          Le <em>Tableau de bord</em> (page d'accueil) affiche les soldes clés et le résultat P&amp;L.
         </li>
         <li>
           <strong>Clôturer l'exercice</strong><br />
@@ -149,6 +151,14 @@ function AccountingTab() {
         </tbody>
       </table>
 
+      <h3 className={styles.sectionTitle}>Groupes analytiques</h3>
+      <p className={styles.para}>
+        Un groupe analytique est une étiquette libre assignée à un ou plusieurs comptes
+        (ex. "Marché Villageois", "Broche"). La page <em>Analytique</em> regroupe ensuite
+        les produits et charges par groupe pour visualiser le résultat de chaque événement.
+        Assigner un groupe : <em>Plan comptable</em> → crayon → champ "Groupe analytique".
+      </p>
+
       <h3 className={styles.sectionTitle}>Glossaire</h3>
       <dl className={styles.glossary}>
         <dt>Exercice fiscal</dt>
@@ -174,11 +184,22 @@ function AppTab() {
     <div>
       <h3 className={styles.sectionTitle}>Pages de l'application</h3>
       <dl className={styles.glossary}>
+        <dt>Tableau de bord</dt>
+        <dd>Page d'accueil. Affiche les soldes des comptes de liquidités (Caisse, Raiffeisen,
+            Twint) et le résultat P&amp;L de l'exercice sélectionné. Les cartes sont
+            configurables (compte ou groupe analytique).</dd>
         <dt>Plan comptable</dt>
-        <dd>Liste des 29 comptes MCY. Lecture seule — le plan est défini à l'installation.</dd>
+        <dd>Liste des comptes MCY. Renommer un compte, modifier sa description ou son groupe
+            analytique via le bouton crayon. Ajouter un compte avec le bouton "+ Nouveau compte".
+            Désactiver (archiver) ou supprimer les comptes sans écritures.</dd>
         <dt>Journal</dt>
         <dd>Saisie et consultation des écritures comptables. Filtres par libellé, compte et
-            période. Modification et suppression possibles tant que l'exercice est ouvert.</dd>
+            période. Modification et suppression possibles tant que l'exercice est ouvert.
+            Un message d'avertissement s'affiche si la date est hors de l'exercice.</dd>
+        <dt>Analytique</dt>
+        <dd>Vue P&amp;L regroupée par groupe analytique pour l'exercice sélectionné.
+            Les comptes sans groupe apparaissent dans la section "Non groupés".
+            Les groupes sont définis dans le Plan comptable.</dd>
         <dt>Exercices</dt>
         <dd>Création et gestion des exercices fiscaux. Clôture, réouverture, soldes à
             nouveau, export Excel par exercice.</dd>
@@ -195,6 +216,7 @@ function AppTab() {
         <tbody>
           <tr><td><kbd>F1</kbd></td><td>Ouvrir / fermer l'aide</td></tr>
           <tr><td><kbd>Escape</kbd></td><td>Fermer l'aide ou les modales</td></tr>
+          <tr><td><kbd>Entrée</kbd></td><td>Dans le dernier champ montant d'une écriture — ajouter une ligne</td></tr>
         </tbody>
       </table>
 
