@@ -185,8 +185,9 @@ function AppTab() {
       <h3 className={styles.sectionTitle}>Pages de l'application</h3>
       <dl className={styles.glossary}>
         <dt>Tableau de bord</dt>
-        <dd>Page d'accueil. Affiche les soldes des comptes de liquidités (Caisse, Raiffeisen,
-            Twint) et le résultat P&amp;L de l'exercice sélectionné. Les cartes sont
+        <dd>Page d'accueil. Affiche les soldes Caisse et Raiffeisen, un panel Twint
+            récapitulatif (encaissements bruts / frais avec taux % / net versé sur Raiffeisen)
+            et le résultat P&amp;L de l'exercice sélectionné. Les cartes sont
             configurables (compte ou groupe analytique).</dd>
         <dt>Plan comptable</dt>
         <dd>Liste des comptes MCY. Renommer un compte, modifier sa description ou son groupe
@@ -205,7 +206,14 @@ function AppTab() {
             nouveau, export Excel par exercice.</dd>
         <dt>Soldes</dt>
         <dd>Vue synthétique des soldes par compte pour l'exercice sélectionné, groupés
-            par classe (Actifs, Passifs, Produits, Charges).</dd>
+            par classe (Actifs, Passifs, Produits, Charges).
+            Cliquer sur un compte ouvre son <em>grand-livre</em>.</dd>
+        <dt>Grand-livre</dt>
+        <dd>Détail de tous les mouvements d'un compte pour l'exercice : date, pièce,
+            libellé, contrepartie(s) et montants. Pour les comptes de bilan (1xx, 2xx),
+            une colonne <em>Solde courant</em> affiche le solde progressif après chaque ligne.
+            Les contreparties affichées sont uniquement celles du côté opposé de l'écriture
+            (débit ↔ crédit). Accessible via <em>Soldes</em> → clic sur un compte.</dd>
         <dt>Paramètres</dt>
         <dd>Chemin de la base de données, export de sauvegarde manuelle, historique des
             sauvegardes automatiques, export Excel global.</dd>
