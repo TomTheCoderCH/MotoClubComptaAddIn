@@ -219,11 +219,11 @@ describe('DashboardPage — cartes personnalisées', () => {
 });
 
 describe('DashboardPage — panel Twint', () => {
-  it('masque le panel si aucun mouvement Twint (gross = 0)', async () => {
+  it('affiche le panel avec message vide si gross = 0', async () => {
     mockApi(dashData, [], noTwint);
     render(<DashboardPage />);
-    await screen.findByText('Tableau de bord');
-    expect(screen.queryByText('Twint — Récapitulatif')).not.toBeInTheDocument();
+    expect(await screen.findByText('Twint — Récapitulatif')).toBeInTheDocument();
+    expect(screen.getByText(/Aucun mouvement enregistré/)).toBeInTheDocument();
   });
 
   it('affiche le panel avec les 3 lignes si gross > 0', async () => {
