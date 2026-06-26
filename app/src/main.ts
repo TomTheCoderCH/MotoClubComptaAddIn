@@ -45,7 +45,17 @@ function createWindow(): void {
   }
 }
 
-app.on('ready', () => {
+app.on('ready', async () => {
+  if (!app.isPackaged) {
+    try {
+      const { default: installExtension, REACT_DEVELOPER_TOOLS } =
+        await import('electron-devtools-installer');
+      await installExtension(REACT_DEVELOPER_TOOLS);
+    } catch (e) {
+      console.error('React DevTools non installé :', e);
+    }
+  }
+
   const settings = readSettings();
 
   registerIpcHandlers();

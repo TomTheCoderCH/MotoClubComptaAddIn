@@ -51,6 +51,7 @@
     "@vitejs/plugin-react": "^5.2.0",
     "@vitest/coverage-v8": "^4.1.9",
     "electron": "^42.5.0",
+    "electron-devtools-installer": "^4.0.0",
     "eslint": "^9.0.0",
     "eslint-plugin-import": "^2.32.0",
     "globals": "^16.0.0",
