@@ -82,19 +82,23 @@
 }
 .totalCell[data-negative] { color: #dc2626; }
 
-.divers {
-  color: #2563eb;
-  cursor: default;
-  text-decoration: underline dotted;
-}
 .counterpartNone { color: #94a3b8; }
 
-.tooltipList {
-  margin: 0;
-  padding: 0 0 0 1rem;
-  list-style: disc;
+.counterpartStack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
-.tooltipList li {
+
+.counterpartLine {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.counterpartAmount {
+  color: #94a3b8;
+  font-family: monospace;
+  font-size: 0.8em;
   white-space: nowrap;
-  font-size: 0.8rem;
 }

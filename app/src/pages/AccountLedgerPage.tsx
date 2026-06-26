@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { AccountLedgerData } from '../types';
 import { formatCHF as fmt, formatDate } from '../lib/format';
-import Tooltip from '../components/Tooltip';
 import styles from './AccountLedgerPage.module.css';
 
 interface AccountLedgerPageProps {
@@ -123,22 +122,17 @@ export default function AccountLedgerPage({ accountId, fiscalYearId, onBack }: A
   );
 }
 
-function CounterpartCell({ counterparts }: { counterparts: Array<{ number: string; name: string }> }) {
+function CounterpartCell({ counterparts }: { counterparts: Array<{ number: string; name: string; amount: number }> }) {
   if (counterparts.length === 0) return <span className={styles.counterpartNone}>—</span>;
-  if (counterparts.length === 1) {
-    return <span>{counterparts[0].number} {counterparts[0].name}</span>;
-  }
+  const multi = counterparts.length > 1;
   return (
-    <Tooltip
-      content={
-        <ul className={styles.tooltipList}>
-          {counterparts.map(cp => (
-            <li key={cp.number}>{cp.number} {cp.name}</li>
-          ))}
-        </ul>
-      }
-    >
-      <span className={styles.divers}>Divers</span>
-    </Tooltip>
+    <span className={styles.counterpartStack}>
+      {counterparts.map(cp => (
+        <span key={cp.number} className={styles.counterpartLine}>
+          <span>{cp.number} {cp.name}</span>
+          {multi && <span className={styles.counterpartAmount}>{fmt(cp.amount)}</span>}
+        </span>
+      ))}
+    </span>
   );
 }

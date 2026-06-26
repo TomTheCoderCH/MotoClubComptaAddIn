@@ -1181,9 +1181,10 @@ describe('getAccountLedger', () => {
     expect(result.lines[0].isClosingEntry).toBe(false);
     expect(result.lines[0].counterparts).toHaveLength(1);
     expect(result.lines[0].counterparts[0].number).toBe('300');
+    expect(result.lines[0].counterparts[0].amount).toBe(141000);
   });
 
-  it('retourne plusieurs contreparties pour écriture multi-lignes', () => {
+  it('retourne plusieurs contreparties (côté crédit) pour écriture multi-lignes', () => {
     const fy = createFiscalYear(2025);
     const accounts = getAllAccounts();
     const caisse = accounts.find(a => a.number === '100')!;
@@ -1197,10 +1198,35 @@ describe('getAccountLedger', () => {
         { account_id: caisse.id, credit: 50000 },
       ],
     });
+    // Caisse est au crédit → contreparties = lignes au débit (400 + 410)
     const result = getAccountLedger(fy.id, caisse.id);
     expect(result.lines[0].counterparts).toHaveLength(2);
     const nums = result.lines[0].counterparts.map(c => c.number).sort();
     expect(nums).toEqual(['400', '410']);
+    const amounts = result.lines[0].counterparts.map(c => c.amount).sort((a, b) => a - b);
+    expect(amounts).toEqual([20000, 30000]);
+  });
+
+  it('ne retourne que les contreparties du côté opposé (débit → crédit uniquement)', () => {
+    const fy = createFiscalYear(2025);
+    const accounts = getAllAccounts();
+    const caisse = accounts.find(a => a.number === '100')!;
+    const assur  = accounts.find(a => a.number === '400')!;
+    const elect  = accounts.find(a => a.number === '410')!;
+    createJournalEntry({
+      fiscal_year_id: fy.id, date: '2025-04-01', description: 'Charges diverses',
+      lines: [
+        { account_id: assur.id,  debit: 30000  },
+        { account_id: elect.id,  debit: 20000  },
+        { account_id: caisse.id, credit: 50000 },
+      ],
+    });
+    // Assurances est au débit → contrepartie = lignes au crédit uniquement (100 Caisse)
+    // Le co-débit 410 Electricité ne doit PAS apparaître
+    const result = getAccountLedger(fy.id, assur.id);
+    expect(result.lines[0].counterparts).toHaveLength(1);
+    expect(result.lines[0].counterparts[0].number).toBe('100');
+    expect(result.lines[0].counterparts[0].amount).toBe(50000);
   });
 
   it('retourne les lignes en ordre chronologique', () => {

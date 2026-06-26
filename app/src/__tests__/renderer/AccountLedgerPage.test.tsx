@@ -13,7 +13,7 @@ const bilanData: AccountLedgerData = {
       description: 'Cotisations membres',
       isOpeningBalance: false, isClosingEntry: false,
       debit: null, credit: 141000,
-      counterparts: [{ number: '300', name: 'Cotisations membres' }],
+      counterparts: [{ number: '300', name: 'Cotisations membres', amount: 141000 }],
     },
     {
       entryId: 2, date: '2025-04-01', piece: 'F-12',
@@ -21,8 +21,8 @@ const bilanData: AccountLedgerData = {
       isOpeningBalance: false, isClosingEntry: false,
       debit: 45000, credit: null,
       counterparts: [
-        { number: '101', name: 'Raiffeisen' },
-        { number: '400', name: 'Assurances' },
+        { number: '101', name: 'Raiffeisen', amount: 20000 },
+        { number: '400', name: 'Assurances', amount: 25000 },
       ],
     },
   ],
@@ -36,7 +36,7 @@ const resultData: AccountLedgerData = {
       description: 'Cotisations membres',
       isOpeningBalance: false, isClosingEntry: false,
       debit: null, credit: 141000,
-      counterparts: [{ number: '100', name: 'Caisse' }],
+      counterparts: [{ number: '100', name: 'Caisse', amount: 141000 }],
     },
   ],
 };
@@ -73,9 +73,14 @@ describe('AccountLedgerPage — affichage', () => {
     expect(await screen.findByText('300 Cotisations membres')).toBeInTheDocument();
   });
 
-  it('affiche "Divers" pour les contreparties multiples', async () => {
+  it('affiche les contreparties multiples empilées avec montants sans "Divers"', async () => {
     render(<AccountLedgerPage accountId={1} fiscalYearId={1} onBack={vi.fn()} />);
-    expect(await screen.findByText('Divers')).toBeInTheDocument();
+    await screen.findByRole('heading', { level: 1 });
+    expect(screen.getByText('101 Raiffeisen')).toBeInTheDocument();
+    expect(screen.getByText('400 Assurances')).toBeInTheDocument();
+    expect(screen.getByText('200.00')).toBeInTheDocument();
+    expect(screen.getByText('250.00')).toBeInTheDocument();
+    expect(screen.queryByText('Divers')).not.toBeInTheDocument();
   });
 
   it('affiche les montants débit et crédit', async () => {
@@ -115,7 +120,7 @@ describe('AccountLedgerPage — affichage', () => {
         entryId: 1, date: '2025-01-01', piece: null, description: 'Solde à nouveau',
         isOpeningBalance: true, isClosingEntry: false,
         debit: 500000, credit: null,
-        counterparts: [{ number: '290', name: 'Capital' }],
+        counterparts: [{ number: '290', name: 'Capital', amount: 337000 }],
       }],
     });
     const { container } = render(<AccountLedgerPage accountId={1} fiscalYearId={1} onBack={vi.fn()} />);
@@ -131,7 +136,7 @@ describe('AccountLedgerPage — affichage', () => {
         entryId: 99, date: '2025-12-31', piece: null, description: 'Clôture vers Capital',
         isOpeningBalance: false, isClosingEntry: true,
         debit: null, credit: 337000,
-        counterparts: [{ number: '900', name: 'Profits et Pertes' }],
+        counterparts: [{ number: '900', name: 'Profits et Pertes', amount: 337000 }],
       }],
     });
     const { container } = render(<AccountLedgerPage accountId={4} fiscalYearId={1} onBack={vi.fn()} />);

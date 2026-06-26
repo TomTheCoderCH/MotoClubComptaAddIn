@@ -76,7 +76,7 @@ export interface LedgerLine {
   isClosingEntry: boolean;
   debit: number | null;   // centimes CHF, null si ligne au crédit
   credit: number | null;  // centimes CHF, null si ligne au débit
-  counterparts: Array<{ number: string; name: string }>;
+  counterparts: Array<{ number: string; name: string; amount: number }>;
 }
 
 export interface AccountLedgerData {

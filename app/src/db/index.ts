@@ -439,11 +439,17 @@ export function getAccountLedger(fiscalYearId: number, accountId: number): Accou
     credit: number | null;
   }>;
 
+  // Filtre par côté opposé : ligne au débit → contreparties au crédit, et vice versa.
+  // Évite d'afficher des co-débits ou co-crédits comme contreparties (écritures composées).
   const cpStmt = getDb().prepare(`
-    SELECT a.number, a.name
-    FROM journal_entry_lines l
-    JOIN accounts a ON a.id = l.account_id
-    WHERE l.journal_entry_id = ? AND l.account_id != ?
+    SELECT a.number, a.name, COALESCE(l2.debit, l2.credit) AS amount
+    FROM journal_entry_lines l2
+    JOIN accounts a ON a.id = l2.account_id
+    WHERE l2.journal_entry_id = ?
+      AND l2.account_id != ?
+      AND CASE WHEN ? = 1 THEN l2.credit IS NOT NULL
+               ELSE l2.debit IS NOT NULL
+          END
     ORDER BY a.number
   `);
 
@@ -456,7 +462,7 @@ export function getAccountLedger(fiscalYearId: number, accountId: number): Accou
     isClosingEntry:   r.is_closing_entry   === 1,
     debit:            r.debit,
     credit:           r.credit,
-    counterparts:     cpStmt.all(r.entry_id, accountId) as Array<{ number: string; name: string }>,
+    counterparts:     cpStmt.all(r.entry_id, accountId, r.debit != null ? 1 : 0) as Array<{ number: string; name: string; amount: number }>,
   }));
 
   return { account, lines };
