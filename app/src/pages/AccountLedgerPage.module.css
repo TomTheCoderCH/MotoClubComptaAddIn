@@ -87,6 +87,7 @@
 .counterpartStack {
   display: inline-grid;
   grid-template-columns: auto auto;
+  align-items: baseline;
   row-gap: 2px;
   column-gap: 0.75rem;
 }
