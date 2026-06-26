@@ -15,6 +15,7 @@ import type {
   AnalyticsAccountRow, AnalyticsGroup, AnalyticsData,
   DashboardCashBalance, DashboardData, DashboardCardConfig, DashboardCustomCard,
   LedgerLine, AccountLedgerData,
+  TwintSummary,
 } from '../types';
 
 let db: Database.Database;
@@ -302,6 +303,37 @@ export function getDashboardData(
   });
 
   return { cashBalances, netResultCents, customCards };
+}
+
+// ─── Récapitulatif Twint ─────────────────────────────────────────────────────
+
+export function getTwintSummary(fiscalYearId: number): TwintSummary {
+  const row = getDb().prepare(`
+    SELECT
+      COALESCE((
+        SELECT SUM(l.debit)
+        FROM journal_entry_lines l
+        JOIN journal_entries e ON e.id = l.journal_entry_id
+        JOIN accounts a ON a.id = l.account_id
+        WHERE e.fiscal_year_id = ? AND a.number = '102' AND l.debit IS NOT NULL
+      ), 0) AS gross,
+      COALESCE((
+        SELECT SUM(COALESCE(l.debit,0)) - SUM(COALESCE(l.credit,0))
+        FROM journal_entry_lines l
+        JOIN journal_entries e ON e.id = l.journal_entry_id
+        JOIN accounts a ON a.id = l.account_id
+        WHERE e.fiscal_year_id = ? AND a.number = '402'
+      ), 0) AS fees
+  `).get(fiscalYearId, fiscalYearId) as { gross: number; fees: number };
+
+  const gross = row.gross;
+  const fees  = row.fees;
+  return {
+    grossCents:  gross,
+    feesCents:   fees,
+    netCents:    gross - fees,
+    ratePercent: gross > 0 ? (fees / gross) * 100 : 0,
+  };
 }
 
 // ─── Exercices ────────────────────────────────────────────────────────────────

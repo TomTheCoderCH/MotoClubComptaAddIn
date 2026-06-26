@@ -25,6 +25,7 @@ import {
   deleteAccount,
   getAnalyticsData,
   getDashboardData,
+  getTwintSummary,
   getAccountLedger,
 } from './db';
 import { listBackups, formatBackupFilename, performBackup } from './backup';
@@ -51,6 +52,9 @@ export function registerIpcHandlers(): void {
   // ─── Tableau de bord ─────────────────────────────────────────────────────────
   ipcMain.handle('dashboard:get', (_e, fiscalYearId: number, cards: DashboardCardConfig[] = []) =>
     getDashboardData(fiscalYearId, cards));
+
+  ipcMain.handle('dashboard:getTwintSummary', (_e, fiscalYearId: number) =>
+    getTwintSummary(fiscalYearId));
 
   ipcMain.handle('settings:saveDashboardCards', (_e, cards: DashboardCardConfig[]) => {
     const current = readSettings();

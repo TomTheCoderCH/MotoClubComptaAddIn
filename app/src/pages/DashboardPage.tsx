@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
-import type { FiscalYear, DashboardData, DashboardCardConfig } from '../types';
+import type { FiscalYear, DashboardData, DashboardCardConfig, TwintSummary } from '../types';
 import { formatCHF } from '../lib/format';
 import AddCardModal from '../components/AddCardModal';
 import styles from './DashboardPage.module.css';
@@ -29,6 +29,7 @@ export default function DashboardPage() {
   const [error,          setError]          = useState<string | null>(null);
   const [customCards,    setCustomCards]    = useState<DashboardCardConfig[]>([]);
   const [showAddModal,   setShowAddModal]   = useState(false);
+  const [twint,          setTwint]          = useState<TwintSummary | null>(null);
 
   // Charger les settings au montage pour récupérer les cartes sauvegardées
   useEffect(() => {
@@ -50,8 +51,14 @@ export default function DashboardPage() {
   useEffect(() => {
     if (selectedYearId === null) return;
     setLoading(true);
-    window.api.getDashboardData(selectedYearId, customCards)
-      .then(setData)
+    Promise.all([
+      window.api.getDashboardData(selectedYearId, customCards),
+      window.api.getTwintSummary(selectedYearId),
+    ])
+      .then(([dashData, twintData]) => {
+        setData(dashData);
+        setTwint(twintData);
+      })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, [selectedYearId, customCards]);
@@ -117,6 +124,27 @@ export default function DashboardPage() {
         <>
           {!!selectedYear?.is_closed && (
             <p className={styles.closedBadge}>Exercice clôturé</p>
+          )}
+
+          {twint && twint.grossCents > 0 && (
+            <div className={styles.twintPanel}>
+              <div className={styles.twintTitle}>Twint — Récapitulatif</div>
+              <div className={styles.twintRow}>
+                <span>Encaissements bruts</span>
+                <span className={styles.twintAmount}>CHF {formatCHF(twint.grossCents)}</span>
+              </div>
+              <div className={styles.twintRow}>
+                <span>
+                  Frais Twint
+                  <span className={styles.twintRate}>({twint.ratePercent.toFixed(2)} %)</span>
+                </span>
+                <span className={styles.twintAmountFees}>− CHF {formatCHF(twint.feesCents)}</span>
+              </div>
+              <div className={styles.twintRowNet}>
+                <span>Net versé sur Raiffeisen</span>
+                <span className={styles.twintAmount}>CHF {formatCHF(twint.netCents)}</span>
+              </div>
+            </div>
           )}
 
           <div className={styles.cards}>

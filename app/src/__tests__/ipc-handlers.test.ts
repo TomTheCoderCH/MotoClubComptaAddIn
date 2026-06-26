@@ -25,6 +25,7 @@ vi.mock('../db', () => ({
   createAccount:       vi.fn(),
   deleteAccount:       vi.fn(),
   getDashboardData:    vi.fn(),
+  getTwintSummary:     vi.fn(),
   getAnalyticsData:    vi.fn(),
   getAccountLedger:    vi.fn(),
 }));
@@ -43,6 +44,7 @@ import {
   createAccount,
   deleteAccount,
   getDashboardData,
+  getTwintSummary,
   getAnalyticsData,
   getAccountLedger,
 } from '../db';
@@ -368,6 +370,30 @@ describe('accounts:delete', () => {
   it('propage une erreur de deleteAccount', async () => {
     vi.mocked(deleteAccount).mockImplementation(() => { throw new Error('des écritures existent'); });
     await expect(call('accounts:delete', 1)).rejects.toThrow('des écritures existent');
+  });
+});
+
+// ─── dashboard:getTwintSummary ───────────────────────────────────────────────
+
+describe('dashboard:getTwintSummary', () => {
+  it('enregistre le canal dashboard:getTwintSummary', () => {
+    expect(handlers.has('dashboard:getTwintSummary')).toBe(true);
+  });
+
+  it('délègue à getTwintSummary et retourne le résultat', async () => {
+    const summary = { grossCents: 123456, feesCents: 1605, netCents: 121851, ratePercent: 1.30 };
+    vi.mocked(getTwintSummary).mockReturnValue(summary);
+    const result = await call('dashboard:getTwintSummary', 1);
+    expect(getTwintSummary).toHaveBeenCalledWith(1);
+    expect(result).toBe(summary);
+  });
+
+  it('retourne zéros si aucun mouvement Twint', async () => {
+    const summary = { grossCents: 0, feesCents: 0, netCents: 0, ratePercent: 0 };
+    vi.mocked(getTwintSummary).mockReturnValue(summary);
+    const result = await call('dashboard:getTwintSummary', 1);
+    expect(result.grossCents).toBe(0);
+    expect(result.ratePercent).toBe(0);
   });
 });
 

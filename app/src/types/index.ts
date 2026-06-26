@@ -203,6 +203,13 @@ export interface DashboardData {
   customCards: DashboardCustomCard[];
 }
 
+export interface TwintSummary {
+  grossCents:  number;  // SUM(debit) sur compte 102 = total encaissé via Twint
+  feesCents:   number;  // solde compte 402 = commissions versées à Twint
+  netCents:    number;  // gross - fees = montant réellement viré sur Raiffeisen
+  ratePercent: number;  // fees / gross * 100 (0 si pas de mouvement)
+}
+
 export interface AnalyticsAccountRow {
   id: number;
   number: string;

@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { FiscalYear, DashboardData, Account } from '../../types';
+import type { FiscalYear, DashboardData, Account, TwintSummary } from '../../types';
 import DashboardPage from '../../pages/DashboardPage';
 
 const fy2025: FiscalYear = {
@@ -35,14 +35,18 @@ const mockAccountMarche: Account = {
   is_active: true, has_entries: false, created_at: '',
 };
 
+const noTwint: TwintSummary = { grossCents: 0, feesCents: 0, netCents: 0, ratePercent: 0 };
+
 function mockApi(
   data: DashboardData = { cashBalances: [], netResultCents: 0, customCards: [] },
   cards = [],
+  twint: TwintSummary = noTwint,
 ) {
   vi.stubGlobal('api', {
     getSettings:        vi.fn().mockResolvedValue({ dataDir: '/data', dashboardCards: cards }),
     getFiscalYears:     vi.fn().mockResolvedValue([fy2025]),
     getDashboardData:   vi.fn().mockResolvedValue(data),
+    getTwintSummary:    vi.fn().mockResolvedValue(twint),
     getActiveAccounts:  vi.fn().mockResolvedValue([mockAccountAvances, mockAccountMarche]),
     saveDashboardCards: vi.fn().mockResolvedValue(undefined),
   });
@@ -58,10 +62,11 @@ describe('DashboardPage — affichage', () => {
 
   it('affiche le message si aucun exercice', async () => {
     vi.stubGlobal('api', {
-      getSettings:       vi.fn().mockResolvedValue({ dataDir: '/data' }),
-      getFiscalYears:    vi.fn().mockResolvedValue([]),
-      getDashboardData:  vi.fn(),
-      getActiveAccounts: vi.fn().mockResolvedValue([]),
+      getSettings:        vi.fn().mockResolvedValue({ dataDir: '/data' }),
+      getFiscalYears:     vi.fn().mockResolvedValue([]),
+      getDashboardData:   vi.fn(),
+      getTwintSummary:    vi.fn().mockResolvedValue(noTwint),
+      getActiveAccounts:  vi.fn().mockResolvedValue([]),
       saveDashboardCards: vi.fn(),
     });
     render(<DashboardPage />);
@@ -119,6 +124,7 @@ describe('DashboardPage — affichage', () => {
       getSettings:        vi.fn().mockResolvedValue({ dataDir: '/data' }),
       getFiscalYears:     vi.fn().mockResolvedValue([closedFy]),
       getDashboardData:   vi.fn().mockResolvedValue(dashData),
+      getTwintSummary:    vi.fn().mockResolvedValue(noTwint),
       getActiveAccounts:  vi.fn().mockResolvedValue([]),
       saveDashboardCards: vi.fn(),
     });
@@ -139,6 +145,7 @@ describe('DashboardPage — sélecteur exercice', () => {
       getSettings:        vi.fn().mockResolvedValue({ dataDir: '/data' }),
       getFiscalYears:     vi.fn().mockResolvedValue([fy2025, fy2]),
       getDashboardData:   vi.fn().mockResolvedValue({ cashBalances: [], netResultCents: 0, customCards: [] }),
+      getTwintSummary:    vi.fn().mockResolvedValue(noTwint),
       getActiveAccounts:  vi.fn().mockResolvedValue([]),
       saveDashboardCards: vi.fn(),
     });
@@ -210,6 +217,35 @@ describe('DashboardPage — cartes personnalisées', () => {
     await waitFor(() => {
       expect(window.api.saveDashboardCards).toHaveBeenCalledWith([]);
     });
+  });
+});
+
+describe('DashboardPage — panel Twint', () => {
+  it('masque le panel si aucun mouvement Twint (gross = 0)', async () => {
+    mockApi(dashData, [], noTwint);
+    render(<DashboardPage />);
+    await screen.findByText('Tableau de bord');
+    expect(screen.queryByText('Twint — Récapitulatif')).not.toBeInTheDocument();
+  });
+
+  it('affiche le panel avec les 3 lignes si gross > 0', async () => {
+    const twint: TwintSummary = { grossCents: 123456, feesCents: 1605, netCents: 121851, ratePercent: 1.30 };
+    mockApi(dashData, [], twint);
+    render(<DashboardPage />);
+    expect(await screen.findByText('Twint — Récapitulatif')).toBeInTheDocument();
+    expect(screen.getByText('Encaissements bruts')).toBeInTheDocument();
+    expect(screen.getByText(/1\.30 %/)).toBeInTheDocument();
+    expect(screen.getByText('Net versé sur Raiffeisen')).toBeInTheDocument();
+  });
+
+  it('affiche les montants CHF corrects', async () => {
+    const twint: TwintSummary = { grossCents: 234500, feesCents: 3050, netCents: 231450, ratePercent: 1.30 };
+    mockApi(dashData, [], twint);
+    render(<DashboardPage />);
+    await screen.findByText('Twint — Récapitulatif');
+    expect(screen.getByText("CHF 2'345.00")).toBeInTheDocument();
+    expect(screen.getByText('− CHF 30.50')).toBeInTheDocument();
+    expect(screen.getByText("CHF 2'314.50")).toBeInTheDocument();
   });
 });
 

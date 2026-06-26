@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { Account, FiscalYear, JournalEntry, JournalEntryLine, AccountBalance, CreateJournalEntryPayload, UpdateJournalEntryPayload, BackupInfo, OpeningBalanceSuggestion, OpeningBalanceLine, ClosingPreview, UpdateAccountPayload, CreateAccountPayload, AnalyticsData, DashboardData, DashboardCardConfig, AccountLedgerData } from './types';
+import type { Account, FiscalYear, JournalEntry, JournalEntryLine, AccountBalance, CreateJournalEntryPayload, UpdateJournalEntryPayload, BackupInfo, OpeningBalanceSuggestion, OpeningBalanceLine, ClosingPreview, UpdateAccountPayload, CreateAccountPayload, AnalyticsData, DashboardData, DashboardCardConfig, AccountLedgerData, TwintSummary } from './types';
 
 // API exposée au renderer via window.api
 contextBridge.exposeInMainWorld('api', {
@@ -66,6 +66,8 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.invoke('dashboard:get', fiscalYearId, cards),
   saveDashboardCards: (cards: DashboardCardConfig[]): Promise<void> =>
     ipcRenderer.invoke('settings:saveDashboardCards', cards),
+  getTwintSummary: (fiscalYearId: number): Promise<TwintSummary> =>
+    ipcRenderer.invoke('dashboard:getTwintSummary', fiscalYearId),
 
   // Analytique
   getAnalytics: (fiscalYearId: number): Promise<AnalyticsData> =>
@@ -106,6 +108,7 @@ export type ElectronAPI = {
   deleteAccount:     (id: number) => Promise<void>;
   getDashboardData:   (fiscalYearId: number, cards: DashboardCardConfig[]) => Promise<DashboardData>;
   saveDashboardCards: (cards: DashboardCardConfig[]) => Promise<void>;
+  getTwintSummary:    (fiscalYearId: number) => Promise<TwintSummary>;
   getAnalytics:       (fiscalYearId: number) => Promise<AnalyticsData>;
   getAccountLedger:   (fiscalYearId: number, accountId: number) => Promise<AccountLedgerData>;
 };
