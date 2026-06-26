@@ -478,7 +478,7 @@ app/
 - [x] Sélecteur du dossier de données au premier lancement (`%APPDATA%\MCY Compta\settings.json` via `app.getPath('userData')`) + migration + WelcomePage — 219 tests au total
 - [x] Saisie des soldes à nouveau (report d'exercice) — 249 tests au total
 - [x] Écritures de clôture automatiques (soldage 3xx/4xx → 900 → 290) — 283 tests unitaires
-- [x] Tests E2E Playwright — 12 tests (app, fiscal-year, journal-entry, balance)
+- [x] Tests E2E Playwright — 12 tests (app, fiscal-year, journal-entry, balance) — puis mis à jour et étendus à 18 tests (voir entrée ci-dessous)
 - [x] Export Excel de clôture (`exceljs`) — Journal, Bilan & Résultat, une feuille par compte (SUBTOTAL, Courant), déclencheurs FiscalYearsPage + SettingsPage — 318 tests au total
 - [x] Refactoring settings : `app.getPath('userData')` à la place du chemin `APPDATA` manuel ; `app.setPath('userData')` dans `main.ts` pour l'isolation E2E — 318 tests
 
@@ -515,10 +515,11 @@ app/
 - [x] HelpDrawer mis à jour — panel Twint, grand-livre (contreparties, solde courant), lien Soldes→Grand-livre
 - [x] Page **Soldes** — filtres client-side : champ texte (N° ou nom, insensible à la casse) + sélecteur de classe (uniquement les classes présentes dans l'exercice) ; message "Aucun compte ne correspond" si résultat vide — 557 tests
 
+- [x] Tests E2E mis à jour et étendus — 18 tests : isolation via `MCY_TEST_USERDATA` (fix `app.getName()` ambigu au lancement depuis .js brut), `app.spec.ts` réécrit (Tableau de bord par défaut, sidebar 8 entrées, colonne Groupe analytique), `dashboard.spec.ts` nouveau (cartes, panel Twint), `fiscal-year.spec.ts` + test clôture avec bénéfice, `journal-entry.spec.ts` + `balance.spec.ts` corrigés (bouton Lucide sans "+", format "1'410.00"), test navigation grand-livre — 557 tests Vitest + 18 E2E
+
 #### Idées futures (non planifiées)
 
 - [ ] **Vite 5→8 + `@vitejs/plugin-react` 5→6** — bloqué : `@electron-forge/plugin-vite` v8 encore en alpha. À revisiter quand une version stable est publiée.
-- [ ] Tests E2E — mettre à jour les tests existants (nombreuses modifications depuis leur écriture) + ajouter clôture complète, analytique, grand-livre, panel Twint
 
 ### Notes techniques actives
 
@@ -527,4 +528,4 @@ app/
 - Les montants sont stockés en **centimes** (INTEGER) — jamais de float pour les montants CHF
 - `better-sqlite3` compilé pour Electron (NODE_MODULE_VERSION 146) ne tourne pas dans le Node système. Le script `pretest` exécute `npm rebuild better-sqlite3` pour le recompiler pour Node avant les tests. Le script `prestart` exécute `npm run rebuild` (= `electron-rebuild -f -w better-sqlite3`) pour le recompiler pour Electron avant `npm start` — nécessaire car `electron-forge start` ne déclenche pas le `rebuildConfig` de manière fiable.
 - Les tests Vitest n'incluent que `src/**` (`include: ['src/**/*.{test,spec}.{ts,tsx}']`) pour éviter de ramasser les specs Playwright du dossier `e2e/`.
-- **Tests E2E** : `npm run test:e2e` → `pretest:e2e` rebuild better-sqlite3 pour Electron → `build:e2e` via `scripts/build-for-e2e.mjs` (produit `.vite/build/main.js` + `.vite/renderer/main_window/` avec `base: './'` pour les chemins relatifs en `file://`) → Playwright lance l'app avec un APPDATA temporaire isolé. `main.ts` appelle `app.setPath('userData', path.join(APPDATA, app.getName()))` avant `app.ready` quand `NODE_ENV=test` — ce qui redirige `app.getPath('userData')` vers le répertoire temporaire. `electron-fixture.ts` place `settings.json` dans `MCY Compta/` (= `app.getName()`). Playwright workers = 1 (séquentiel, les instances Electron concurrentes interfèrent). Après `test:e2e`, relancer `npm test` recompile automatiquement pour Node via `pretest`.
+- **Tests E2E** : `npm run test:e2e` → `pretest:e2e` rebuild better-sqlite3 pour Electron → `build:e2e` via `scripts/build-for-e2e.mjs` (produit `.vite/build/main.js` + `.vite/renderer/main_window/` avec `base: './'` pour les chemins relatifs en `file://`) → Playwright lance l'app avec un répertoire temporaire isolé. L'isolation E2E utilise la variable d'env `MCY_TEST_USERDATA` (pas `APPDATA+app.getName()` — `app.getName()` peut retourner "Electron" quand lancé depuis un .js brut sans package.json adjacent). `main.ts` appelle `app.setPath('userData', process.env['MCY_TEST_USERDATA'])` avant `app.ready` quand `NODE_ENV=test`. `electron-fixture.ts` place `settings.json` directement dans `userDataDir` (sous-dossier `userdata/` du répertoire temp). Playwright workers = 1 (séquentiel, les instances Electron concurrentes interfèrent). Après `test:e2e`, relancer `npm test` recompile automatiquement pour Node via `pretest`.
