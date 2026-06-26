@@ -7,10 +7,12 @@ import { registerIpcHandlers } from './ipc-handlers';
 import { performBackup, pruneBackups } from './backup';
 import { readSettings } from './settings';
 
-// E2E test isolation: redirect userData to the temp APPDATA injected by electron-fixture.ts.
+// E2E test isolation: redirect userData to the temp directory injected by electron-fixture.ts.
 // app.setPath('userData') must be called before app.ready, and overrides the registry-based default.
-if (process.env['NODE_ENV'] === 'test' && process.env['APPDATA']) {
-  app.setPath('userData', path.join(process.env['APPDATA'], app.getName()));
+// MCY_TEST_USERDATA avoids relying on app.getName() which can return "Electron" when launched
+// from a raw .js path without a package.json in the same directory.
+if (process.env['NODE_ENV'] === 'test' && process.env['MCY_TEST_USERDATA']) {
+  app.setPath('userData', process.env['MCY_TEST_USERDATA']);
 }
 
 // Force le locale Chromium en fr-CH pour que les <input type="date"> affichent dd.MM.yyyy.

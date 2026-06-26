@@ -18,7 +18,7 @@ test('crée une écriture simple et la voit dans le journal', async ({ window })
   await goToJournal(window);
 
   // Ouvre le formulaire
-  await window.getByRole('button', { name: '+ Nouvelle écriture' }).click();
+  await window.getByRole('button', { name: /Nouvelle écriture/ }).click();
   await expect(window.getByRole('dialog')).toBeVisible();
 
   // Remplit les champs de l'en-tête
@@ -37,7 +37,7 @@ test('crée une écriture simple et la voit dans le journal', async ({ window })
   await expect(window.getByText('Ecriture équilibrée')).toBeVisible();
 
   // Soumet
-  await window.getByRole('button', { name: 'Enregistrer l\'écriture' }).click();
+  await window.getByRole('button', { name: "Enregistrer l'écriture" }).click();
   await expect(window.getByRole('dialog')).not.toBeVisible();
 
   // L'écriture apparaît dans le journal
@@ -53,5 +53,5 @@ test('le bouton de nouvelle écriture est absent sur un exercice clôturé', asy
   await expect(window.getByText('Clôturé')).toBeVisible();
 
   await goToJournal(window);
-  await expect(window.getByRole('button', { name: '+ Nouvelle écriture' })).not.toBeVisible();
+  await expect(window.getByRole('button', { name: /Nouvelle écriture/ })).not.toBeVisible();
 });

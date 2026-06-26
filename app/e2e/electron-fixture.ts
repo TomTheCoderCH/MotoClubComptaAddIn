@@ -9,17 +9,20 @@ type Fixtures = {
   window: Page;
 };
 
-// Chaque test reçoit un APPDATA isolé avec settings.json pré-configuré
-// → l'app démarre directement sur AccountsPage (WelcomePage bypassée)
+// Chaque test reçoit un userData isolé avec settings.json pré-configuré
+// → l'app démarre directement sur DashboardPage (WelcomePage bypassée)
 // → DB temporaire fraîche, aucune pollution entre tests
+// MCY_TEST_USERDATA est transmis à main.ts qui appelle app.setPath('userData', ...)
+// avant app.ready — évite l'ambiguïté sur app.getName() selon le contexte de lancement.
 export const test = base.extend<Fixtures>({
-  electronApp: async (_fixtures, use) => {
-    const tempAppData = fs.mkdtempSync(path.join(os.tmpdir(), 'mcy-e2e-'));
-    const dataDir = path.join(tempAppData, 'data');
-    fs.mkdirSync(dataDir, { recursive: true });
-    fs.mkdirSync(path.join(tempAppData, 'MCY Compta'), { recursive: true });
+  electronApp: async ({}, use) => {
+    const tempDir    = fs.mkdtempSync(path.join(os.tmpdir(), 'mcy-e2e-'));
+    const userDataDir = path.join(tempDir, 'userdata');
+    const dataDir    = path.join(tempDir, 'data');
+    fs.mkdirSync(userDataDir, { recursive: true });
+    fs.mkdirSync(dataDir,     { recursive: true });
     fs.writeFileSync(
-      path.join(tempAppData, 'MCY Compta', 'settings.json'),
+      path.join(userDataDir, 'settings.json'),
       JSON.stringify({ dataDir }),
       'utf-8',
     );
@@ -27,14 +30,14 @@ export const test = base.extend<Fixtures>({
     const mainPath = path.join(__dirname, '../.vite/build/main.js');
     const app = await electron.launch({
       args: [mainPath],
-      env: { ...process.env, APPDATA: tempAppData, NODE_ENV: 'test' },
+      env: { ...process.env, MCY_TEST_USERDATA: userDataDir, NODE_ENV: 'test' },
     });
 
     await use(app);
     await app.close();
     // Small delay to let Electron release file locks (SQLite, backup) before cleanup
     await new Promise(r => setTimeout(r, 500));
-    try { fs.rmSync(tempAppData, { recursive: true, force: true }); } catch { /* ignore EPERM */ }
+    try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch { /* ignore EPERM */ }
   },
 
   window: async ({ electronApp }, use) => {
