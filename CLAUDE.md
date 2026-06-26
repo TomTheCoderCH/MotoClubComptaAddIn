@@ -545,6 +545,7 @@ app/
 | Fonctionnalité | Scénarios à couvrir |
 |---|---|
 | **Journal** | Modifier une écriture existante ; supprimer une écriture ; filtres (libellé, compte, période) |
+| **Journal — raccourcis** | `Ctrl+N` ouvre le formulaire ; `Entrée` sur dernier montant ajoute une ligne ; `Ctrl+S` enregistre et ferme ; `Ctrl+Entrée` enregistre et ouvre une nouvelle écriture |
 | **Soldes à nouveau** | Saisir les soldes à nouveau après création d'un 2ᵉ exercice |
 | **Analytique** | Navigation page Analytique ; affichage P&L par groupe |
 | **Bilan complet** | Navigation page Bilan complet ; contrôle d'équilibre affiché |
@@ -552,6 +553,7 @@ app/
 | **Paramètres** | Export sauvegarde manuelle ; liste des sauvegardes automatiques |
 | **Dashboard Twint** | Panel Twint avec données réelles (encaissements + frais) |
 | **Grand-livre** | Solde courant progressif (comptes de bilan) ; masquage contreparties sur soldes à nouveau |
+| **Aide — raccourcis** | `F1` ouvre le drawer d'aide ; `Escape` le ferme ; `Escape` ferme les modales |
 
 #### Idées futures (non planifiées)
 
