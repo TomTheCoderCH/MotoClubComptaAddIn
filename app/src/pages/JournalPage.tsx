@@ -31,6 +31,8 @@ export default function JournalPage() {
 
   const modalRef             = useRef<ModalState>(null);
   const currentFiscalYearRef = useRef<FiscalYear | undefined>(undefined);
+  const tableWrapperRef      = useRef<HTMLDivElement>(null);
+  const scrollToBottomRef    = useRef(false);
 
   useEffect(() => {
     Promise.all([
@@ -51,6 +53,13 @@ export default function JournalPage() {
       .then(setEntries)
       .catch((e: Error) => setError(e.message));
   }, [selectedYear, years]);
+
+  useEffect(() => {
+    if (scrollToBottomRef.current && tableWrapperRef.current) {
+      tableWrapperRef.current.scrollTop = tableWrapperRef.current.scrollHeight;
+      scrollToBottomRef.current = false;
+    }
+  }, [entries]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -94,7 +103,7 @@ export default function JournalPage() {
   currentFiscalYearRef.current = currentFiscalYear;
 
   return (
-    <div>
+    <div className={styles.pageWrapper}>
       <div className={styles.header}>
         <h1 className={styles.h1}>Journal</h1>
         {years.length > 0 && (
@@ -137,70 +146,72 @@ export default function JournalPage() {
           {filtered.length === 0 ? (
             <p className={styles.empty}>{entries.length === 0 ? 'Aucune écriture pour cet exercice.' : 'Aucune écriture ne correspond aux filtres.'}</p>
           ) : (
-            <table className={styles.table}>
-              <thead>
-                <tr className={styles.theadRow}>
-                  <th className={styles.th}>Date</th>
-                  <th className={styles.th}>Libellé</th>
-                  <th className={styles.th}>Pièce</th>
-                  <th className={`${styles.th} ${styles.thRight}`}>Débit</th>
-                  <th className={`${styles.th} ${styles.thRight}`}>Crédit</th>
-                  {!currentFiscalYear?.is_closed && <th className={styles.th} />}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(entry =>
-                  entry.lines.map((line, i) => {
-                    const acc = accounts.find(a => a.id === line.account_id);
-                    return (
-                      <tr key={`${entry.id}-${line.id}`} className={styles.row}>
-                        <td className={styles.td}>{i === 0 ? formatDate(entry.date) : ''}</td>
-                        <td className={styles.td}>{i === 0 ? entry.description : ''}</td>
-                        <td className={styles.td}>{i === 0 ? (entry.piece ?? '') : ''}</td>
-                        <td className={`${styles.td} ${styles.tdRight}`}>
-                          {line.debit != null ? formatCHF(line.debit) : ''}
-                          {line.debit != null && acc && (
-                            <Tooltip content={acc.name}>
-                              <span className={tooltipStyles.acctNumber}> {acc.number}</span>
-                            </Tooltip>
-                          )}
-                        </td>
-                        <td className={`${styles.td} ${styles.tdRight}`}>
-                          {line.credit != null ? formatCHF(line.credit) : ''}
-                          {line.credit != null && acc && (
-                            <Tooltip content={acc.name}>
-                              <span className={tooltipStyles.acctNumber}> {acc.number}</span>
-                            </Tooltip>
-                          )}
-                        </td>
-                        {!currentFiscalYear?.is_closed && (
-                          <td className={styles.td}>
-                            {i === 0 && (
-                              <div className={styles.actions}>
-                                <button
-                                  onClick={() => setModal({ mode: 'edit', entry })}
-                                  className={styles.actionBtn}
-                                  aria-label="Modifier"
-                                >
-                                  <Pencil size={12} />Modifier
-                                </button>
-                                <button
-                                  onClick={() => setConfirmEntry(entry)}
-                                  className={`${styles.actionBtn} ${styles.actionBtnDelete}`}
-                                  aria-label="Supprimer"
-                                >
-                                  <Trash2 size={12} />Supprimer
-                                </button>
-                              </div>
+            <div ref={tableWrapperRef} className={styles.tableWrapper}>
+              <table className={styles.table}>
+                <thead>
+                  <tr className={styles.theadRow}>
+                    <th className={styles.th}>Date</th>
+                    <th className={styles.th}>Libellé</th>
+                    <th className={styles.th}>Pièce</th>
+                    <th className={`${styles.th} ${styles.thRight}`}>Débit</th>
+                    <th className={`${styles.th} ${styles.thRight}`}>Crédit</th>
+                    {!currentFiscalYear?.is_closed && <th className={styles.th} />}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map(entry =>
+                    entry.lines.map((line, i) => {
+                      const acc = accounts.find(a => a.id === line.account_id);
+                      return (
+                        <tr key={`${entry.id}-${line.id}`} className={styles.row}>
+                          <td className={styles.td}>{i === 0 ? formatDate(entry.date) : ''}</td>
+                          <td className={styles.td}>{i === 0 ? entry.description : ''}</td>
+                          <td className={styles.td}>{i === 0 ? (entry.piece ?? '') : ''}</td>
+                          <td className={`${styles.td} ${styles.tdRight}`}>
+                            {line.debit != null ? formatCHF(line.debit) : ''}
+                            {line.debit != null && acc && (
+                              <Tooltip content={acc.name}>
+                                <span className={tooltipStyles.acctNumber}> {acc.number}</span>
+                              </Tooltip>
                             )}
                           </td>
-                        )}
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+                          <td className={`${styles.td} ${styles.tdRight}`}>
+                            {line.credit != null ? formatCHF(line.credit) : ''}
+                            {line.credit != null && acc && (
+                              <Tooltip content={acc.name}>
+                                <span className={tooltipStyles.acctNumber}> {acc.number}</span>
+                              </Tooltip>
+                            )}
+                          </td>
+                          {!currentFiscalYear?.is_closed && (
+                            <td className={styles.td}>
+                              {i === 0 && (
+                                <div className={styles.actions}>
+                                  <button
+                                    onClick={() => setModal({ mode: 'edit', entry })}
+                                    className={styles.actionBtn}
+                                    aria-label="Modifier"
+                                  >
+                                    <Pencil size={12} />Modifier
+                                  </button>
+                                  <button
+                                    onClick={() => setConfirmEntry(entry)}
+                                    className={`${styles.actionBtn} ${styles.actionBtnDelete}`}
+                                    aria-label="Supprimer"
+                                  >
+                                    <Trash2 size={12} />Supprimer
+                                  </button>
+                                </div>
+                              )}
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           )}
         </>
       )}
@@ -214,10 +225,12 @@ export default function JournalPage() {
             const isEdit = modal?.mode === 'edit';
             setModal(null);
             await reloadEntries();
+            if (!isEdit) scrollToBottomRef.current = true;
             setToast(isEdit ? 'Écriture modifiée' : 'Écriture enregistrée');
           }}
           onSavedNew={modal.mode === 'create' ? async () => {
             await reloadEntries();
+            scrollToBottomRef.current = true;
             setToast('Écriture enregistrée');
           } : undefined}
           onClose={() => setModal(null)}

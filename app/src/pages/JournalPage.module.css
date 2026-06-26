@@ -1,3 +1,18 @@
+.pageWrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.tableWrapper {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
 .header {
   display: flex;
   align-items: center;
@@ -75,9 +90,6 @@
   width: 100%;
   font-size: 0.875rem;
   background: #fff;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .theadRow {
@@ -90,6 +102,10 @@
   font-weight: 600;
   color: #475569;
   border-bottom: 1px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f1f5f9;
 }
 
 .thRight {
