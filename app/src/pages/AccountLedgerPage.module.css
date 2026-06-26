@@ -87,7 +87,13 @@
 }
 .tdRight[data-negative] { color: #dc2626; }
 
-.totalRow { background: #e2e8f0; border-top: 2px solid #cbd5e1; }
+.totalRow {
+  background: #e2e8f0;
+  border-top: 2px solid #cbd5e1;
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+}
 .totalLabel { padding: 0.45rem 1rem; font-weight: 600; color: #334155; }
 
 .totalCell {
