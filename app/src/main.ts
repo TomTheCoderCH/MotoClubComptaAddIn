@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog } from 'electron';
+import { app, BrowserWindow, dialog, session } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
 import started from 'electron-squirrel-startup';
@@ -48,12 +48,16 @@ function createWindow(): void {
 app.on('ready', async () => {
   if (!app.isPackaged) {
     try {
+      // Utilise electron-devtools-installer uniquement pour le téléchargement du CRX,
+      // puis charge via la nouvelle API session.extensions (non dépréciée dans Electron 42+)
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { default: installExtension, REACT_DEVELOPER_TOOLS } =
-        require('electron-devtools-installer') as typeof import('electron-devtools-installer');
-      await installExtension(REACT_DEVELOPER_TOOLS);
+      const { downloadChromeExtension } = require('electron-devtools-installer/dist/downloadChromeExtension') as {
+        downloadChromeExtension: (id: string) => Promise<string>;
+      };
+      const extensionPath = await downloadChromeExtension('fmkadmapgofadopljbjfkapdkoienihi');
+      await session.defaultSession.extensions.loadExtension(extensionPath, { allowFileAccess: true });
     } catch (e) {
-      console.error('React DevTools non installé :', e);
+      console.error('[DevTools] React DevTools non installé :', e);
     }
   }
 
