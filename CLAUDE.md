@@ -517,6 +517,42 @@ app/
 
 - [x] Tests E2E mis à jour et étendus — 18 tests : isolation via `MCY_TEST_USERDATA` (fix `app.getName()` ambigu au lancement depuis .js brut), `app.spec.ts` réécrit (Tableau de bord par défaut, sidebar 8 entrées, colonne Groupe analytique), `dashboard.spec.ts` nouveau (cartes, panel Twint), `fiscal-year.spec.ts` + test clôture avec bénéfice, `journal-entry.spec.ts` + `balance.spec.ts` corrigés (bouton Lucide sans "+", format "1'410.00"), test navigation grand-livre — 557 tests Vitest + 18 E2E
 
+#### Couverture E2E actuelle (18 tests)
+
+| Fichier | Test |
+|---|---|
+| `app.spec.ts` | Affiche le titre Tableau de bord par défaut |
+| `app.spec.ts` | Affiche message si aucun exercice sur le tableau de bord |
+| `app.spec.ts` | La sidebar affiche les 8 entrées de navigation |
+| `app.spec.ts` | Navigue vers le Plan comptable avec 29 comptes |
+| `app.spec.ts` | Affiche le compte Caisse (100) dans le plan comptable |
+| `app.spec.ts` | Affiche les colonnes du plan comptable |
+| `dashboard.spec.ts` | Affiche le titre Tableau de bord par défaut |
+| `dashboard.spec.ts` | Affiche les cartes Caisse, Raiffeisen et Résultat après création d'exercice |
+| `dashboard.spec.ts` | Panel Twint affiche message d'absence de mouvement si aucune écriture Twint |
+| `fiscal-year.spec.ts` | Crée un exercice et vérifie son statut ouvert |
+| `fiscal-year.spec.ts` | Clôture un exercice vide puis le rouvre |
+| `fiscal-year.spec.ts` | Ne peut pas créer deux fois le même exercice |
+| `fiscal-year.spec.ts` | La clôture avec une écriture affiche un bénéfice |
+| `journal-entry.spec.ts` | Crée une écriture simple et la voit dans le journal |
+| `journal-entry.spec.ts` | Le bouton de nouvelle écriture est absent sur un exercice clôturé |
+| `balance.spec.ts` | Les soldes reflètent les écritures saisies |
+| `balance.spec.ts` | La page Soldes affiche le message d'absence d'exercice |
+| `balance.spec.ts` | Cliquer sur un compte ouvre son grand-livre |
+
+#### Non couvert par les E2E (à planifier)
+
+| Fonctionnalité | Scénarios à couvrir |
+|---|---|
+| **Journal** | Modifier une écriture existante ; supprimer une écriture ; filtres (libellé, compte, période) |
+| **Soldes à nouveau** | Saisir les soldes à nouveau après création d'un 2ᵉ exercice |
+| **Analytique** | Navigation page Analytique ; affichage P&L par groupe |
+| **Bilan complet** | Navigation page Bilan complet ; contrôle d'équilibre affiché |
+| **Plan comptable** | Créer un compte ; modifier un compte ; groupe analytique |
+| **Paramètres** | Export sauvegarde manuelle ; liste des sauvegardes automatiques |
+| **Dashboard Twint** | Panel Twint avec données réelles (encaissements + frais) |
+| **Grand-livre** | Solde courant progressif (comptes de bilan) ; masquage contreparties sur soldes à nouveau |
+
 #### Idées futures (non planifiées)
 
 - [ ] **Vite 5→8 + `@vitejs/plugin-react` 5→6** — bloqué : `@electron-forge/plugin-vite` v8 encore en alpha. À revisiter quand une version stable est publiée.
