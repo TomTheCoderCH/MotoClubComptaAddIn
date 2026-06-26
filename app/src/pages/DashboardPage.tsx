@@ -18,7 +18,6 @@ function fmt(centimes: number): string {
 const FIXED_ACCOUNTS = [
   { number: '100', label: 'Caisse' },
   { number: '101', label: 'Raiffeisen' },
-  { number: '102', label: 'Twint' },
 ];
 
 export default function DashboardPage() {
@@ -126,27 +125,6 @@ export default function DashboardPage() {
             <p className={styles.closedBadge}>Exercice clôturé</p>
           )}
 
-          {twint && twint.grossCents > 0 && (
-            <div className={styles.twintPanel}>
-              <div className={styles.twintTitle}>Twint — Récapitulatif</div>
-              <div className={styles.twintRow}>
-                <span>Encaissements bruts</span>
-                <span className={styles.twintAmount}>CHF {formatCHF(twint.grossCents)}</span>
-              </div>
-              <div className={styles.twintRow}>
-                <span>
-                  Frais Twint
-                  <span className={styles.twintRate}>({twint.ratePercent.toFixed(2)} %)</span>
-                </span>
-                <span className={styles.twintAmountFees}>− CHF {formatCHF(twint.feesCents)}</span>
-              </div>
-              <div className={styles.twintRowNet}>
-                <span>Net versé sur Raiffeisen</span>
-                <span className={styles.twintAmount}>CHF {formatCHF(twint.netCents)}</span>
-              </div>
-            </div>
-          )}
-
           <div className={styles.cards}>
             {/* Cartes fixes */}
             {FIXED_ACCOUNTS.map(({ number, label }) => {
@@ -169,6 +147,34 @@ export default function DashboardPage() {
               <div className={styles.cardNumber}>3xx − 4xx</div>
               <div className={styles.cardAmount}>{fmt(data.netResultCents)}</div>
             </div>
+
+            {/* Carte Twint — double largeur */}
+            {twint && (
+              <div className={styles.twintCard}>
+                <div className={styles.twintTitle}>Twint — Récapitulatif</div>
+                {twint.grossCents === 0 ? (
+                  <p className={styles.twintEmpty}>Aucun mouvement enregistré pour cet exercice.</p>
+                ) : (
+                  <>
+                    <div className={styles.twintRow}>
+                      <span>Encaissements bruts</span>
+                      <span className={styles.twintAmount}>CHF {formatCHF(twint.grossCents)}</span>
+                    </div>
+                    <div className={styles.twintRow}>
+                      <span>
+                        Frais Twint
+                        <span className={styles.twintRate}>({twint.ratePercent.toFixed(2)} %)</span>
+                      </span>
+                      <span className={styles.twintAmountFees}>− CHF {formatCHF(twint.feesCents)}</span>
+                    </div>
+                    <div className={styles.twintRowNet}>
+                      <span>Net versé sur Raiffeisen</span>
+                      <span className={styles.twintAmount}>CHF {formatCHF(twint.netCents)}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
 
             {/* Cartes personnalisées */}
             {data.customCards.map(card => (

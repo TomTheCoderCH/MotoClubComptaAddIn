@@ -73,21 +73,19 @@ describe('DashboardPage — affichage', () => {
     expect(await screen.findByText(/Aucun exercice/)).toBeInTheDocument();
   });
 
-  it('affiche les 4 cartes fixes (Caisse, Raiffeisen, Twint, Résultat)', async () => {
+  it('affiche les 3 cartes fixes (Caisse, Raiffeisen, Résultat)', async () => {
     mockApi(dashData);
     render(<DashboardPage />);
     expect(await screen.findByText('Caisse')).toBeInTheDocument();
     expect(screen.getByText('Raiffeisen')).toBeInTheDocument();
-    expect(screen.getByText('Twint')).toBeInTheDocument();
     expect(screen.getByText('Résultat')).toBeInTheDocument();
   });
 
-  it('affiche CHF 0.00 pour Twint si aucun mouvement', async () => {
-    mockApi(dashData);
+  it('affiche le panel Twint avec message vide si aucun mouvement', async () => {
+    mockApi(dashData, [], noTwint);
     render(<DashboardPage />);
-    await screen.findByText('Twint');
-    const twintCard = screen.getByText('Twint').closest('div')!.parentElement!;
-    expect(twintCard).toHaveTextContent('CHF 0.00');
+    expect(await screen.findByText('Twint — Récapitulatif')).toBeInTheDocument();
+    expect(screen.getByText(/Aucun mouvement enregistré/)).toBeInTheDocument();
   });
 
   it('affiche le solde Caisse correctement formaté', async () => {
