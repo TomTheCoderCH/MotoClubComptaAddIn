@@ -78,7 +78,9 @@ export default function AccountLedgerPage({ accountId, fiscalYearId, onBack }: A
                         <td className={styles.td}>{line.piece ?? ''}</td>
                         <td className={styles.td}>{line.description}</td>
                         <td className={styles.td}>
-                          <CounterpartCell counterparts={line.counterparts} />
+                          {line.isOpeningBalance
+                            ? <span className={styles.counterpartNone}>—</span>
+                            : <CounterpartCell counterparts={line.counterparts} />}
                         </td>
                         <td className={`${styles.td} ${styles.tdRight}`}>
                           {line.debit != null ? fmt(line.debit) : ''}

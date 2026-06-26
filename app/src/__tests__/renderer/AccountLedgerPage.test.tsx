@@ -127,6 +127,7 @@ describe('AccountLedgerPage — affichage', () => {
     await screen.findByText('Solde à nouveau');
     const row = container.querySelector('tbody tr');
     expect(row?.className).toContain('rowOpening');
+    expect(screen.queryByText('290 Capital')).not.toBeInTheDocument();
   });
 
   it('la ligne de clôture a la classe CSS rowClosing', async () => {
