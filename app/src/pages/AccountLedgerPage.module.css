@@ -85,15 +85,14 @@
 .counterpartNone { color: #94a3b8; }
 
 .counterpartStack {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  row-gap: 2px;
+  column-gap: 0.75rem;
 }
 
 .counterpartLine {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
+  display: contents;
 }
 
 .counterpartAmount {
@@ -101,4 +100,5 @@
   font-family: monospace;
   font-size: 0.8em;
   white-space: nowrap;
+  text-align: right;
 }
