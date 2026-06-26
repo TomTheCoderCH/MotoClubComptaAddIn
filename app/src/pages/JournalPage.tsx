@@ -70,8 +70,8 @@ export default function JournalPage() {
         }
       }
     };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
+    document.addEventListener('keydown', handler, { capture: true });
+    return () => document.removeEventListener('keydown', handler, { capture: true });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function reloadEntries() {
@@ -146,7 +146,7 @@ export default function JournalPage() {
           {filtered.length === 0 ? (
             <p className={styles.empty}>{entries.length === 0 ? 'Aucune écriture pour cet exercice.' : 'Aucune écriture ne correspond aux filtres.'}</p>
           ) : (
-            <div ref={tableWrapperRef} className={styles.tableWrapper}>
+            <div ref={tableWrapperRef} className={styles.tableWrapper} tabIndex={-1}>
               <table className={styles.table}>
                 <thead>
                   <tr className={styles.theadRow}>
