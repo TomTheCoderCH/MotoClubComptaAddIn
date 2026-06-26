@@ -513,11 +513,11 @@ app/
 - [x] React DevTools intégré en mode développement uniquement (`!app.isPackaged`, `session.extensions.loadExtension`) — externalisé du bundle Vite
 - [x] Dashboard **panel Twint récapitulatif** — encaissements bruts (SUM debit 102) / frais avec taux % effectif (solde 402) / net versé sur Raiffeisen ; remplace la carte solde 102 (toujours à 0) ; handler IPC `dashboard:getTwintSummary` — 553 tests
 - [x] HelpDrawer mis à jour — panel Twint, grand-livre (contreparties, solde courant), lien Soldes→Grand-livre
+- [x] Page **Soldes** — filtres client-side : champ texte (N° ou nom, insensible à la casse) + sélecteur de classe (uniquement les classes présentes dans l'exercice) ; message "Aucun compte ne correspond" si résultat vide — 557 tests
 
 #### Idées futures (non planifiées)
 
 - [ ] **Vite 5→8 + `@vitejs/plugin-react` 5→6** — bloqué : `@electron-forge/plugin-vite` v8 encore en alpha. À revisiter quand une version stable est publiée.
-- [ ] Filtres / recherche sur la page Soldes (par classe, par compte)
 - [ ] Tests E2E — mettre à jour les tests existants (nombreuses modifications depuis leur écriture) + ajouter clôture complète, analytique, grand-livre, panel Twint
 
 ### Notes techniques actives
