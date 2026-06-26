@@ -49,6 +49,8 @@ export default function BalancesPage({ onOpenLedger }: BalancesPageProps) {
   const [balances,       setBalances]       = useState<AccountBalance[]>([]);
   const [loading,        setLoading]        = useState(false);
   const [error,          setError]          = useState<string | null>(null);
+  const [search,         setSearch]         = useState('');
+  const [classFilter,    setClassFilter]    = useState<number | null>(null);
 
   useEffect(() => {
     window.api.getFiscalYears()
@@ -70,7 +72,13 @@ export default function BalancesPage({ onOpenLedger }: BalancesPageProps) {
       .finally(() => setLoading(false));
   }, [selectedYearId]);
 
-  const groups = groupBalances(balances);
+  const filtered = balances.filter(b => {
+    if (classFilter !== null && b.class !== classFilter) return false;
+    const q = search.trim().toLowerCase();
+    return !q || b.number.includes(q) || b.name.toLowerCase().includes(q);
+  });
+  const groups = groupBalances(filtered);
+  const availableClasses = [...new Set(balances.map(b => b.class))].sort((a, b) => a - b);
 
   return (
     <div>
@@ -104,6 +112,32 @@ export default function BalancesPage({ onOpenLedger }: BalancesPageProps) {
       ) : balances.length === 0 ? (
         <p className={styles.empty}>Aucun mouvement pour cet exercice.</p>
       ) : (
+        <>
+          <div className={styles.filterBar}>
+            <input
+              type="search"
+              placeholder="Rechercher par N° ou nom…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className={styles.searchInput}
+              aria-label="Rechercher un compte"
+            />
+            <select
+              value={classFilter ?? ''}
+              onChange={e => setClassFilter(e.target.value ? Number(e.target.value) : null)}
+              className={styles.select}
+              aria-label="Filtrer par classe"
+            >
+              <option value="">Toutes les classes</option>
+              {availableClasses.map(cls => (
+                <option key={cls} value={cls}>{CLASS_LABELS[cls] ?? `Classe ${cls}`}</option>
+              ))}
+            </select>
+          </div>
+
+          {groups.length === 0 ? (
+            <p className={styles.empty}>Aucun compte ne correspond à la recherche.</p>
+          ) : (
         <table className={styles.table}>
           <thead>
             <tr className={styles.theadRow}>
@@ -125,6 +159,8 @@ export default function BalancesPage({ onOpenLedger }: BalancesPageProps) {
             ))}
           </tbody>
         </table>
+          )}
+        </>
       )}
     </div>
   );

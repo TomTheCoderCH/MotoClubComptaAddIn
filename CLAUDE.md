@@ -518,7 +518,7 @@ app/
 
 - [ ] **Vite 5→8 + `@vitejs/plugin-react` 5→6** — bloqué : `@electron-forge/plugin-vite` v8 encore en alpha. À revisiter quand une version stable est publiée.
 - [ ] Filtres / recherche sur la page Soldes (par classe, par compte)
-- [ ] Tests E2E supplémentaires — clôture complète, analytics
+- [ ] Tests E2E — mettre à jour les tests existants (nombreuses modifications depuis leur écriture) + ajouter clôture complète, analytique, grand-livre, panel Twint
 
 ### Notes techniques actives
 

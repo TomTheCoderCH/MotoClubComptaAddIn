@@ -56,8 +56,9 @@ describe('BalancesPage — affichage', () => {
   it('affiche les comptes groupés par classe', async () => {
     mockApi([fy2025], balancesFixture);
     render(<BalancesPage />);
-    expect(await screen.findByText('Classe 1 — Actifs')).toBeInTheDocument();
-    expect(screen.getByText('Classe 3 — Produits')).toBeInTheDocument();
+    // Le label de classe apparaît en <td> dans le tableau ET en <option> dans le filtre
+    expect(await screen.findAllByText('Classe 1 — Actifs')).not.toHaveLength(0);
+    expect(screen.getAllByText('Classe 3 — Produits')).not.toHaveLength(0);
     expect(screen.getByText('Caisse')).toBeInTheDocument();
     expect(screen.getByText('Cotisations membres')).toBeInTheDocument();
   });
@@ -65,7 +66,7 @@ describe('BalancesPage — affichage', () => {
   it('affiche les sous-totaux par classe', async () => {
     mockApi([fy2025], balancesFixture);
     render(<BalancesPage />);
-    await screen.findByText('Classe 1 — Actifs');
+    await screen.findAllByText('Classe 1 — Actifs');
     // Sous-total classe 1 : débit 1'200.00, solde 400.00
     // Ces valeurs apparaissent aussi sur la ligne Caisse → getAllByText
     expect(screen.getAllByText("1'200.00")).toHaveLength(2); // ligne + sous-total
@@ -87,10 +88,50 @@ describe('BalancesPage — affichage', () => {
     render(<BalancesPage />);
     await screen.findByText('Caisse');
 
-    await user.selectOptions(screen.getByRole('combobox'), '2'); // value = id de fy2024
+    // Deux combobox présents (exercice + filtre classe) : on cible par label
+    await user.selectOptions(screen.getByLabelText('Exercice'), '2');
     await waitFor(() => {
       expect(window.api.getAccountBalances).toHaveBeenCalledWith(2);
     });
+  });
+
+  it('filtre les comptes par texte (numéro)', async () => {
+    const user = userEvent.setup();
+    mockApi([fy2025], balancesFixture);
+    render(<BalancesPage />);
+    await screen.findByText('Caisse');
+    await user.type(screen.getByLabelText('Rechercher un compte'), '300');
+    expect(screen.queryByText('Caisse')).not.toBeInTheDocument();
+    expect(screen.getByText('Cotisations membres')).toBeInTheDocument();
+  });
+
+  it('filtre les comptes par texte (nom)', async () => {
+    const user = userEvent.setup();
+    mockApi([fy2025], balancesFixture);
+    render(<BalancesPage />);
+    await screen.findByText('Caisse');
+    await user.type(screen.getByLabelText('Rechercher un compte'), 'caisse');
+    expect(screen.getByText('Caisse')).toBeInTheDocument();
+    expect(screen.queryByText('Cotisations membres')).not.toBeInTheDocument();
+  });
+
+  it('filtre par classe', async () => {
+    const user = userEvent.setup();
+    mockApi([fy2025], balancesFixture);
+    render(<BalancesPage />);
+    await screen.findByText('Caisse');
+    await user.selectOptions(screen.getByLabelText('Filtrer par classe'), '3');
+    expect(screen.queryByText('Caisse')).not.toBeInTheDocument();
+    expect(screen.getByText('Cotisations membres')).toBeInTheDocument();
+  });
+
+  it('affiche un message si aucun compte ne correspond', async () => {
+    const user = userEvent.setup();
+    mockApi([fy2025], balancesFixture);
+    render(<BalancesPage />);
+    await screen.findByText('Caisse');
+    await user.type(screen.getByLabelText('Rechercher un compte'), 'xxxxxx');
+    expect(screen.getByText(/Aucun compte ne correspond/)).toBeInTheDocument();
   });
 
   it('appelle onOpenLedger avec accountId et fiscalYearId au clic sur une ligne', async () => {
