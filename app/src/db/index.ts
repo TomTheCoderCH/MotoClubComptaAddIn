@@ -316,6 +316,7 @@ export function getTwintSummary(fiscalYearId: number): TwintSummary {
         JOIN journal_entries e ON e.id = l.journal_entry_id
         JOIN accounts a ON a.id = l.account_id
         WHERE e.fiscal_year_id = ? AND a.number = '102' AND l.debit IS NOT NULL
+          AND e.is_closing_entry = 0
       ), 0) AS gross,
       COALESCE((
         SELECT SUM(COALESCE(l.debit,0)) - SUM(COALESCE(l.credit,0))
@@ -323,6 +324,7 @@ export function getTwintSummary(fiscalYearId: number): TwintSummary {
         JOIN journal_entries e ON e.id = l.journal_entry_id
         JOIN accounts a ON a.id = l.account_id
         WHERE e.fiscal_year_id = ? AND a.number = '402'
+          AND e.is_closing_entry = 0
       ), 0) AS fees
   `).get(fiscalYearId, fiscalYearId) as { gross: number; fees: number };
 
