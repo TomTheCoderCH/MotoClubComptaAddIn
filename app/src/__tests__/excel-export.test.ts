@@ -228,22 +228,22 @@ describe('exportFiscalYearToExcel — feuille Journal', () => {
 });
 
 describe('exportFiscalYearToExcel — feuille Bilan & Résultat', () => {
-  it('contient une section Actifs', async () => {
+  it('contient une section ACTIF', async () => {
     await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
     const ws = wb.getWorksheet('Bilan & Résultat')!;
     const values = ws.getColumn(1).values as string[];
-    expect(values).toContain('Actifs');
+    expect(values).toContain('ACTIF');
   });
 
-  it('contient une section Produits', async () => {
+  it('contient une section PRODUITS', async () => {
     await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
     const ws = wb.getWorksheet('Bilan & Résultat')!;
     const values = ws.getColumn(1).values as string[];
-    expect(values).toContain('Produits');
+    expect(values).toContain('PRODUITS');
   });
 
   it('contient une ligne Résultat net', async () => {
