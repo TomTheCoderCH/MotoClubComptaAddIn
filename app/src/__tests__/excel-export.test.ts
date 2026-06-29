@@ -87,94 +87,68 @@ describe('exportFiscalYearToExcel — structure', () => {
 });
 
 describe('exportFiscalYearToExcel — feuille de compte (Raiffeisen)', () => {
-  it('ligne 2 contient le nom du compte en A2', async () => {
+  it('ligne 1 contient le titre avec numéro, nom et exercice', async () => {
     await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
     const ws = wb.getWorksheet('101 Raiffeisen')!;
-    expect(ws.getCell('A2').value).toBe('Raiffeisen');
+    const title = ws.getCell('A1').value as string;
+    expect(title).toContain('101');
+    expect(title).toContain('Raiffeisen');
+    expect(title).toContain('2025');
   });
 
-  it('ligne 2 contient "Total" en C2', async () => {
+  it('ligne 3 contient les en-têtes Date / Libellé / Débit CHF / Crédit CHF', async () => {
     await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
     const ws = wb.getWorksheet('101 Raiffeisen')!;
-    expect(ws.getCell('C2').value).toBe('Total');
+    expect(ws.getCell('A3').value).toBe('Date');
+    expect(ws.getCell('B3').value).toBe('Libellé');
+    expect(ws.getCell('C3').value).toBe('Débit CHF');
+    expect(ws.getCell('D3').value).toBe('Crédit CHF');
   });
 
-  it('ligne 5 contient les en-têtes Date / Libellé / Doit / Avoir', async () => {
+  it('ligne 4 (première donnée) contient un objet Date et la description', async () => {
     await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
     const ws = wb.getWorksheet('101 Raiffeisen')!;
-    expect(ws.getCell('A5').value).toBe('Date');
-    expect(ws.getCell('B5').value).toBe('Libellé');
-    expect(ws.getCell('C5').value).toBe('Doit');
-    expect(ws.getCell('D5').value).toBe('Avoir');
+    expect(ws.getCell('A4').value).toBeInstanceOf(Date);
+    expect(ws.getCell('B4').value).toBe('Cotisations annuelles');
   });
 
-  it('ligne 6 (première donnée) contient la date et la description', async () => {
+  it('le débit est en CHF (pas en centimes) dans la colonne Débit CHF', async () => {
     await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
     const ws = wb.getWorksheet('101 Raiffeisen')!;
-    expect(ws.getCell('A6').value).toBe('2025-03-01');
-    expect(ws.getCell('B6').value).toBe('Cotisations annuelles');
+    // 141000 centimes = 1410.00 CHF — 1 data row → données en ligne 4
+    expect(ws.getCell('C4').value).toBe(1410);
   });
 
-  it('le débit est en CHF (pas en centimes) dans la colonne Doit', async () => {
+  it('la ligne de total contient une formule SUBTOTAL en C (ligne 5 avec 1 ligne de données)', async () => {
     await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
     const ws = wb.getWorksheet('101 Raiffeisen')!;
-    // 141000 centimes = 1410.00 CHF
-    expect(ws.getCell('C6').value).toBe(1410);
-  });
-
-  it('la ligne Total contient une formule SUBTOTAL en C', async () => {
-    await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
-    const wb = new ExcelJS.Workbook();
-    await wb.xlsx.readFile(tmpFile);
-    const ws = wb.getWorksheet('101 Raiffeisen')!;
-    // 1 data row → total is at row 7
-    const cell = ws.getCell('C7');
-    const v = cell.value as { formula: string };
+    // header=3, data=4, total=5
+    const v = ws.getCell('C5').value as { formula: string };
     expect(v?.formula).toMatch(/SUBTOTAL\(109/);
   });
 
-  it('la feuille Cotisations membres n\'a PAS de colonne Courant (compte PRODUIT)', async () => {
+  it('la feuille Cotisations membres n\'a PAS de colonne Solde CHF (compte non-ACTIF)', async () => {
     await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
     const ws = wb.getWorksheet('300 Cotisations membres')!;
-    expect(ws.getCell('E5').value).toBeNull();
+    // 4 colonnes seulement — E3 est vide
+    expect(ws.getCell('E3').value).toBeNull();
   });
 });
 
-describe('exportFiscalYearToExcel — colonne Courant (Caisse)', () => {
-  it('la feuille Caisse a la colonne Courant en E5', async () => {
-    // Add a Caisse entry
-    const accounts = getActiveAccounts();
-    const caisse = accounts.find(a => a.number === '100')!;
-    const capital = accounts.find(a => a.number === '290')!;
-    createJournalEntry({
-      fiscal_year_id: fiscalYearId,
-      date: '2025-01-01',
-      description: 'Solde à nouveau',
-      lines: [
-        { account_id: caisse.id, debit: 590800 },  // CHF 5908.00
-        { account_id: capital.id, credit: 590800 },
-      ],
-    });
-    await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
-    const wb = new ExcelJS.Workbook();
-    await wb.xlsx.readFile(tmpFile);
-    const ws = wb.getWorksheet('100 Caisse')!;
-    expect(ws.getCell('E5').value).toBe('Courant');
-  });
-
-  it('la colonne Courant contient une formule SUM en E6', async () => {
+describe('exportFiscalYearToExcel — colonne Solde CHF (Caisse)', () => {
+  it('la feuille Caisse a la colonne Solde CHF en E3', async () => {
     const accounts = getActiveAccounts();
     const caisse = accounts.find(a => a.number === '100')!;
     const capital = accounts.find(a => a.number === '290')!;
@@ -191,9 +165,28 @@ describe('exportFiscalYearToExcel — colonne Courant (Caisse)', () => {
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
     const ws = wb.getWorksheet('100 Caisse')!;
-    const cell = ws.getCell('E6');
-    const v = cell.value as { formula: string };
-    expect(v?.formula).toMatch(/SUM\(\$C\$6/);
+    expect(ws.getCell('E3').value).toBe('Solde CHF');
+  });
+
+  it('la colonne Solde CHF contient une formule SUM en E4 (première ligne de données)', async () => {
+    const accounts = getActiveAccounts();
+    const caisse = accounts.find(a => a.number === '100')!;
+    const capital = accounts.find(a => a.number === '290')!;
+    createJournalEntry({
+      fiscal_year_id: fiscalYearId,
+      date: '2025-01-01',
+      description: 'Solde à nouveau',
+      lines: [
+        { account_id: caisse.id, debit: 590800 },
+        { account_id: capital.id, credit: 590800 },
+      ],
+    });
+    await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.readFile(tmpFile);
+    const ws = wb.getWorksheet('100 Caisse')!;
+    const v = ws.getCell('E4').value as { formula: string };
+    expect(v?.formula).toMatch(/SUM\(INDEX\(/);
   });
 });
 

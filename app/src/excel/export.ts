@@ -1,4 +1,6 @@
 import ExcelJS from 'exceljs';
+import JSZip from 'jszip';
+import fs from 'node:fs';
 import type Database from 'better-sqlite3';
 
 const EXCEL_FORBIDDEN = /[*?:\\/[\]]/g;
@@ -118,10 +120,57 @@ export async function exportFiscalYearToExcel(
   addBilanSheet(wb, accountMap, fy.year, usedSheetNames);
   addJournalSheet(wb, journalRows, fy.year, usedSheetNames);
   for (const account of accountMap.values()) {
-    addAccountSheet(wb, account, usedSheetNames);
+    addAccountSheet(wb, account, fy.year, usedSheetNames);
   }
 
-  await wb.xlsx.writeFile(outputPath);
+  const raw = await wb.xlsx.writeBuffer() as Buffer;
+  fs.writeFileSync(outputPath, await fixNamedRangesOrder(raw));
+}
+
+// Deux bugs ExcelJS dans les definedNames corrigés par post-processing :
+//
+// Fix 1 — Apostrophe dans les noms de feuille :
+//   ExcelJS génère &apos;Souper fin d&apos;an&apos;! (apostrophe interne non doublée).
+//   Excel exige &apos;Souper fin d&apos;&apos;an&apos;! (doublée dans un nom quoté).
+//   Sans ce fix, Excel supprime les Print_Area et Print_Titles de ces feuilles.
+//
+// Fix 2 — Ordre des definedNames :
+//   ExcelJS interleave _xlnm.Print_Titles entre des entrées _xlnm.Print_Area.
+//   Excel rejette cet ordre. On déplace toutes les Print_Titles en fin de <definedNames>.
+async function fixNamedRangesOrder(buffer: Buffer): Promise<Buffer> {
+  const zip = await JSZip.loadAsync(buffer);
+  const wbFile = zip.file('xl/workbook.xml');
+  if (!wbFile) return buffer;
+  let xml = await wbFile.async('string');
+
+  // Fix 1 : doubler les apostrophes internes dans les noms de feuille quotés
+  xml = xml.replace(/<definedName([^>]*)>(&apos;[^<]*)<\/definedName>/g, (_, attrs, content) => {
+    const bangPos = content.indexOf('!');
+    if (bangPos === -1) return `<definedName${attrs}>${content}</definedName>`;
+    const beforeBang = content.substring(0, bangPos);
+    if (!beforeBang.endsWith('&apos;')) return `<definedName${attrs}>${content}</definedName>`;
+    const sheetName = beforeBang.slice(6, -6); // retire &apos; ouvrant et &apos; fermant
+    const rangeRef  = content.substring(bangPos);
+    const fixed     = sheetName.replace(/&apos;/g, '&apos;&apos;');
+    return `<definedName${attrs}>&apos;${fixed}&apos;${rangeRef}</definedName>`;
+  });
+
+  // Fix 2 : déplacer toutes les Print_Titles après tous les Print_Area
+  const titles: string[] = [];
+  xml = xml.replace(/<definedName name="_xlnm\.Print_Titles"[^>]*>[^<]*<\/definedName>/g, m => {
+    titles.push(m);
+    return '';
+  });
+  if (titles.length > 0 && xml.includes('</definedNames>')) {
+    // Supprimer les guillemets inutiles autour des noms simples (&apos;Journal&apos; → Journal)
+    // Le > ancre le match au début du contenu de la balise pour éviter de matcher
+    // à l'intérieur d'un nom comme '...d&apos;&apos;an&apos;!' → 'an!' (bug)
+    const normalized = titles.map(t => t.replace(/>&apos;([A-Za-z]\w*)&apos;!/g, '>$1!'));
+    xml = xml.replace('</definedNames>', normalized.join('') + '</definedNames>');
+  }
+
+  zip.file('xl/workbook.xml', xml);
+  return Buffer.from(await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' }));
 }
 
 function addBilanSheet(
@@ -199,6 +248,12 @@ function fmtDate(iso: string): string {
   return `${d}.${m}.${y}`;
 }
 
+// Midi UTC pour éviter le décalage de fuseau horaire lors de la sérialisation ExcelJS
+function isoToDate(iso: string): Date {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+}
+
 type JournalSide = { account: string; amount: number };
 
 function groupJournalEntries(rows: JournalRow[]): Array<{
@@ -253,11 +308,6 @@ function addJournalSheet(wb: ExcelJS.Workbook, rows: JournalRow[], year: number,
   // Collecte des lignes du tableau
   type TableRow = [Date, string, string, string, string, number];
   const tableRows: TableRow[] = [];
-  // Midi UTC évite le décalage de fuseau horaire (UTC+1/+2) lors de la sérialisation ExcelJS
-  const isoToDate = (iso: string) => {
-    const [y, m, d] = iso.split('-').map(Number);
-    return new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
-  };
 
   for (const entry of groupJournalEntries(rows)) {
     // Soldes à nouveau : une ligne par compte, colonne contrepartie vide
@@ -314,9 +364,11 @@ function addJournalSheet(wb: ExcelJS.Workbook, rows: JournalRow[], year: number,
   });
 
   // Zone d'impression et mise en page
-  const lastRow = DATA_START - 1 + tableRows.length; // ligne 3 (en-tête) + données
-  ws.pageSetup.printArea      = `A1:F${lastRow}`;
-  ws.pageSetup.printTitlesRow = '1:3';       // répète titre + en-tête du tableau sur chaque page
+  // Workaround ExcelJS : passer "$" avant le numéro de ligne pour obtenir $A$1:$F$N
+  // (ExcelJS ajoute "$" devant la colonne, mais pas devant la ligne → format mixte rejeté par Excel)
+  const lastRow = DATA_START - 1 + tableRows.length;
+  ws.pageSetup.printArea      = `A$1:F$${lastRow}`;
+  ws.pageSetup.printTitlesRow = '1:3';
   ws.pageSetup.orientation    = 'portrait';
   ws.pageSetup.paperSize      = 9;           // A4
   ws.pageSetup.fitToPage      = true;
@@ -328,76 +380,94 @@ function centsToCHF(cents: number | null): number {
   return cents !== null ? Math.round(cents) / 100 : 0;
 }
 
-function addAccountSheet(wb: ExcelJS.Workbook, account: AccountData, used: Set<string>): void {
+function addAccountSheet(wb: ExcelJS.Workbook, account: AccountData, year: number, used: Set<string>): void {
   const sheetName = sanitizeSheetName(account.number, account.name, used);
   const ws = wb.addWorksheet(sheetName);
   const n = account.rows.length;
-  const firstRow = 6;
-  const lastDataRow = firstRow + n - 1;
-  const totalRow = lastDataRow + 1;
-  const hasCourant =
-    account.type === 'ACTIF' && !account.mustBeZeroAtClosing;
 
-  // Row 2: account name | empty | 'Total' | net formula
-  ws.getCell('A2').value = account.name;
-  ws.getCell('C2').value = 'Total';
-  if (n > 0) {
-    const netFormula =
-      account.normalBalance === 'DEBIT'
-        ? `SUBTOTAL(109,C${firstRow}:C${lastDataRow})-SUBTOTAL(109,D${firstRow}:D${lastDataRow})`
-        : `SUBTOTAL(109,D${firstRow}:D${lastDataRow})-SUBTOTAL(109,C${firstRow}:C${lastDataRow})`;
-    ws.getCell('D2').value = { formula: netFormula };
-  }
+  const hasSolde = account.type === 'ACTIF' && !account.mustBeZeroAtClosing;
+  const colCount = hasSolde ? 5 : 4;
+  const lastColLetter = ['', 'A', 'B', 'C', 'D', 'E'][colCount];
 
-  // Row 3: Doit total | Avoir total
-  if (n > 0) {
-    ws.getCell('C3').value = {
-      formula: `SUBTOTAL(109,C${firstRow}:C${lastDataRow})`,
-    };
-    ws.getCell('D3').value = {
-      formula: `SUBTOTAL(109,D${firstRow}:D${lastDataRow})`,
-    };
-  }
+  // Largeurs colonnes
+  ws.getColumn(1).width = 8;
+  ws.getColumn(2).width = 38;
+  ws.getColumn(3).width = 14;
+  ws.getColumn(4).width = 14;
+  if (hasSolde) ws.getColumn(5).width = 14;
 
-  // Row 5: headers
-  ws.getCell('A5').value = 'Date';
-  ws.getCell('B5').value = 'Libellé';
-  ws.getCell('C5').value = 'Doit';
-  ws.getCell('D5').value = 'Avoir';
-  if (hasCourant) ws.getCell('E5').value = 'Courant';
+  // Ligne 1 : titre fusionné
+  const titleCell = ws.getCell('A1');
+  titleCell.value = `${account.number} ${account.name} — Exercice ${year}`;
+  titleCell.font  = { bold: true, size: 13 };
+  ws.mergeCells(`A1:${lastColLetter}1`);
 
-  // Data rows
-  account.rows.forEach((r, idx) => {
-    const rowNum = firstRow + idx;
-    ws.getCell(`A${rowNum}`).value = r.date;
-    ws.getCell(`B${rowNum}`).value = r.description;
-    if (r.debit !== null) {
-      const cell = ws.getCell(`C${rowNum}`);
-      cell.value = centsToCHF(r.debit);
-      cell.numFmt = '#,##0.00';
-    }
-    if (r.credit !== null) {
-      const cell = ws.getCell(`D${rowNum}`);
-      cell.value = centsToCHF(r.credit);
-      cell.numFmt = '#,##0.00';
-    }
-    if (hasCourant) {
-      const cell = ws.getCell(`E${rowNum}`);
-      cell.value = {
-        formula: `SUM($C$${firstRow}:C${rowNum})-SUM($D$${firstRow}:D${rowNum})`,
-      };
-      cell.numFmt = '#,##0.00';
+  // Lignes du tableau (ligne 3 = en-têtes, données dès la ligne 4)
+  type TRow = (Date | string | number | null)[];
+  const tableRows: TRow[] = account.rows.map(r => {
+    const row: TRow = [
+      isoToDate(r.date),
+      r.description,
+      r.debit  !== null ? centsToCHF(r.debit)  : null,
+      r.credit !== null ? centsToCHF(r.credit) : null,
+    ];
+    if (hasSolde) row.push(null); // placeholder — formule posée ensuite
+    return row;
+  });
+
+  type ColDef = {
+    name: string; filterButton?: boolean;
+    totalsRowFunction?: 'none'|'sum'|'average'|'count'|'countNums'|'max'|'min'|'stdDev'|'var'|'custom';
+  };
+  const columns: ColDef[] = [
+    { name: 'Date',       filterButton: true },
+    { name: 'Libellé',    filterButton: true },
+    { name: 'Débit CHF',  filterButton: true, totalsRowFunction: 'sum' },
+    { name: 'Crédit CHF', filterButton: true, totalsRowFunction: 'sum' },
+  ];
+  if (hasSolde) columns.push({ name: 'Solde CHF', filterButton: true });
+
+  ws.addTable({
+    name:      `Compte${account.number}`,
+    ref:       'A3',
+    headerRow: true,
+    totalsRow: true,
+    style:     { theme: 'TableStyleMedium2', showRowStripes: true },
+    columns,
+    rows: tableRows,
+  });
+
+  // Formats cellules après création du tableau
+  const DATA_START = 4;
+  const TOTAL_ROW  = DATA_START + n; // ligne de total (gérée par la table pour Débit/Crédit)
+
+  account.rows.forEach((_, i) => {
+    const rowNum = DATA_START + i;
+    const dateCell = ws.getCell(rowNum, 1);
+    dateCell.numFmt    = 'DD.MM';
+    dateCell.alignment = { horizontal: 'left' };
+    ws.getCell(rowNum, 3).numFmt = '#,##0.00';
+    ws.getCell(rowNum, 4).numFmt = '#,##0.00';
+    if (hasSolde) {
+      const soldeCell = ws.getCell(rowNum, 5);
+      const t = `Compte${account.number}`;
+      soldeCell.value = { formula: account.normalBalance === 'DEBIT'
+        ? `SUM(INDEX(${t}[Débit CHF],1):${t}[[#This Row],[Débit CHF]])-SUM(INDEX(${t}[Crédit CHF],1):${t}[[#This Row],[Crédit CHF]])`
+        : `SUM(INDEX(${t}[Crédit CHF],1):${t}[[#This Row],[Crédit CHF]])-SUM(INDEX(${t}[Débit CHF],1):${t}[[#This Row],[Débit CHF]])` };
+      soldeCell.numFmt = '#,##0.00';
     }
   });
 
-  // Total row
-  if (n > 0) {
-    ws.getCell(`A${totalRow}`).value = 'Total';
-    const doitCell = ws.getCell(`C${totalRow}`);
-    doitCell.value = { formula: `SUBTOTAL(109,C${firstRow}:C${lastDataRow})` };
-    doitCell.numFmt = '#,##0.00';
-    const avoirCell = ws.getCell(`D${totalRow}`);
-    avoirCell.value = { formula: `SUBTOTAL(109,D${firstRow}:D${lastDataRow})` };
-    avoirCell.numFmt = '#,##0.00';
-  }
+  // Formats sur la ligne de total (ExcelJS génère les formules SUBTOTAL pour Débit/Crédit)
+  ws.getCell(TOTAL_ROW, 3).numFmt = '#,##0.00';
+  ws.getCell(TOTAL_ROW, 4).numFmt = '#,##0.00';
+
+  // Mise en page impression — workaround ExcelJS : $-ligne en entrée → format $A$1 absolu en sortie
+  ws.pageSetup.printArea      = `A$1:${lastColLetter}$${TOTAL_ROW}`;
+  ws.pageSetup.printTitlesRow = '1:3';
+  ws.pageSetup.orientation    = 'portrait';
+  ws.pageSetup.paperSize      = 9;
+  ws.pageSetup.fitToPage      = true;
+  ws.pageSetup.fitToWidth     = 1;
+  ws.pageSetup.fitToHeight    = 0;
 }
