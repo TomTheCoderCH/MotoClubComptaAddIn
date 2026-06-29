@@ -91,7 +91,9 @@ export async function exportFiscalYearToExcel(
     JOIN journal_entry_lines l ON l.journal_entry_id = e.id
     JOIN accounts a ON a.id = l.account_id
     WHERE e.fiscal_year_id = ?
-    ORDER BY e.is_opening_balance DESC, e.is_closing_entry ASC, e.date, e.id, l.id
+    ORDER BY e.is_opening_balance DESC, e.is_closing_entry ASC,
+             e.date, e.id,
+             (l.debit IS NOT NULL) DESC, l.id
   `).all(fiscalYearId) as JournalRow[];
 
   const accountMap = new Map<string, AccountData>();
@@ -197,6 +199,40 @@ function fmtDate(iso: string): string {
   return `${d}.${m}.${y}`;
 }
 
+type JournalSide = { account: string; amount: number };
+
+function groupJournalEntries(rows: JournalRow[]): Array<{
+  entryId: number;
+  date: string;
+  piece: string | null;
+  description: string;
+  isOpeningBalance: boolean;
+  isClosingEntry: boolean;
+  debits: JournalSide[];
+  credits: JournalSide[];
+}> {
+  const map = new Map<number, ReturnType<typeof groupJournalEntries>[number]>();
+  for (const r of rows) {
+    if (!map.has(r.entryId)) {
+      map.set(r.entryId, {
+        entryId: r.entryId,
+        date: r.date,
+        piece: r.piece,
+        description: r.description,
+        isOpeningBalance: r.isOpeningBalance === 1,
+        isClosingEntry: r.isClosingEntry === 1,
+        debits: [],
+        credits: [],
+      });
+    }
+    const entry = map.get(r.entryId)!;
+    const account = `${r.accountNumber} ${r.accountName}`;
+    if (r.debit !== null)  entry.debits.push({ account, amount: r.debit });
+    if (r.credit !== null) entry.credits.push({ account, amount: r.credit });
+  }
+  return Array.from(map.values());
+}
+
 function addJournalSheet(wb: ExcelJS.Workbook, rows: JournalRow[], year: number, used: Set<string>): void {
   const journalName = 'Journal';
   used.add(journalName);
@@ -206,9 +242,9 @@ function addJournalSheet(wb: ExcelJS.Workbook, rows: JournalRow[], year: number,
   ws.getColumn('A').width = 12;  // Date
   ws.getColumn('B').width = 12;  // Pièce
   ws.getColumn('C').width = 36;  // Libellé
-  ws.getColumn('D').width = 30;  // Compte
-  ws.getColumn('E').width = 14;  // Débit
-  ws.getColumn('F').width = 14;  // Crédit
+  ws.getColumn('D').width = 28;  // Compte débit
+  ws.getColumn('E').width = 28;  // Compte crédit
+  ws.getColumn('F').width = 14;  // Montant
 
   // Titre
   const titleCell = ws.getCell('A1');
@@ -217,7 +253,7 @@ function addJournalSheet(wb: ExcelJS.Workbook, rows: JournalRow[], year: number,
   ws.mergeCells('A1:F1');
 
   // En-têtes colonnes (ligne 3)
-  const HEADERS = ['Date', 'Pièce', 'Libellé', 'Compte', 'Débit CHF', 'Crédit CHF'];
+  const HEADERS = ['Date', 'Pièce', 'Libellé', 'Débit (compte)', 'Crédit (compte)', 'Montant CHF'];
   const HDR_ROW = 3;
   HEADERS.forEach((h, i) => {
     const cell = ws.getCell(HDR_ROW, i + 1);
@@ -225,90 +261,74 @@ function addJournalSheet(wb: ExcelJS.Workbook, rows: JournalRow[], year: number,
     cell.font = { bold: true };
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
     cell.border = { bottom: { style: 'thin' } };
-    if (i >= 4) cell.alignment = { horizontal: 'right' };
+    if (i === 5) cell.alignment = { horizontal: 'right' };
   });
 
+  const entries = groupJournalEntries(rows);
   let currentRow = HDR_ROW + 1;
-  let lastEntryId: number | null = null;
   let inClosingSection = false;
-  let totalDebit = 0;
-  let totalCredit = 0;
+  let grandTotal = 0;
 
-  for (const r of rows) {
-    // Séparateur de section avant les écritures de clôture
-    if (r.isClosingEntry && !inClosingSection) {
-      currentRow++; // ligne vide
+  for (const entry of entries) {
+    // Séparateur avant les écritures de clôture
+    if (entry.isClosingEntry && !inClosingSection) {
+      currentRow++;
       const sectionCell = ws.getCell(currentRow, 1);
       sectionCell.value = 'Écritures de clôture';
       sectionCell.font = { bold: true, italic: true, color: { argb: 'FF64748B' } };
       ws.mergeCells(currentRow, 1, currentRow, 6);
       currentRow++;
       inClosingSection = true;
-      lastEntryId = null;
     }
 
-    // Ligne vide entre les écritures (nouvelle écriture)
-    if (r.entryId !== lastEntryId && lastEntryId !== null) {
+    const rowCount = Math.max(entry.debits.length, entry.credits.length);
+
+    for (let i = 0; i < rowCount; i++) {
+      const debit  = entry.debits[i];
+      const credit = entry.credits[i];
+      const amount = debit?.amount ?? credit?.amount ?? 0;
+
+      // Date / Pièce / Libellé : seulement sur la première ligne de l'écriture
+      if (i === 0) {
+        ws.getCell(currentRow, 1).value = fmtDate(entry.date);
+        ws.getCell(currentRow, 2).value = entry.piece ?? '';
+        ws.getCell(currentRow, 3).value = entry.description;
+      }
+
+      if (debit)  ws.getCell(currentRow, 4).value = debit.account;
+      if (credit) ws.getCell(currentRow, 5).value = credit.account;
+
+      const amountCell = ws.getCell(currentRow, 6);
+      amountCell.value     = centsToCHF(amount);
+      amountCell.numFmt    = '#,##0.00';
+      amountCell.alignment = { horizontal: 'right' };
+
+      if (entry.isClosingEntry) {
+        for (let c = 1; c <= 6; c++) {
+          ws.getCell(currentRow, c).fill = {
+            type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' },
+          };
+        }
+      }
+
       currentRow++;
     }
-    lastEntryId = r.entryId;
 
-    const dateCell   = ws.getCell(currentRow, 1);
-    const pieceCell  = ws.getCell(currentRow, 2);
-    const libelleCell = ws.getCell(currentRow, 3);
-    const compteCell = ws.getCell(currentRow, 4);
-    const debitCell  = ws.getCell(currentRow, 5);
-    const creditCell = ws.getCell(currentRow, 6);
-
-    dateCell.value    = fmtDate(r.date);
-    pieceCell.value   = r.piece ?? '';
-    libelleCell.value = r.description;
-    compteCell.value  = `${r.accountNumber} ${r.accountName}`;
-
-    if (r.debit !== null) {
-      debitCell.value  = centsToCHF(r.debit);
-      debitCell.numFmt = '#,##0.00';
-      debitCell.alignment = { horizontal: 'right' };
-      totalDebit += r.debit;
-    }
-    if (r.credit !== null) {
-      creditCell.value  = centsToCHF(r.credit);
-      creditCell.numFmt = '#,##0.00';
-      creditCell.alignment = { horizontal: 'right' };
-      totalCredit += r.credit;
-    }
-
-    // Fond légèrement coloré pour les écritures de clôture
-    if (r.isClosingEntry) {
-      for (let c = 1; c <= 6; c++) {
-        ws.getCell(currentRow, c).fill = {
-          type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' },
-        };
-      }
-    }
-
-    currentRow++;
+    grandTotal += entry.debits.reduce((s, d) => s + d.amount, 0);
+    currentRow++; // ligne vide entre les écritures
   }
 
   // Ligne de totaux
-  currentRow++;
   const totalLabelCell = ws.getCell(currentRow, 3);
   totalLabelCell.value = 'Total';
   totalLabelCell.font  = { bold: true };
 
-  const totalDebitCell = ws.getCell(currentRow, 5);
-  totalDebitCell.value  = centsToCHF(totalDebit);
-  totalDebitCell.numFmt = '#,##0.00';
-  totalDebitCell.font   = { bold: true };
-  totalDebitCell.alignment = { horizontal: 'right' };
-  totalDebitCell.border = { top: { style: 'thin' } };
-
-  const totalCreditCell = ws.getCell(currentRow, 6);
-  totalCreditCell.value  = centsToCHF(totalCredit);
-  totalCreditCell.numFmt = '#,##0.00';
-  totalCreditCell.font   = { bold: true };
-  totalCreditCell.alignment = { horizontal: 'right' };
-  totalCreditCell.border = { top: { style: 'thin' } };
+  const totalCell = ws.getCell(currentRow, 6);
+  totalCell.value     = centsToCHF(grandTotal);
+  totalCell.numFmt    = '#,##0.00';
+  totalCell.font      = { bold: true };
+  totalCell.alignment = { horizontal: 'right' };
+  totalCell.border    = { top: { style: 'thin' } };
 }
 
 function centsToCHF(cents: number | null): number {
