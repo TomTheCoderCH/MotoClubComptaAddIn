@@ -226,7 +226,7 @@ function groupJournalEntries(rows: JournalRow[]): Array<{
       });
     }
     const entry = map.get(r.entryId)!;
-    const account = `${r.accountNumber} ${r.accountName}`;
+    const account = r.accountName;
     if (r.debit !== null)  entry.debits.push({ account, amount: r.debit });
     if (r.credit !== null) entry.credits.push({ account, amount: r.credit });
   }
@@ -251,17 +251,18 @@ function addJournalSheet(wb: ExcelJS.Workbook, rows: JournalRow[], year: number,
   ws.mergeCells('A1:F1');
 
   // Collecte des lignes du tableau
-  type TableRow = [string, string, string, string, string, number];
+  type TableRow = [Date, string, string, string, string, number];
   const tableRows: TableRow[] = [];
+  const isoToDate = (iso: string) => new Date(`${iso}T00:00:00`);
 
   for (const entry of groupJournalEntries(rows)) {
     // Soldes à nouveau : une ligne par compte, colonne contrepartie vide
     if (entry.isOpeningBalance) {
       for (const d of entry.debits) {
-        tableRows.push([fmtDate(entry.date), entry.piece ?? '', entry.description, d.account, '', centsToCHF(d.amount)]);
+        tableRows.push([isoToDate(entry.date), entry.piece ?? '', entry.description, d.account, '', centsToCHF(d.amount)]);
       }
       for (const cr of entry.credits) {
-        tableRows.push([fmtDate(entry.date), entry.piece ?? '', entry.description, '', cr.account, centsToCHF(cr.amount)]);
+        tableRows.push([isoToDate(entry.date), entry.piece ?? '', entry.description, '', cr.account, centsToCHF(cr.amount)]);
       }
       continue;
     }
@@ -273,7 +274,7 @@ function addJournalSheet(wb: ExcelJS.Workbook, rows: JournalRow[], year: number,
       const debitAccount  = (i < entry.debits.length  ? entry.debits[i]  : entry.debits[entry.debits.length   - 1])?.account ?? '';
       const creditAccount = (i < entry.credits.length ? entry.credits[i] : entry.credits[entry.credits.length - 1])?.account ?? '';
       const amount = (i < entry.debits.length ? entry.debits[i] : entry.credits[i])?.amount ?? 0;
-      tableRows.push([fmtDate(entry.date), entry.piece ?? '', entry.description, debitAccount, creditAccount, centsToCHF(amount)]);
+      tableRows.push([isoToDate(entry.date), entry.piece ?? '', entry.description, debitAccount, creditAccount, centsToCHF(amount)]);
     }
   }
 
@@ -297,13 +298,26 @@ function addJournalSheet(wb: ExcelJS.Workbook, rows: JournalRow[], year: number,
     rows: tableRows,
   });
 
-  // Format numérique sur la colonne Montant CHF (colonne F, dès la ligne 4)
+  // Formats sur les colonnes Date (A) et Montant CHF (F), dès la ligne 4
   const DATA_START = 4;
   tableRows.forEach((_, i) => {
-    const cell = ws.getCell(DATA_START + i, 6);
-    cell.numFmt    = '#,##0.00';
-    cell.alignment = { horizontal: 'right' };
+    const dateCell = ws.getCell(DATA_START + i, 1);
+    dateCell.numFmt    = 'DD.MM';
+    dateCell.alignment = { horizontal: 'left' };
+    const amtCell = ws.getCell(DATA_START + i, 6);
+    amtCell.numFmt    = '#,##0.00';
+    amtCell.alignment = { horizontal: 'right' };
   });
+
+  // Zone d'impression et mise en page
+  const lastRow = DATA_START - 1 + tableRows.length; // ligne 3 (en-tête) + données
+  ws.pageSetup.printArea      = `A1:F${lastRow}`;
+  ws.pageSetup.printTitlesRow = '1:3';       // répète titre + en-tête du tableau sur chaque page
+  ws.pageSetup.orientation    = 'portrait';
+  ws.pageSetup.paperSize      = 9;           // A4
+  ws.pageSetup.fitToPage      = true;
+  ws.pageSetup.fitToWidth     = 1;           // 1 page de large
+  ws.pageSetup.fitToHeight    = 0;           // autant de pages en hauteur que nécessaire
 }
 
 function centsToCHF(cents: number | null): number {

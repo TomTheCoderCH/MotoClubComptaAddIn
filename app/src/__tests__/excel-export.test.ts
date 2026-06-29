@@ -224,9 +224,9 @@ describe('exportFiscalYearToExcel — feuille Journal', () => {
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
     const ws = wb.getWorksheet('Journal')!;
-    expect(ws.getCell('A4').value).toMatch(/^\d{2}\.\d{2}\.\d{4}$/);
-    expect(ws.getCell('D4').value as string).toContain('101');
-    expect(ws.getCell('E4').value as string).toContain('300');
+    expect(ws.getCell('A4').value).toBeInstanceOf(Date);
+    expect(ws.getCell('D4').value as string).toContain('Raiffeisen');
+    expect(ws.getCell('E4').value as string).toContain('Cotisations');
     expect(ws.getCell('F4').value).toBe(1410);
     // pas de ligne vide → ligne 5 contient une vraie valeur ou n'existe pas
     const row5 = ws.getCell('A5').value;
