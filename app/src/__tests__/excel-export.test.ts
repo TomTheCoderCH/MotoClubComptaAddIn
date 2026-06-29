@@ -198,42 +198,53 @@ describe('exportFiscalYearToExcel — colonne Courant (Caisse)', () => {
 });
 
 describe('exportFiscalYearToExcel — feuille Journal', () => {
-  it('la ligne 1 contient les en-têtes Date / Libellé / Montant / Pièce', async () => {
+  it('la ligne 1 contient le titre Journal — Exercice YYYY', async () => {
     await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
     const ws = wb.getWorksheet('Journal')!;
-    expect(ws.getCell('A1').value).toBe('Date');
-    expect(ws.getCell('B1').value).toBe('Libellé');
-    expect(ws.getCell('C1').value).toBe('Montant');
-    expect(ws.getCell('D1').value).toBe('Pièce');
+    expect(ws.getCell('A1').value).toBe('Journal — Exercice 2025');
   });
 
-  it('contient autant de lignes que de journal_entry_lines', async () => {
+  it('la ligne 3 contient les en-têtes Date / Pièce / Libellé / Compte / Débit CHF / Crédit CHF', async () => {
     await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
     const ws = wb.getWorksheet('Journal')!;
-    // Setup creates 1 entry with 2 lines → 2 data rows + 1 header = 3
-    expect(ws.rowCount).toBe(3);
+    expect(ws.getCell('A3').value).toBe('Date');
+    expect(ws.getCell('B3').value).toBe('Pièce');
+    expect(ws.getCell('C3').value).toBe('Libellé');
+    expect(ws.getCell('D3').value).toBe('Compte');
+    expect(ws.getCell('E3').value).toBe('Débit CHF');
+    expect(ws.getCell('F3').value).toBe('Crédit CHF');
   });
 
-  it('le libellé est "{Compte} — {Description}"', async () => {
+  it('la première ligne de données contient la date au format DD.MM.YYYY', async () => {
     await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
     const ws = wb.getWorksheet('Journal')!;
-    const label = ws.getCell('B2').value as string;
-    expect(label).toContain('Raiffeisen');
-    expect(label).toContain('Cotisations annuelles');
+    // première ligne de données = ligne 4
+    expect(ws.getCell('A4').value).toMatch(/^\d{2}\.\d{2}\.\d{4}$/);
   });
 
-  it('le montant est en CHF (pas en centimes)', async () => {
+  it('la colonne Compte contient le numéro et le nom du compte', async () => {
     await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
     const ws = wb.getWorksheet('Journal')!;
-    expect(ws.getCell('C2').value).toBe(1410);
+    const compte = ws.getCell('D4').value as string;
+    expect(compte).toContain('101');
+    expect(compte).toContain('Raiffeisen');
+  });
+
+  it('le montant débit est en CHF (pas en centimes)', async () => {
+    await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.readFile(tmpFile);
+    const ws = wb.getWorksheet('Journal')!;
+    // ligne débit Raiffeisen = 1410 CHF
+    expect(ws.getCell('E4').value).toBe(1410);
   });
 });
 

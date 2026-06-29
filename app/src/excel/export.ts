@@ -37,10 +37,14 @@ interface ExportRow {
 }
 
 interface JournalRow {
-  accountName: string;
+  entryId: number;
   date: string;
-  description: string;
   piece: string | null;
+  description: string;
+  isOpeningBalance: number;
+  isClosingEntry: number;
+  accountNumber: string;
+  accountName: string;
   debit: number | null;
   credit: number | null;
 }
@@ -78,12 +82,16 @@ export async function exportFiscalYearToExcel(
   `).all(fiscalYearId) as ExportRow[];
 
   const journalRows = db.prepare(`
-    SELECT a.name AS accountName, e.date, e.description, e.piece, l.debit, l.credit
+    SELECT e.id AS entryId, e.date, e.piece, e.description,
+           e.is_opening_balance AS isOpeningBalance,
+           e.is_closing_entry AS isClosingEntry,
+           a.number AS accountNumber, a.name AS accountName,
+           l.debit, l.credit
     FROM journal_entries e
     JOIN journal_entry_lines l ON l.journal_entry_id = e.id
     JOIN accounts a ON a.id = l.account_id
     WHERE e.fiscal_year_id = ?
-    ORDER BY e.date, e.id, l.id
+    ORDER BY e.is_opening_balance DESC, e.is_closing_entry ASC, e.date, e.id, l.id
   `).all(fiscalYearId) as JournalRow[];
 
   const accountMap = new Map<string, AccountData>();
@@ -106,7 +114,7 @@ export async function exportFiscalYearToExcel(
 
   const usedSheetNames = new Set<string>();
   addBilanSheet(wb, accountMap, fy.year, usedSheetNames);
-  addJournalSheet(wb, journalRows, usedSheetNames);
+  addJournalSheet(wb, journalRows, fy.year, usedSheetNames);
   for (const account of accountMap.values()) {
     addAccountSheet(wb, account, usedSheetNames);
   }
@@ -184,27 +192,123 @@ function addBilanSheet(
   netCell.numFmt = '#,##0.00';
 }
 
-function addJournalSheet(wb: ExcelJS.Workbook, rows: JournalRow[], used: Set<string>): void {
+function fmtDate(iso: string): string {
+  const [y, m, d] = iso.split('-');
+  return `${d}.${m}.${y}`;
+}
+
+function addJournalSheet(wb: ExcelJS.Workbook, rows: JournalRow[], year: number, used: Set<string>): void {
   const journalName = 'Journal';
   used.add(journalName);
   const ws = wb.addWorksheet(journalName);
 
-  // Header row
-  ws.getCell('A1').value = 'Date';
-  ws.getCell('B1').value = 'Libellé';
-  ws.getCell('C1').value = 'Montant';
-  ws.getCell('D1').value = 'Pièce';
+  // Largeurs de colonnes
+  ws.getColumn('A').width = 12;  // Date
+  ws.getColumn('B').width = 12;  // Pièce
+  ws.getColumn('C').width = 36;  // Libellé
+  ws.getColumn('D').width = 30;  // Compte
+  ws.getColumn('E').width = 14;  // Débit
+  ws.getColumn('F').width = 14;  // Crédit
 
-  rows.forEach((r, idx) => {
-    const rowNum = idx + 2;
-    ws.getCell(`A${rowNum}`).value = r.date;
-    ws.getCell(`B${rowNum}`).value = `${r.accountName} — ${r.description}`;
-    const amount = r.debit !== null ? centsToCHF(r.debit) : centsToCHF(r.credit);
-    const amountCell = ws.getCell(`C${rowNum}`);
-    amountCell.value = amount;
-    amountCell.numFmt = '#,##0.00';
-    if (r.piece) ws.getCell(`D${rowNum}`).value = r.piece;
+  // Titre
+  const titleCell = ws.getCell('A1');
+  titleCell.value = `Journal — Exercice ${year}`;
+  titleCell.font = { bold: true, size: 13 };
+  ws.mergeCells('A1:F1');
+
+  // En-têtes colonnes (ligne 3)
+  const HEADERS = ['Date', 'Pièce', 'Libellé', 'Compte', 'Débit CHF', 'Crédit CHF'];
+  const HDR_ROW = 3;
+  HEADERS.forEach((h, i) => {
+    const cell = ws.getCell(HDR_ROW, i + 1);
+    cell.value = h;
+    cell.font = { bold: true };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+    cell.border = { bottom: { style: 'thin' } };
+    if (i >= 4) cell.alignment = { horizontal: 'right' };
   });
+
+  let currentRow = HDR_ROW + 1;
+  let lastEntryId: number | null = null;
+  let inClosingSection = false;
+  let totalDebit = 0;
+  let totalCredit = 0;
+
+  for (const r of rows) {
+    // Séparateur de section avant les écritures de clôture
+    if (r.isClosingEntry && !inClosingSection) {
+      currentRow++; // ligne vide
+      const sectionCell = ws.getCell(currentRow, 1);
+      sectionCell.value = 'Écritures de clôture';
+      sectionCell.font = { bold: true, italic: true, color: { argb: 'FF64748B' } };
+      ws.mergeCells(currentRow, 1, currentRow, 6);
+      currentRow++;
+      inClosingSection = true;
+      lastEntryId = null;
+    }
+
+    // Ligne vide entre les écritures (nouvelle écriture)
+    if (r.entryId !== lastEntryId && lastEntryId !== null) {
+      currentRow++;
+    }
+    lastEntryId = r.entryId;
+
+    const dateCell   = ws.getCell(currentRow, 1);
+    const pieceCell  = ws.getCell(currentRow, 2);
+    const libelleCell = ws.getCell(currentRow, 3);
+    const compteCell = ws.getCell(currentRow, 4);
+    const debitCell  = ws.getCell(currentRow, 5);
+    const creditCell = ws.getCell(currentRow, 6);
+
+    dateCell.value    = fmtDate(r.date);
+    pieceCell.value   = r.piece ?? '';
+    libelleCell.value = r.description;
+    compteCell.value  = `${r.accountNumber} ${r.accountName}`;
+
+    if (r.debit !== null) {
+      debitCell.value  = centsToCHF(r.debit);
+      debitCell.numFmt = '#,##0.00';
+      debitCell.alignment = { horizontal: 'right' };
+      totalDebit += r.debit;
+    }
+    if (r.credit !== null) {
+      creditCell.value  = centsToCHF(r.credit);
+      creditCell.numFmt = '#,##0.00';
+      creditCell.alignment = { horizontal: 'right' };
+      totalCredit += r.credit;
+    }
+
+    // Fond légèrement coloré pour les écritures de clôture
+    if (r.isClosingEntry) {
+      for (let c = 1; c <= 6; c++) {
+        ws.getCell(currentRow, c).fill = {
+          type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' },
+        };
+      }
+    }
+
+    currentRow++;
+  }
+
+  // Ligne de totaux
+  currentRow++;
+  const totalLabelCell = ws.getCell(currentRow, 3);
+  totalLabelCell.value = 'Total';
+  totalLabelCell.font  = { bold: true };
+
+  const totalDebitCell = ws.getCell(currentRow, 5);
+  totalDebitCell.value  = centsToCHF(totalDebit);
+  totalDebitCell.numFmt = '#,##0.00';
+  totalDebitCell.font   = { bold: true };
+  totalDebitCell.alignment = { horizontal: 'right' };
+  totalDebitCell.border = { top: { style: 'thin' } };
+
+  const totalCreditCell = ws.getCell(currentRow, 6);
+  totalCreditCell.value  = centsToCHF(totalCredit);
+  totalCreditCell.numFmt = '#,##0.00';
+  totalCreditCell.font   = { bold: true };
+  totalCreditCell.alignment = { horizontal: 'right' };
+  totalCreditCell.border = { top: { style: 'thin' } };
 }
 
 function centsToCHF(cents: number | null): number {
