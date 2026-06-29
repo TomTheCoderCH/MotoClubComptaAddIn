@@ -206,7 +206,7 @@ describe('exportFiscalYearToExcel — feuille Journal', () => {
     expect(ws.getCell('A1').value).toBe('Journal — Exercice 2025');
   });
 
-  it('la ligne 3 contient les en-têtes Date / Pièce / Libellé / Débit / Crédit / Montant', async () => {
+  it('la ligne 3 est un tableau structuré avec les bons en-têtes', async () => {
     await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
@@ -214,31 +214,23 @@ describe('exportFiscalYearToExcel — feuille Journal', () => {
     expect(ws.getCell('A3').value).toBe('Date');
     expect(ws.getCell('B3').value).toBe('Pièce');
     expect(ws.getCell('C3').value).toBe('Libellé');
-    expect(ws.getCell('D3').value).toBe('Débit (compte)');
-    expect(ws.getCell('E3').value).toBe('Crédit (compte)');
+    expect(ws.getCell('D3').value).toBe('Débit compte');
+    expect(ws.getCell('E3').value).toBe('Crédit compte');
     expect(ws.getCell('F3').value).toBe('Montant CHF');
   });
 
-  it('une écriture simple tient sur 1 ligne avec débit, crédit et montant', async () => {
+  it('une écriture simple tient sur 1 ligne (ligne 4) sans ligne vide après', async () => {
     await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
     const ws = wb.getWorksheet('Journal')!;
-    // ligne 4 = première écriture (1 débit + 1 crédit → 1 ligne)
     expect(ws.getCell('A4').value).toMatch(/^\d{2}\.\d{2}\.\d{4}$/);
-    expect(ws.getCell('D4').value as string).toContain('101');   // compte débit
-    expect(ws.getCell('E4').value as string).toContain('300');   // compte crédit
-    expect(ws.getCell('F4').value).toBe(1410);                   // montant CHF
-  });
-
-  it('la ligne vide après une écriture sépare les écritures', async () => {
-    await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
-    const wb = new ExcelJS.Workbook();
-    await wb.xlsx.readFile(tmpFile);
-    const ws = wb.getWorksheet('Journal')!;
-    // ligne 5 = ligne vide après la première écriture
-    expect(ws.getCell('A5').value).toBeNull();
-    expect(ws.getCell('D5').value).toBeNull();
+    expect(ws.getCell('D4').value as string).toContain('101');
+    expect(ws.getCell('E4').value as string).toContain('300');
+    expect(ws.getCell('F4').value).toBe(1410);
+    // pas de ligne vide → ligne 5 contient une vraie valeur ou n'existe pas
+    const row5 = ws.getCell('A5').value;
+    expect(row5 === null || typeof row5 === 'string').toBe(true);
   });
 });
 

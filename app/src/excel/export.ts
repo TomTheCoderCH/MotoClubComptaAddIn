@@ -238,114 +238,72 @@ function addJournalSheet(wb: ExcelJS.Workbook, rows: JournalRow[], year: number,
   used.add(journalName);
   const ws = wb.addWorksheet(journalName);
 
-  // Largeurs de colonnes
-  ws.getColumn('A').width = 12;  // Date
-  ws.getColumn('B').width = 12;  // Pièce
-  ws.getColumn('C').width = 36;  // Libellé
-  ws.getColumn('D').width = 28;  // Compte débit
-  ws.getColumn('E').width = 28;  // Compte crédit
-  ws.getColumn('F').width = 14;  // Montant
+  ws.getColumn('A').width = 12;
+  ws.getColumn('B').width = 12;
+  ws.getColumn('C').width = 36;
+  ws.getColumn('D').width = 28;
+  ws.getColumn('E').width = 28;
+  ws.getColumn('F').width = 14;
 
-  // Titre
   const titleCell = ws.getCell('A1');
   titleCell.value = `Journal — Exercice ${year}`;
   titleCell.font = { bold: true, size: 13 };
   ws.mergeCells('A1:F1');
 
-  // En-têtes colonnes (ligne 3)
-  const HEADERS = ['Date', 'Pièce', 'Libellé', 'Débit (compte)', 'Crédit (compte)', 'Montant CHF'];
-  const HDR_ROW = 3;
-  HEADERS.forEach((h, i) => {
-    const cell = ws.getCell(HDR_ROW, i + 1);
-    cell.value = h;
-    cell.font = { bold: true };
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
-    cell.border = { bottom: { style: 'thin' } };
-    if (i === 5) cell.alignment = { horizontal: 'right' };
-  });
+  // Collecte des lignes du tableau
+  type TableRow = [string, string, string, string, string, number];
+  const tableRows: TableRow[] = [];
 
-  const entries = groupJournalEntries(rows);
-  let currentRow = HDR_ROW + 1;
-  let grandTotal = 0;
-
-  for (const entry of entries) {
-    const isClosing = entry.isClosingEntry;
-
-    // Solde à nouveau : une ligne par compte, colonne contrepartie vide
+  for (const entry of groupJournalEntries(rows)) {
+    // Soldes à nouveau : une ligne par compte, colonne contrepartie vide
     if (entry.isOpeningBalance) {
-      const allLines: Array<{ col: 4 | 5; account: string; amount: number }> = [
-        ...entry.debits.map(d  => ({ col: 4 as const, account: d.account,  amount: d.amount  })),
-        ...entry.credits.map(cr => ({ col: 5 as const, account: cr.account, amount: cr.amount })),
-      ];
-      for (const line of allLines) {
-        ws.getCell(currentRow, 1).value = fmtDate(entry.date);
-        ws.getCell(currentRow, 2).value = entry.piece ?? '';
-        ws.getCell(currentRow, 3).value = entry.description;
-        ws.getCell(currentRow, line.col).value = line.account;
-        const amountCell = ws.getCell(currentRow, 6);
-        amountCell.value     = centsToCHF(line.amount);
-        amountCell.numFmt    = '#,##0.00';
-        amountCell.alignment = { horizontal: 'right' };
-        currentRow++;
+      for (const d of entry.debits) {
+        tableRows.push([fmtDate(entry.date), entry.piece ?? '', entry.description, d.account, '', centsToCHF(d.amount)]);
       }
-      grandTotal += entry.debits.reduce((s, d) => s + d.amount, 0);
-      currentRow++;
+      for (const cr of entry.credits) {
+        tableRows.push([fmtDate(entry.date), entry.piece ?? '', entry.description, '', cr.account, centsToCHF(cr.amount)]);
+      }
       continue;
     }
 
     // Écritures ordinaires et de clôture :
-    // N débits × M crédits → max(N, M) lignes.
-    // Le côté le plus court est répété (ex: 1 crédit × N débits → crédit répété N fois).
+    // max(N débits, M crédits) lignes — le côté le plus court est répété.
     const rowCount = Math.max(entry.debits.length, entry.credits.length);
-
     for (let i = 0; i < rowCount; i++) {
-      const debit  = entry.debits[Math.min(i,  entry.debits.length  - 1)];
-      const credit = entry.credits[Math.min(i, entry.credits.length - 1)];
-      // Pour les lignes au-delà de la longueur réelle, on répète — mais pas si l'autre côté
-      // n'existe pas du tout (évite de répéter un compte inexistant).
-      const showDebit  = i < entry.debits.length  || entry.debits.length  === 0 ? entry.debits[i]  : debit;
-      const showCredit = i < entry.credits.length || entry.credits.length === 0 ? entry.credits[i] : credit;
+      const debitAccount  = (i < entry.debits.length  ? entry.debits[i]  : entry.debits[entry.debits.length   - 1])?.account ?? '';
+      const creditAccount = (i < entry.credits.length ? entry.credits[i] : entry.credits[entry.credits.length - 1])?.account ?? '';
       const amount = (i < entry.debits.length ? entry.debits[i] : entry.credits[i])?.amount ?? 0;
-
-      // Date / Pièce / Libellé répétés sur chaque ligne
-      ws.getCell(currentRow, 1).value = fmtDate(entry.date);
-      ws.getCell(currentRow, 2).value = entry.piece ?? '';
-      ws.getCell(currentRow, 3).value = entry.description;
-
-      if (showDebit)  ws.getCell(currentRow, 4).value = showDebit.account;
-      if (showCredit) ws.getCell(currentRow, 5).value = showCredit.account;
-
-      const amountCell = ws.getCell(currentRow, 6);
-      amountCell.value     = centsToCHF(amount);
-      amountCell.numFmt    = '#,##0.00';
-      amountCell.alignment = { horizontal: 'right' };
-
-      if (isClosing) {
-        for (let c = 1; c <= 6; c++) {
-          ws.getCell(currentRow, c).fill = {
-            type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' },
-          };
-        }
-      }
-
-      currentRow++;
+      tableRows.push([fmtDate(entry.date), entry.piece ?? '', entry.description, debitAccount, creditAccount, centsToCHF(amount)]);
     }
-
-    grandTotal += entry.debits.reduce((s, d) => s + d.amount, 0);
-    currentRow++; // ligne vide entre les écritures
   }
 
-  // Ligne de totaux
-  const totalLabelCell = ws.getCell(currentRow, 3);
-  totalLabelCell.value = 'Total';
-  totalLabelCell.font  = { bold: true };
+  // Tableau structuré Excel (ligne 3 = en-têtes, données dès la ligne 4)
+  ws.addTable({
+    name:      `Journal${year}`,
+    ref:       'A3',
+    headerRow: true,
+    style: {
+      theme:          'TableStyleMedium2',
+      showRowStripes: true,
+    },
+    columns: [
+      { name: 'Date',            filterButton: true },
+      { name: 'Pièce',          filterButton: true },
+      { name: 'Libellé',        filterButton: true },
+      { name: 'Débit compte',   filterButton: true },
+      { name: 'Crédit compte',  filterButton: true },
+      { name: 'Montant CHF',    filterButton: true },
+    ],
+    rows: tableRows,
+  });
 
-  const totalCell = ws.getCell(currentRow, 6);
-  totalCell.value     = centsToCHF(grandTotal);
-  totalCell.numFmt    = '#,##0.00';
-  totalCell.font      = { bold: true };
-  totalCell.alignment = { horizontal: 'right' };
-  totalCell.border    = { top: { style: 'thin' } };
+  // Format numérique sur la colonne Montant CHF (colonne F, dès la ligne 4)
+  const DATA_START = 4;
+  tableRows.forEach((_, i) => {
+    const cell = ws.getCell(DATA_START + i, 6);
+    cell.numFmt    = '#,##0.00';
+    cell.alignment = { horizontal: 'right' };
+  });
 }
 
 function centsToCHF(cents: number | null): number {
