@@ -511,17 +511,42 @@ export function getAccountLedger(fiscalYearId: number, accountId: number): Accou
     ORDER BY a.number
   `);
 
-  const lines: LedgerLine[] = rows.map(r => ({
-    entryId:          r.entry_id,
-    date:             r.date,
-    piece:            r.piece,
-    description:      r.description,
-    isOpeningBalance: r.is_opening_balance === 1,
-    isClosingEntry:   r.is_closing_entry   === 1,
-    debit:            r.debit,
-    credit:           r.credit,
-    counterparts:     cpStmt.all(r.entry_id, accountId, r.debit != null ? 1 : 0) as Array<{ number: string; name: string; amount: number }>,
-  }));
+  // Pour les écritures de clôture, chaque ligne est appairée exactement avec
+  // la contrepartie de même montant (structure : chaque compte 3xx/4xx ↔ 900,
+  // même montant, côté opposé). On filtre aussi par montant pour isoler la
+  // contrepartie directe et éviter de lister tous les comptes de l'écriture.
+  const cpClosingStmt = getDb().prepare(`
+    SELECT a.number, a.name, COALESCE(l2.debit, l2.credit) AS amount
+    FROM journal_entry_lines l2
+    JOIN accounts a ON a.id = l2.account_id
+    WHERE l2.journal_entry_id = ?
+      AND l2.account_id != ?
+      AND CASE WHEN ? = 1 THEN l2.credit IS NOT NULL
+               ELSE l2.debit IS NOT NULL
+          END
+      AND COALESCE(l2.debit, l2.credit) = ?
+    ORDER BY a.number
+    LIMIT 1
+  `);
+
+  const lines: LedgerLine[] = rows.map(r => {
+    const isDebit = r.debit != null;
+    const amount  = r.debit ?? r.credit ?? 0;
+    const counterparts = r.is_closing_entry === 1
+      ? cpClosingStmt.all(r.entry_id, accountId, isDebit ? 1 : 0, amount) as Array<{ number: string; name: string; amount: number }>
+      : cpStmt.all(r.entry_id, accountId, isDebit ? 1 : 0) as Array<{ number: string; name: string; amount: number }>;
+    return {
+      entryId:          r.entry_id,
+      date:             r.date,
+      piece:            r.piece,
+      description:      r.description,
+      isOpeningBalance: r.is_opening_balance === 1,
+      isClosingEntry:   r.is_closing_entry   === 1,
+      debit:            r.debit,
+      credit:           r.credit,
+      counterparts,
+    };
+  });
 
   return { account, lines };
 }
