@@ -177,7 +177,7 @@ export function getAnalyticsData(fiscalYearId: number): AnalyticsData {
     FROM accounts a
     JOIN journal_entry_lines l ON l.account_id = a.id
     JOIN journal_entries e     ON e.id = l.journal_entry_id
-    WHERE e.fiscal_year_id = ? AND a.class IN (3, 4)
+    WHERE e.fiscal_year_id = ? AND a.class IN (3, 4) AND e.is_closing_entry = 0
     GROUP BY a.id
     ORDER BY a.number
   `).all(fiscalYearId) as RawRow[];
