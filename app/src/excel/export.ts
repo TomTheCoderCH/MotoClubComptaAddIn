@@ -253,7 +253,11 @@ function addJournalSheet(wb: ExcelJS.Workbook, rows: JournalRow[], year: number,
   // Collecte des lignes du tableau
   type TableRow = [Date, string, string, string, string, number];
   const tableRows: TableRow[] = [];
-  const isoToDate = (iso: string) => new Date(`${iso}T00:00:00`);
+  // Midi UTC évite le décalage de fuseau horaire (UTC+1/+2) lors de la sérialisation ExcelJS
+  const isoToDate = (iso: string) => {
+    const [y, m, d] = iso.split('-').map(Number);
+    return new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+  };
 
   for (const entry of groupJournalEntries(rows)) {
     // Soldes à nouveau : une ligne par compte, colonne contrepartie vide
