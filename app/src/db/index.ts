@@ -864,7 +864,7 @@ export function closeFiscalYear(fiscalYearId: number): void {
       `).run({
         fiscal_year_id: fiscalYearId,
         date: `${year}-12-31`,
-        description: `Clôture — Transfert vers Capital ${year}`,
+        description: `Clôture — Transfert du ${preview.netResultCents > 0 ? 'bénéfice' : 'déficit'} vers Capital ${year}`,
       });
 
       const amt = Math.abs(preview.netResultCents);
