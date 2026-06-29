@@ -44,7 +44,7 @@ export default function BilanPage() {
   useEffect(() => {
     if (selectedYearId === null) return;
     setLoading(true);
-    window.api.getAccountBalances(selectedYearId)
+    window.api.getAccountBalancesExcludingClosing(selectedYearId)
       .then(setBalances)
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
@@ -157,7 +157,7 @@ export default function BilanPage() {
                     {/* Ligne résultat provisoire */}
                     <tr className={styles.resultRow}>
                       <td className={styles.td}>
-                        {isClosed ? 'Résultat (clôturé)' : 'Résultat provisoire *'}
+                        {isClosed ? "Résultat de l'exercice" : 'Résultat provisoire *'}
                       </td>
                       <td className={`${styles.td} ${styles.tdRight}`}
                           data-negative={netResult < 0 || undefined}>

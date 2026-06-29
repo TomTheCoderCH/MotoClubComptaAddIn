@@ -30,6 +30,7 @@ declare global {
       updateJournalEntry: (payload: UpdateJournalEntryPayload) => Promise<JournalEntry & { lines: JournalEntryLine[] }>;
       deleteJournalEntry: (id: number) => Promise<void>;
       getAccountBalances: (fiscalYearId: number) => Promise<AccountBalance[]>;
+      getAccountBalancesExcludingClosing: (fiscalYearId: number) => Promise<AccountBalance[]>;
       getOpeningBalanceSuggestions: (fiscalYearId: number) => Promise<OpeningBalanceSuggestion[]>;
       createOpeningBalance: (fiscalYearId: number, lines: OpeningBalanceLine[]) => Promise<void>;
       getClosingPreview: (fiscalYearId: number) => Promise<ClosingPreview>;

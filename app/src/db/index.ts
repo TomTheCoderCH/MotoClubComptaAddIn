@@ -438,6 +438,32 @@ export function getAccountBalances(fiscalYearId: number): AccountBalance[] {
   `).all(fiscalYearId) as AccountBalance[];
 }
 
+// Même requête que getAccountBalances mais sans les écritures de clôture
+// (is_closing_entry = 1). Utilisée par le Bilan complet pour afficher les états
+// financiers en présentation comptable standard : Capital = solde d'ouverture,
+// Résultat de l'exercice = produits − charges réels avant soldage.
+export function getAccountBalancesExcludingClosing(fiscalYearId: number): AccountBalance[] {
+  return getDb().prepare(`
+    SELECT
+      a.id,
+      a.number,
+      a.name,
+      a.class,
+      SUM(COALESCE(l.debit, 0))  AS total_debit,
+      SUM(COALESCE(l.credit, 0)) AS total_credit,
+      CASE a.normal_balance
+        WHEN 'DEBIT'  THEN SUM(COALESCE(l.debit,0)) - SUM(COALESCE(l.credit,0))
+        WHEN 'CREDIT' THEN SUM(COALESCE(l.credit,0)) - SUM(COALESCE(l.debit,0))
+      END AS solde
+    FROM accounts a
+    JOIN journal_entry_lines l ON l.account_id = a.id
+    JOIN journal_entries e     ON e.id = l.journal_entry_id
+    WHERE e.fiscal_year_id = ? AND e.is_closing_entry = 0
+    GROUP BY a.id
+    ORDER BY a.number
+  `).all(fiscalYearId) as AccountBalance[];
+}
+
 export function getAccountLedger(fiscalYearId: number, accountId: number): AccountLedgerData {
   const account = getDb().prepare(`
     SELECT id, number, name, type, normal_balance, class

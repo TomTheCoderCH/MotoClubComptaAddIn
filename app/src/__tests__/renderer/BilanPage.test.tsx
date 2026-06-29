@@ -40,8 +40,8 @@ function mockApi(
   balances: AccountBalance[] = balancesFixture,
 ) {
   vi.stubGlobal('api', {
-    getFiscalYears:     vi.fn().mockResolvedValue(years),
-    getAccountBalances: vi.fn().mockResolvedValue(balances),
+    getFiscalYears:                      vi.fn().mockResolvedValue(years),
+    getAccountBalancesExcludingClosing:  vi.fn().mockResolvedValue(balances),
   });
 }
 
@@ -105,10 +105,10 @@ describe('BilanPage — affichage', () => {
     expect(matches.length).toBeGreaterThan(0);
   });
 
-  it('affiche "Résultat (clôturé)" pour un exercice clôturé', async () => {
+  it("affiche \"Résultat de l'exercice\" pour un exercice clôturé", async () => {
     mockApi([fy2024], balancesFixture);
     render(<BilanPage />);
-    expect(await screen.findByText('Résultat (clôturé)')).toBeInTheDocument();
+    expect(await screen.findByText("Résultat de l'exercice")).toBeInTheDocument();
     expect(screen.queryByText(/Résultat provisoire/)).toBeNull();
   });
 });
@@ -122,8 +122,8 @@ describe('BilanPage — sélecteur exercice', () => {
   it('recharge les données au changement d\'exercice', async () => {
     const getBalances = vi.fn().mockResolvedValue(balancesFixture);
     vi.stubGlobal('api', {
-      getFiscalYears:     vi.fn().mockResolvedValue([fy2025, fy2024]),
-      getAccountBalances: getBalances,
+      getFiscalYears:                     vi.fn().mockResolvedValue([fy2025, fy2024]),
+      getAccountBalancesExcludingClosing: getBalances,
     });
     render(<BilanPage />);
     const select = await screen.findByRole('combobox');

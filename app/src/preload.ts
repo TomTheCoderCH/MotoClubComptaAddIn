@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('api', {
 
   // Soldes
   getAccountBalances: (fiscalYearId: number)         => ipcRenderer.invoke('db:getAccountBalances', fiscalYearId),
+  getAccountBalancesExcludingClosing: (fiscalYearId: number) => ipcRenderer.invoke('db:getAccountBalancesExcludingClosing', fiscalYearId),
 
   // Soldes à nouveau
   getOpeningBalanceSuggestions: (fiscalYearId: number) =>
@@ -89,6 +90,7 @@ export type ElectronAPI = {
   updateJournalEntry: (payload: UpdateJournalEntryPayload) => Promise<JournalEntry & { lines: JournalEntryLine[] }>;
   deleteJournalEntry: (id: number) => Promise<void>;
   getAccountBalances: (fiscalYearId: number) => Promise<AccountBalance[]>;
+  getAccountBalancesExcludingClosing: (fiscalYearId: number) => Promise<AccountBalance[]>;
   getOpeningBalanceSuggestions: (fiscalYearId: number) => Promise<OpeningBalanceSuggestion[]>;
   createOpeningBalance: (fiscalYearId: number, lines: OpeningBalanceLine[]) => Promise<void>;
   getClosingPreview: (fiscalYearId: number) => Promise<ClosingPreview>;

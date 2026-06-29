@@ -12,6 +12,7 @@ import {
   updateJournalEntry,
   deleteJournalEntry,
   getAccountBalances,
+  getAccountBalancesExcludingClosing,
   getOpeningBalanceSuggestions,
   createOpeningBalanceEntry,
   getClosingPreview,
@@ -77,6 +78,7 @@ export function registerIpcHandlers(): void {
 
   // ─── Soldes ──────────────────────────────────────────────────────────────────
   ipcMain.handle('db:getAccountBalances', (_e, fiscalYearId: number) => getAccountBalances(fiscalYearId));
+  ipcMain.handle('db:getAccountBalancesExcludingClosing', (_e, fiscalYearId: number) => getAccountBalancesExcludingClosing(fiscalYearId));
 
   // ─── Sauvegarde ──────────────────────────────────────────────────────────────
   ipcMain.handle('backup:list', () => {
