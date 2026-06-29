@@ -266,44 +266,61 @@ function addJournalSheet(wb: ExcelJS.Workbook, rows: JournalRow[], year: number,
 
   const entries = groupJournalEntries(rows);
   let currentRow = HDR_ROW + 1;
-  let inClosingSection = false;
   let grandTotal = 0;
 
   for (const entry of entries) {
-    // Séparateur avant les écritures de clôture
-    if (entry.isClosingEntry && !inClosingSection) {
-      currentRow++;
-      const sectionCell = ws.getCell(currentRow, 1);
-      sectionCell.value = 'Écritures de clôture';
-      sectionCell.font = { bold: true, italic: true, color: { argb: 'FF64748B' } };
-      ws.mergeCells(currentRow, 1, currentRow, 6);
-      currentRow++;
-      inClosingSection = true;
-    }
+    const isClosing = entry.isClosingEntry;
 
-    const rowCount = Math.max(entry.debits.length, entry.credits.length);
-
-    for (let i = 0; i < rowCount; i++) {
-      const debit  = entry.debits[i];
-      const credit = entry.credits[i];
-      const amount = debit?.amount ?? credit?.amount ?? 0;
-
-      // Date / Pièce / Libellé : seulement sur la première ligne de l'écriture
-      if (i === 0) {
+    // Solde à nouveau : une ligne par compte, colonne contrepartie vide
+    if (entry.isOpeningBalance) {
+      const allLines: Array<{ col: 4 | 5; account: string; amount: number }> = [
+        ...entry.debits.map(d  => ({ col: 4 as const, account: d.account,  amount: d.amount  })),
+        ...entry.credits.map(cr => ({ col: 5 as const, account: cr.account, amount: cr.amount })),
+      ];
+      for (const line of allLines) {
         ws.getCell(currentRow, 1).value = fmtDate(entry.date);
         ws.getCell(currentRow, 2).value = entry.piece ?? '';
         ws.getCell(currentRow, 3).value = entry.description;
+        ws.getCell(currentRow, line.col).value = line.account;
+        const amountCell = ws.getCell(currentRow, 6);
+        amountCell.value     = centsToCHF(line.amount);
+        amountCell.numFmt    = '#,##0.00';
+        amountCell.alignment = { horizontal: 'right' };
+        currentRow++;
       }
+      grandTotal += entry.debits.reduce((s, d) => s + d.amount, 0);
+      currentRow++;
+      continue;
+    }
 
-      if (debit)  ws.getCell(currentRow, 4).value = debit.account;
-      if (credit) ws.getCell(currentRow, 5).value = credit.account;
+    // Écritures ordinaires et de clôture :
+    // N débits × M crédits → max(N, M) lignes.
+    // Le côté le plus court est répété (ex: 1 crédit × N débits → crédit répété N fois).
+    const rowCount = Math.max(entry.debits.length, entry.credits.length);
+
+    for (let i = 0; i < rowCount; i++) {
+      const debit  = entry.debits[Math.min(i,  entry.debits.length  - 1)];
+      const credit = entry.credits[Math.min(i, entry.credits.length - 1)];
+      // Pour les lignes au-delà de la longueur réelle, on répète — mais pas si l'autre côté
+      // n'existe pas du tout (évite de répéter un compte inexistant).
+      const showDebit  = i < entry.debits.length  || entry.debits.length  === 0 ? entry.debits[i]  : debit;
+      const showCredit = i < entry.credits.length || entry.credits.length === 0 ? entry.credits[i] : credit;
+      const amount = (i < entry.debits.length ? entry.debits[i] : entry.credits[i])?.amount ?? 0;
+
+      // Date / Pièce / Libellé répétés sur chaque ligne
+      ws.getCell(currentRow, 1).value = fmtDate(entry.date);
+      ws.getCell(currentRow, 2).value = entry.piece ?? '';
+      ws.getCell(currentRow, 3).value = entry.description;
+
+      if (showDebit)  ws.getCell(currentRow, 4).value = showDebit.account;
+      if (showCredit) ws.getCell(currentRow, 5).value = showCredit.account;
 
       const amountCell = ws.getCell(currentRow, 6);
       amountCell.value     = centsToCHF(amount);
       amountCell.numFmt    = '#,##0.00';
       amountCell.alignment = { horizontal: 'right' };
 
-      if (entry.isClosingEntry) {
+      if (isClosing) {
         for (let c = 1; c <= 6; c++) {
           ws.getCell(currentRow, c).fill = {
             type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' },
