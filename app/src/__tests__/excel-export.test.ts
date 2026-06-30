@@ -98,15 +98,16 @@ describe('exportFiscalYearToExcel — feuille de compte (Raiffeisen)', () => {
     expect(title).toContain('2025');
   });
 
-  it('ligne 3 contient les en-têtes Date / Libellé / Débit CHF / Crédit CHF', async () => {
+  it('ligne 3 contient les en-têtes Date / Libellé / Contrepartie / Débit CHF / Crédit CHF', async () => {
     await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
     const ws = wb.getWorksheet('101 Raiffeisen')!;
     expect(ws.getCell('A3').value).toBe('Date');
     expect(ws.getCell('B3').value).toBe('Libellé');
-    expect(ws.getCell('C3').value).toBe('Débit CHF');
-    expect(ws.getCell('D3').value).toBe('Crédit CHF');
+    expect(ws.getCell('C3').value).toBe('Contrepartie');
+    expect(ws.getCell('D3').value).toBe('Débit CHF');
+    expect(ws.getCell('E3').value).toBe('Crédit CHF');
   });
 
   it('ligne 4 (première donnée) contient un objet Date et la description', async () => {
@@ -123,17 +124,17 @@ describe('exportFiscalYearToExcel — feuille de compte (Raiffeisen)', () => {
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
     const ws = wb.getWorksheet('101 Raiffeisen')!;
-    // 141000 centimes = 1410.00 CHF — 1 data row → données en ligne 4
-    expect(ws.getCell('C4').value).toBe(1410);
+    // 141000 centimes = 1410.00 CHF — 1 data row → données en ligne 4, Débit CHF en col D
+    expect(ws.getCell('D4').value).toBe(1410);
   });
 
-  it('la ligne de total contient une formule SUBTOTAL en C (ligne 5 avec 1 ligne de données)', async () => {
+  it('la ligne de total contient une formule SUBTOTAL en D (ligne 5 avec 1 ligne de données)', async () => {
     await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
     const ws = wb.getWorksheet('101 Raiffeisen')!;
-    // header=3, data=4, total=5
-    const v = ws.getCell('C5').value as { formula: string };
+    // header=3, data=4, total=5 — Débit CHF en col D
+    const v = ws.getCell('D5').value as { formula: string };
     expect(v?.formula).toMatch(/SUBTOTAL\(109/);
   });
 
@@ -142,13 +143,13 @@ describe('exportFiscalYearToExcel — feuille de compte (Raiffeisen)', () => {
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
     const ws = wb.getWorksheet('300 Cotisations membres')!;
-    // 4 colonnes seulement — E3 est vide
-    expect(ws.getCell('E3').value).toBeNull();
+    // 5 colonnes (Date Libellé Contrepartie Débit Crédit) — F3 est vide (pas de Solde)
+    expect(ws.getCell('F3').value).toBeNull();
   });
 });
 
 describe('exportFiscalYearToExcel — colonne Solde CHF (Caisse)', () => {
-  it('la feuille Caisse a la colonne Solde CHF en E3', async () => {
+  it('la feuille Caisse a la colonne Solde CHF en F3', async () => {
     const accounts = getActiveAccounts();
     const caisse = accounts.find(a => a.number === '100')!;
     const capital = accounts.find(a => a.number === '290')!;
@@ -165,10 +166,10 @@ describe('exportFiscalYearToExcel — colonne Solde CHF (Caisse)', () => {
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
     const ws = wb.getWorksheet('100 Caisse')!;
-    expect(ws.getCell('E3').value).toBe('Solde CHF');
+    expect(ws.getCell('F3').value).toBe('Solde CHF');
   });
 
-  it('la colonne Solde CHF contient une formule SUM en E4 (première ligne de données)', async () => {
+  it('la colonne Solde CHF contient une formule SUM en F4 (première ligne de données)', async () => {
     const accounts = getActiveAccounts();
     const caisse = accounts.find(a => a.number === '100')!;
     const capital = accounts.find(a => a.number === '290')!;
@@ -185,7 +186,7 @@ describe('exportFiscalYearToExcel — colonne Solde CHF (Caisse)', () => {
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
     const ws = wb.getWorksheet('100 Caisse')!;
-    const v = ws.getCell('E4').value as { formula: string };
+    const v = ws.getCell('F4').value as { formula: string };
     expect(v?.formula).toMatch(/SUM\(INDEX\(/);
   });
 });

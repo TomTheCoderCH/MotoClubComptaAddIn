@@ -77,6 +77,7 @@ interface LedgerRow {
   description: string;
   piece: string | null;
   isOpeningBalance: boolean;
+  contra: string;         // nom du compte contrepartie (vide si ouverture/clôture)
   debit: number | null;   // in CHF
   credit: number | null;  // in CHF
 }
@@ -127,6 +128,7 @@ function buildAccountLedger(entries: EntryDetail[], accountNumber: string): Ledg
           description: entry.description,
           piece: entry.piece,
           isOpeningBalance: entry.isOpeningBalance,
+          contra: '',
           debit:  ownLine.debit  !== null ? centsToCHF(ownLine.debit)  : null,
           credit: ownLine.credit !== null ? centsToCHF(ownLine.credit) : null,
         });
@@ -143,6 +145,7 @@ function buildAccountLedger(entries: EntryDetail[], accountNumber: string): Ledg
           description: entry.description,
           piece: entry.piece,
           isOpeningBalance: false,
+          contra: contraLines.length === 1 ? contraLines[0].accountName : '',
           debit:  isDebit  ? centsToCHF(ownLine.debit!)  : null,
           credit: !isDebit ? centsToCHF(ownLine.credit!) : null,
         });
@@ -154,6 +157,7 @@ function buildAccountLedger(entries: EntryDetail[], accountNumber: string): Ledg
             description: entry.description,
             piece: entry.piece,
             isOpeningBalance: false,
+            contra: cl.accountName,
             debit:  isDebit  ? centsToCHF(cAmt) : null,
             credit: !isDebit ? centsToCHF(cAmt) : null,
           });
@@ -627,15 +631,16 @@ function addAccountSheet(
   const ws = wb.addWorksheet(sheetName);
 
   const hasSolde = account.type === 'ACTIF' && !account.mustBeZeroAtClosing;
-  // Columns: Date(1) Libellé(2) Débit(3) Crédit(4) [Solde(5)]
-  const colCount = hasSolde ? 5 : 4;
-  const lastColLetter = ['', 'A', 'B', 'C', 'D', 'E'][colCount];
+  // Columns: Date(1) Libellé(2) Contrepartie(3) Débit(4) Crédit(5) [Solde(6)]
+  const colCount = hasSolde ? 6 : 5;
+  const lastColLetter = ['', 'A', 'B', 'C', 'D', 'E', 'F'][colCount];
 
   ws.getColumn(1).width = 8;
-  ws.getColumn(2).width = 38;
-  ws.getColumn(3).width = 14;
-  ws.getColumn(4).width = 14;
-  if (hasSolde) ws.getColumn(5).width = 14;
+  ws.getColumn(2).width = 30;
+  ws.getColumn(3).width = 22;
+  ws.getColumn(4).width = 12;
+  ws.getColumn(5).width = 12;
+  if (hasSolde) ws.getColumn(6).width = 12;
 
   ws.views = [{ state: 'frozen', xSplit: 0, ySplit: 3, topLeftCell: 'A4' }];
 
@@ -652,6 +657,7 @@ function addAccountSheet(
     const row: TRow = [
       isoToDate(r.date),
       r.description,
+      r.contra,
       r.debit,
       r.credit,
     ];
@@ -664,10 +670,11 @@ function addAccountSheet(
     totalsRowFunction?: 'none'|'sum'|'average'|'count'|'countNums'|'max'|'min'|'stdDev'|'var'|'custom';
   };
   const columns: ColDef[] = [
-    { name: 'Date',       filterButton: true },
-    { name: 'Libellé',   filterButton: true },
-    { name: 'Débit CHF', filterButton: true, totalsRowFunction: 'sum' },
-    { name: 'Crédit CHF', filterButton: true, totalsRowFunction: 'sum' },
+    { name: 'Date',          filterButton: true },
+    { name: 'Libellé',      filterButton: true },
+    { name: 'Contrepartie', filterButton: true },
+    { name: 'Débit CHF',    filterButton: true, totalsRowFunction: 'sum' },
+    { name: 'Crédit CHF',   filterButton: true, totalsRowFunction: 'sum' },
   ];
   if (hasSolde) columns.push({ name: 'Solde CHF', filterButton: true });
 
@@ -689,10 +696,10 @@ function addAccountSheet(
     const dateCell = ws.getCell(rowNum, 1);
     dateCell.numFmt    = 'DD.MM';
     dateCell.alignment = { horizontal: 'left' };
-    ws.getCell(rowNum, 3).numFmt = '#,##0.00';
     ws.getCell(rowNum, 4).numFmt = '#,##0.00';
+    ws.getCell(rowNum, 5).numFmt = '#,##0.00';
     if (hasSolde) {
-      const soldeCell = ws.getCell(rowNum, 5);
+      const soldeCell = ws.getCell(rowNum, 6);
       const t = `Compte${account.number}`;
       soldeCell.value = { formula: account.normalBalance === 'DEBIT'
         ? `SUM(INDEX(${t}[Débit CHF],1):${t}[[#This Row],[Débit CHF]])-SUM(INDEX(${t}[Crédit CHF],1):${t}[[#This Row],[Crédit CHF]])`
@@ -701,8 +708,8 @@ function addAccountSheet(
     }
   });
 
-  ws.getCell(TOTAL_ROW, 3).numFmt = '#,##0.00';
   ws.getCell(TOTAL_ROW, 4).numFmt = '#,##0.00';
+  ws.getCell(TOTAL_ROW, 5).numFmt = '#,##0.00';
 
   ws.pageSetup.printArea      = `A$1:${lastColLetter}$${TOTAL_ROW}`;
   ws.pageSetup.printTitlesRow = '1:3';
