@@ -518,7 +518,9 @@ app/
 
 - [x] Tests E2E mis à jour et étendus — 18 tests : isolation via `MCY_TEST_USERDATA` (fix `app.getName()` ambigu au lancement depuis .js brut), `app.spec.ts` réécrit (Tableau de bord par défaut, sidebar 8 entrées, colonne Groupe analytique), `dashboard.spec.ts` nouveau (cartes, panel Twint), `fiscal-year.spec.ts` + test clôture avec bénéfice, `journal-entry.spec.ts` + `balance.spec.ts` corrigés (bouton Lucide sans "+", format "1'410.00"), test navigation grand-livre — 557 tests Vitest + 18 E2E
 
-#### Couverture E2E actuelle (18 tests)
+- [x] Tests E2E étendus — 32 tests (14 nouveaux) : `journal-entry.spec.ts` + 4 tests (modifier, supprimer, filtrer, Ctrl+N) ; `analytics.spec.ts` nouveau (Analytique, Non groupés, Bilan complet, ✓ Bilan équilibré) ; `accounts.spec.ts` nouveau (créer compte, modifier groupe, groupe dans Analytique) ; `help.spec.ts` nouveau (Aide ouvre drawer, Escape ferme drawer, Escape ferme modale journal) — 555 tests Vitest + 32 E2E ; correctif scoping dialog pour getByLabel('Date'/'Libellé') conflictuels avec JournalFilters
+
+#### Couverture E2E actuelle (32 tests)
 
 | Fichier | Test |
 |---|---|
@@ -528,6 +530,13 @@ app/
 | `app.spec.ts` | Navigue vers le Plan comptable avec 29 comptes |
 | `app.spec.ts` | Affiche le compte Caisse (100) dans le plan comptable |
 | `app.spec.ts` | Affiche les colonnes du plan comptable |
+| `accounts.spec.ts` | Crée un nouveau compte dans le plan comptable |
+| `accounts.spec.ts` | Modifie le groupe analytique d'un compte existant |
+| `accounts.spec.ts` | Un compte avec groupe apparaît dans la page Analytique |
+| `analytics.spec.ts` | Affiche le titre Analytique |
+| `analytics.spec.ts` | Affiche la section Non groupés avec des mouvements sur des comptes sans groupe |
+| `analytics.spec.ts` | Affiche le titre Bilan complet |
+| `analytics.spec.ts` | Affiche ✓ Bilan équilibré après une écriture simple |
 | `dashboard.spec.ts` | Affiche le titre Tableau de bord par défaut |
 | `dashboard.spec.ts` | Affiche les cartes Caisse, Raiffeisen et Résultat après création d'exercice |
 | `dashboard.spec.ts` | Panel Twint affiche message d'absence de mouvement si aucune écriture Twint |
@@ -535,7 +544,14 @@ app/
 | `fiscal-year.spec.ts` | Clôture un exercice vide puis le rouvre |
 | `fiscal-year.spec.ts` | Ne peut pas créer deux fois le même exercice |
 | `fiscal-year.spec.ts` | La clôture avec une écriture affiche un bénéfice |
+| `help.spec.ts` | Le bouton Aide ouvre le drawer d'aide |
+| `help.spec.ts` | Escape ferme le drawer d'aide |
+| `help.spec.ts` | Escape ferme une modale journal |
 | `journal-entry.spec.ts` | Crée une écriture simple et la voit dans le journal |
+| `journal-entry.spec.ts` | Modifie une écriture existante |
+| `journal-entry.spec.ts` | Supprime une écriture |
+| `journal-entry.spec.ts` | Filtre les écritures par libellé |
+| `journal-entry.spec.ts` | Raccourci Ctrl+N ouvre le formulaire de nouvelle écriture |
 | `journal-entry.spec.ts` | Le bouton de nouvelle écriture est absent sur un exercice clôturé |
 | `balance.spec.ts` | Les soldes reflètent les écritures saisies |
 | `balance.spec.ts` | La page Soldes affiche le message d'absence d'exercice |
@@ -545,16 +561,12 @@ app/
 
 | Fonctionnalité | Scénarios à couvrir |
 |---|---|
-| **Journal** | Modifier une écriture existante ; supprimer une écriture ; filtres (libellé, compte, période) |
-| **Journal — raccourcis** | `Ctrl+N` ouvre le formulaire ; `Entrée` sur dernier montant ajoute une ligne ; `Ctrl+S` enregistre et ferme ; `Ctrl+Entrée` enregistre et ouvre une nouvelle écriture |
+| **Journal — raccourcis** | `Entrée` sur dernier montant ajoute une ligne ; `Ctrl+S` enregistre et ferme ; `Ctrl+Entrée` enregistre et ouvre une nouvelle écriture |
 | **Soldes à nouveau** | Saisir les soldes à nouveau après création d'un 2ᵉ exercice |
-| **Analytique** | Navigation page Analytique ; affichage P&L par groupe |
-| **Bilan complet** | Navigation page Bilan complet ; contrôle d'équilibre affiché |
-| **Plan comptable** | Créer un compte ; modifier un compte ; groupe analytique |
+| **Analytique** | Affichage P&L par groupe nommé (avec une écriture sur le groupe) |
 | **Paramètres** | Export sauvegarde manuelle ; liste des sauvegardes automatiques |
 | **Dashboard Twint** | Panel Twint avec données réelles (encaissements + frais) |
 | **Grand-livre** | Solde courant progressif (comptes de bilan) ; masquage contreparties sur soldes à nouveau |
-| **Aide — raccourcis** | `F1` ouvre le drawer d'aide ; `Escape` le ferme ; `Escape` ferme les modales |
 
 #### Idées futures (non planifiées)
 
