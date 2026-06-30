@@ -123,12 +123,27 @@ function buildAccountLedger(entries: EntryDetail[], accountNumber: string): Ledg
       // pas de décomposition par contrepartie — la clôture est un méga-entry avec
       // toutes les comptes 3xx/4xx + 900 répétés, qui générerait un produit cartésien.
       if (entry.isOpeningBalance || entry.isClosingEntry) {
+        let contra = '';
+        if (entry.isClosingEntry) {
+          // Pour la clôture, trouver la contrepartie par correspondance de montant
+          // sur le côté opposé (ex. D:300 141000 ↔ C:900 141000, D:900 21525 ↔ C:400 21525).
+          // Préférer les comptes non-900 quand disponibles (pour le compte 900 lui-même,
+          // cela révèle le compte réel : D:900 21525 → C:400 Assurances).
+          const isDebit = ownLine.debit !== null;
+          const ownAmt  = isDebit ? ownLine.debit : ownLine.credit;
+          const candidates = entry.lines.filter(l =>
+            l.accountNumber !== accountNumber &&
+            (isDebit ? l.credit === ownAmt : l.debit === ownAmt),
+          );
+          const match = candidates.find(c => c.accountNumber !== '900') ?? candidates[0];
+          contra = match?.accountName ?? '';
+        }
         result.push({
           date: entry.date,
           description: entry.description,
           piece: entry.piece,
           isOpeningBalance: entry.isOpeningBalance,
-          contra: '',
+          contra,
           debit:  ownLine.debit  !== null ? centsToCHF(ownLine.debit)  : null,
           credit: ownLine.credit !== null ? centsToCHF(ownLine.credit) : null,
         });
