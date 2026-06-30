@@ -33,6 +33,7 @@ interface ExportRow {
   date: string;
   description: string;
   piece: string | null;
+  isClosingEntry: number;
   debit: number | null;
   credit: number | null;
 }
@@ -174,7 +175,7 @@ export async function exportFiscalYearToExcel(
     SELECT a.number AS accountNumber, a.name AS accountName,
            a.type AS accountType, a.normal_balance AS normalBalance,
            a.must_be_zero_at_closing AS mustBeZeroAtClosing,
-           e.date, e.description, e.piece,
+           e.date, e.description, e.piece, e.is_closing_entry AS isClosingEntry,
            l.debit, l.credit
     FROM accounts a
     JOIN journal_entry_lines l ON l.account_id = a.id
@@ -310,9 +311,13 @@ function addBilanSheet(
   ws.getColumn(6).width = 28;
   ws.getColumn(7).width = 13;
 
+  // Exclut les écritures de clôture (is_closing_entry=1) pour reproduire le
+  // comportement de getAccountBalancesExcludingClosing : Capital = solde d'ouverture,
+  // Résultat = produits − charges réels avant soldage, même après clôture.
   function computeSolde(data: AccountData): number {
-    const totalDebit  = data.rows.reduce((s, r) => s + (r.debit  ?? 0), 0);
-    const totalCredit = data.rows.reduce((s, r) => s + (r.credit ?? 0), 0);
+    const rows = data.rows.filter(r => r.isClosingEntry === 0);
+    const totalDebit  = rows.reduce((s, r) => s + (r.debit  ?? 0), 0);
+    const totalCredit = rows.reduce((s, r) => s + (r.credit ?? 0), 0);
     return data.normalBalance === 'DEBIT'
       ? centsToCHF(totalDebit - totalCredit)
       : centsToCHF(totalCredit - totalDebit);
