@@ -479,7 +479,7 @@ app/
 - [x] Saisie des soldes à nouveau (report d'exercice) — 249 tests au total
 - [x] Écritures de clôture automatiques (soldage 3xx/4xx → 900 → 290) — 283 tests unitaires
 - [x] Tests E2E Playwright — 12 tests (app, fiscal-year, journal-entry, balance) — puis mis à jour et étendus à 18 tests (voir entrée ci-dessous)
-- [x] Export Excel de clôture (`exceljs`) — Journal, Bilan & Résultat, une feuille par compte (SUBTOTAL, Courant), déclencheurs FiscalYearsPage + SettingsPage — 318 tests au total
+- [x] Export Excel de clôture (`exceljs`) — Journal, Bilan & Résultat deux colonnes (Actif|Passif, Produits|Charges), feuille Analytique (groupes + non groupés), une feuille par compte (Contrepartie, SUBTOTAL, Solde courant actifs) ; décomposition Twint par contrepartie ; contrepartie des écritures de clôture résolue par correspondance de montant (D:3xx ↔ C:900, D:900 ↔ C:4xx) ; correctifs bilan hors clôture (`is_closing_entry=0`), 900/3xx/4xx sans produit cartésien ; déclencheurs FiscalYearsPage + SettingsPage — 555 tests
 - [x] Refactoring settings : `app.getPath('userData')` à la place du chemin `APPDATA` manuel ; `app.setPath('userData')` dans `main.ts` pour l'isolation E2E — 318 tests
 
 - [x] Migration styles inline → CSS Modules — 14 composants/pages migrés, 318 tests — plan : `docs/superpowers/plans/2026-06-23-css-modules-migration.md`
@@ -503,6 +503,7 @@ app/
 - [x] Validation inline date hors exercice — message rouge sous le champ Date si date < `start_date` ou > `end_date` de l'exercice ; bouton Enregistrer désactivé — 477 tests
 - [x] HelpDrawer mis à jour — Tableau de bord, Analytique, Plan comptable éditable, groupes analytiques, raccourci `Entrée`, avertissement date — 477 tests
 - [x] Toast de confirmation (`Toast.tsx`) — "Écriture enregistrée" après création / "Écriture modifiée" après édition ; auto-dismiss 2,5 s — 482 tests
+- [x] Toast unifié pour les exports — prop `variant` (`'success'` vert 2,5 s | `'error'` rouge 6 s, `role="alert"`) ; FiscalYearsPage et SettingsPage remplacent les `<p>` inline par des Toasts pour l'export Excel et la sauvegarde ; annulation = aucun feedback — 555 tests
 - [x] Icônes Lucide React (`lucide-react`) — tous les boutons d'action (créer, modifier, supprimer, exporter, restaurer…) : icône + texte via `display: inline-flex; align-items: center; gap` sur chaque classe bouton CSS — pages : JournalPage, AccountsPage, AccountFormModal, FiscalYearsPage, DashboardPage, SettingsPage — 482 tests
 - [x] Corrections qualité tests — React key warning (AccountsPage : `<>` → `<React.Fragment key={cls}>`) ; 4 warnings `act(...)` éliminés (SettingsPage, FiscalYearsPage ×2, BalancesPage : `getBy*` → `await findBy*`) — 482 tests
 - [x] Page **Bilan complet** (`BilanPage`) — deux colonnes (Actif / Passif & FP + Résultat / Charges), résultat net P&L calculé en renderer depuis `getAccountBalances`, aucune écriture persistée ; mention "Résultat provisoire *" si exercice ouvert, "clôturé" si fermé ; contrôle d'équilibre bilan ; entrée sidebar "Bilan complet" — 494 tests
