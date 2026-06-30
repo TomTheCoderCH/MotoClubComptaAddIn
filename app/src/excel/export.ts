@@ -243,6 +243,7 @@ export async function exportFiscalYearToExcel(
 
   const usedSheetNames = new Set<string>();
   addBilanSheet(wb, accountMap, fy.year, usedSheetNames);
+  addAnalyticsSheet(wb, db, fiscalYearId, fy.year, usedSheetNames);
   addJournalSheet(wb, journalRows, fy.year, usedSheetNames);
   for (const account of accountMap.values()) {
     addAccountSheet(wb, account, entries, fy.year, usedSheetNames);
@@ -503,6 +504,209 @@ function addBilanSheet(
   netValCell.alignment = { horizontal: 'right' };
 
   ws.pageSetup.printArea   = `A$1:G$${r}`;
+  ws.pageSetup.orientation = 'portrait';
+  ws.pageSetup.paperSize   = 9;
+  ws.pageSetup.fitToPage   = true;
+  ws.pageSetup.fitToWidth  = 1;
+  ws.pageSetup.fitToHeight = 0;
+}
+
+// ─── Analytique ──────────────────────────────────────────────────────────────
+
+function addAnalyticsSheet(
+  wb: ExcelJS.Workbook,
+  db: Database.Database,
+  fiscalYearId: number,
+  year: number,
+  used: Set<string>,
+): void {
+  type RawRow = {
+    number: string; name: string; type: string;
+    account_group: string | null;
+    total_debit: number; total_credit: number;
+  };
+
+  const rows = db.prepare(`
+    SELECT a.number, a.name, a.type, a.account_group,
+           SUM(COALESCE(l.debit,  0)) AS total_debit,
+           SUM(COALESCE(l.credit, 0)) AS total_credit
+    FROM accounts a
+    JOIN journal_entry_lines l ON l.account_id = a.id
+    JOIN journal_entries e     ON e.id = l.journal_entry_id
+    WHERE e.fiscal_year_id = ? AND a.class IN (3, 4) AND e.is_closing_entry = 0
+    GROUP BY a.id
+    ORDER BY a.number
+  `).all(fiscalYearId) as RawRow[];
+
+  if (rows.length === 0) return;
+
+  const toRecettes = (r: RawRow) =>
+    r.type === 'PRODUIT' ? centsToCHF(r.total_credit - r.total_debit) : 0;
+  const toCharges = (r: RawRow) =>
+    r.type === 'CHARGE' ? centsToCHF(r.total_debit - r.total_credit) : 0;
+
+  const grouped   = rows.filter(r => r.account_group);
+  const ungrouped = rows.filter(r => !r.account_group);
+
+  const groupMap = new Map<string, RawRow[]>();
+  for (const r of grouped) {
+    if (!groupMap.has(r.account_group!)) groupMap.set(r.account_group!, []);
+    groupMap.get(r.account_group!)!.push(r);
+  }
+
+  const groups = Array.from(groupMap.entries())
+    .sort(([a], [b]) => a.localeCompare(b, 'fr'))
+    .map(([name, accs]) => {
+      const totalRecettes = accs.reduce((s, r) => s + toRecettes(r), 0);
+      const totalCharges  = accs.reduce((s, r) => s + toCharges(r),  0);
+      return { name, accounts: accs, totalRecettes, totalCharges, resultat: totalRecettes - totalCharges };
+    });
+
+  used.add('Analytique');
+  const ws = wb.addWorksheet('Analytique');
+
+  const MONEY  = '#,##0.00';
+  const GREEN  = 'FF107C10';
+  const RED    = 'FFCC0000';
+
+  ws.getColumn(1).width = 35;
+  ws.getColumn(2).width = 13;
+  ws.getColumn(3).width = 13;
+  ws.getColumn(4).width = 13;
+
+  let r = 1;
+
+  // Title
+  ws.mergeCells(r, 1, r, 4);
+  const titleCell = ws.getCell(r, 1);
+  titleCell.value = `Analytique — Exercice ${year}`;
+  titleCell.font  = { bold: true, size: 13 };
+  r += 2;
+
+  // ── Grouped section ───────────────────────────────────────────────────────
+  if (groups.length > 0) {
+    // Section header
+    ws.mergeCells(r, 1, r, 4);
+    const sh = ws.getCell(r, 1);
+    sh.value = 'GROUPES ANALYTIQUES';
+    sh.font  = { bold: true, color: { argb: 'FFFFFFFF' } };
+    sh.fill  = SECT_BG;
+    r++;
+
+    // Column headers
+    for (const [col, label, align] of [
+      [1, 'Groupe Analytique', 'left'],
+      [2, 'Recettes CHF', 'right'],
+      [3, 'Charges CHF', 'right'],
+      [4, 'Résultat CHF', 'right'],
+    ] as [number, string, string][]) {
+      const c = ws.getCell(r, col);
+      c.value     = label;
+      c.font      = { bold: true };
+      c.fill      = COLS_BG;
+      c.alignment = { horizontal: align as ExcelJS.Alignment['horizontal'] };
+    }
+    r++;
+
+    for (const g of groups) {
+      const resultatArgb = g.resultat >= 0 ? GREEN : RED;
+      ws.getCell(r, 1).value = g.name;
+
+      const recCell = ws.getCell(r, 2);
+      recCell.value     = g.totalRecettes;
+      recCell.numFmt    = MONEY;
+      recCell.alignment = { horizontal: 'right' };
+
+      const chrCell = ws.getCell(r, 3);
+      chrCell.value     = g.totalCharges;
+      chrCell.numFmt    = MONEY;
+      chrCell.alignment = { horizontal: 'right' };
+
+      const resCell = ws.getCell(r, 4);
+      resCell.value     = g.resultat;
+      resCell.numFmt    = MONEY;
+      resCell.alignment = { horizontal: 'right' };
+      resCell.font      = { color: { argb: resultatArgb } };
+      r++;
+    }
+
+    // Total row
+    const grandRecettes = groups.reduce((s, g) => s + g.totalRecettes, 0);
+    const grandCharges  = groups.reduce((s, g) => s + g.totalCharges,  0);
+    const grandResultat = grandRecettes - grandCharges;
+    const GREY_FILL: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8E8E8' } };
+
+    for (let c = 1; c <= 4; c++) ws.getCell(r, c).fill = GREY_FILL;
+    ws.getCell(r, 1).value = 'Total groupes';
+    ws.getCell(r, 1).font  = { bold: true };
+
+    const tRec = ws.getCell(r, 2);
+    tRec.value = grandRecettes; tRec.numFmt = MONEY; tRec.font = { bold: true };
+    tRec.alignment = { horizontal: 'right' };
+    tRec.border    = { top: { style: 'thin' } };
+
+    const tChr = ws.getCell(r, 3);
+    tChr.value = grandCharges; tChr.numFmt = MONEY; tChr.font = { bold: true };
+    tChr.alignment = { horizontal: 'right' };
+    tChr.border    = { top: { style: 'thin' } };
+
+    const tRes = ws.getCell(r, 4);
+    tRes.value = grandResultat; tRes.numFmt = MONEY;
+    tRes.font  = { bold: true, color: { argb: grandResultat >= 0 ? GREEN : RED } };
+    tRes.alignment = { horizontal: 'right' };
+    tRes.border    = { top: { style: 'thin' } };
+    r++;
+  }
+
+  // ── Ungrouped section ─────────────────────────────────────────────────────
+  if (ungrouped.length > 0) {
+    r++;  // blank row
+
+    ws.mergeCells(r, 1, r, 4);
+    const sh2 = ws.getCell(r, 1);
+    sh2.value = 'NON GROUPÉS';
+    sh2.font  = { bold: true, color: { argb: 'FFFFFFFF' } };
+    sh2.fill  = SECT_BG;
+    r++;
+
+    // Column headers
+    for (const [col, label, align] of [
+      [1, 'N°',           'left'],
+      [2, 'Compte',       'left'],
+      [3, 'Recettes CHF', 'right'],
+      [4, 'Charges CHF',  'right'],
+    ] as [number, string, string][]) {
+      const c = ws.getCell(r, col);
+      c.value     = label;
+      c.font      = { bold: true };
+      c.fill      = COLS_BG;
+      c.alignment = { horizontal: align as ExcelJS.Alignment['horizontal'] };
+    }
+    // Override col 2 width for Compte (repurpose col 1 as narrow N° col)
+    ws.getColumn(1).width = 6;
+    ws.getColumn(2).width = 32;
+    r++;
+
+    for (const row of ungrouped) {
+      const rec = toRecettes(row);
+      const chr = toCharges(row);
+      ws.getCell(r, 1).value = row.number;
+
+      ws.getCell(r, 2).value = row.name;
+
+      if (rec > 0) {
+        const c = ws.getCell(r, 3);
+        c.value = rec; c.numFmt = MONEY; c.alignment = { horizontal: 'right' };
+      }
+      if (chr > 0) {
+        const c = ws.getCell(r, 4);
+        c.value = chr; c.numFmt = MONEY; c.alignment = { horizontal: 'right' };
+      }
+      r++;
+    }
+  }
+
+  ws.pageSetup.printArea   = `A1:D${r - 1}`;
   ws.pageSetup.orientation = 'portrait';
   ws.pageSetup.paperSize   = 9;
   ws.pageSetup.fitToPage   = true;

@@ -51,12 +51,12 @@ describe('exportFiscalYearToExcel — structure', () => {
     expect(fs.statSync(tmpFile).size).toBeGreaterThan(0);
   });
 
-  it('crée 3 feuilles : Bilan & Résultat + Journal + 2 comptes actifs (Raiffeisen + Cotisations)', async () => {
+  it('crée les feuilles : Bilan & Résultat + Analytique + Journal + comptes actifs', async () => {
     await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
-    // Bilan + Journal + Raiffeisen + Cotisations membres = 4
-    expect(wb.worksheets.length).toBe(4);
+    // Bilan + Analytique + Journal + Raiffeisen + Cotisations membres = 5
+    expect(wb.worksheets.length).toBe(5);
   });
 
   it('la première feuille est "Bilan & Résultat"', async () => {
@@ -66,19 +66,20 @@ describe('exportFiscalYearToExcel — structure', () => {
     expect(wb.worksheets[0].name).toBe('Bilan & Résultat');
   });
 
-  it('la deuxième feuille est "Journal"', async () => {
+  it('la deuxième feuille est "Analytique", la troisième "Journal"', async () => {
     await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
-    expect(wb.worksheets[1].name).toBe('Journal');
+    expect(wb.worksheets[1].name).toBe('Analytique');
+    expect(wb.worksheets[2].name).toBe('Journal');
   });
 
   it('les feuilles de compte suivent dans l\'ordre du numéro de compte', async () => {
     await exportFiscalYearToExcel(db, fiscalYearId, tmpFile);
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(tmpFile);
-    expect(wb.worksheets[2].name).toBe('101 Raiffeisen');
-    expect(wb.worksheets[3].name).toBe('300 Cotisations membres');
+    expect(wb.worksheets[3].name).toBe('101 Raiffeisen');
+    expect(wb.worksheets[4].name).toBe('300 Cotisations membres');
   });
 
   it('lève une erreur si l\'exercice n\'existe pas', async () => {
