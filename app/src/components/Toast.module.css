@@ -2,7 +2,6 @@
   position: fixed;
   bottom: 1.5rem;
   right: 1.5rem;
-  background: #16a34a;
   color: #fff;
   padding: 0.65rem 1.1rem;
   border-radius: 8px;
@@ -11,6 +10,11 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 9999;
   animation: slideIn 0.2s ease;
+  background: #16a34a;
+}
+
+.toast[data-variant='error'] {
+  background: #dc2626;
 }
 
 @keyframes slideIn {

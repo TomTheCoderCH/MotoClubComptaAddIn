@@ -2,24 +2,23 @@ import { useEffect, useState } from 'react';
 import { FolderOpen, Download, RotateCcw, FileSpreadsheet } from 'lucide-react';
 import type { BackupInfo, FiscalYear } from '../types';
 import { formatSize, formatDateTime as formatDate } from '../lib/format';
+import Toast from '../components/Toast';
 import styles from './SettingsPage.module.css';
 
-type ExportStatus = 'idle' | 'loading' | 'success' | 'error' | 'cancelled';
 type ChangeStatus = 'idle' | 'loading' | 'success' | 'cancelled';
 
 export default function SettingsPage() {
-  const [dbPath,        setDbPath]        = useState<string>('');
-  const [schemaVersion, setSchemaVersion] = useState<number | null>(null);
-  const [backups,      setBackups]      = useState<BackupInfo[]>([]);
-  const [exportStatus, setExportStatus] = useState<ExportStatus>('idle');
-  const [exportPath,   setExportPath]   = useState<string | null>(null);
-  const [error,        setError]        = useState<string | null>(null);
-  const [changeStatus, setChangeStatus] = useState<ChangeStatus>('idle');
-  const [restoring,    setRestoring]    = useState(false);
-  const [fiscalYears,  setFiscalYears]  = useState<FiscalYear[]>([]);
-  const [selectedFyId, setSelectedFyId] = useState<number | null>(null);
-  const [excelStatus,  setExcelStatus]  = useState<'idle' | 'loading' | 'success' | 'error' | 'cancelled'>('idle');
-  const [excelPath,    setExcelPath]    = useState<string | null>(null);
+  const [dbPath,          setDbPath]          = useState<string>('');
+  const [schemaVersion,   setSchemaVersion]   = useState<number | null>(null);
+  const [backups,         setBackups]         = useState<BackupInfo[]>([]);
+  const [error,           setError]           = useState<string | null>(null);
+  const [changeStatus,    setChangeStatus]    = useState<ChangeStatus>('idle');
+  const [restoring,       setRestoring]       = useState(false);
+  const [fiscalYears,     setFiscalYears]     = useState<FiscalYear[]>([]);
+  const [selectedFyId,    setSelectedFyId]    = useState<number | null>(null);
+  const [backupExporting, setBackupExporting] = useState(false);
+  const [excelExporting,  setExcelExporting]  = useState(false);
+  const [toast,           setToast]           = useState<{ msg: string; variant: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     window.api.getDbPath()
@@ -40,19 +39,16 @@ export default function SettingsPage() {
   }, []);
 
   async function handleExport() {
-    setExportStatus('loading');
-    setExportPath(null);
+    setBackupExporting(true);
     try {
       const result = await window.api.exportBackup();
-      if (result === null) {
-        setExportStatus('cancelled');
-      } else {
-        setExportStatus('success');
-        setExportPath(result.path);
+      if (result !== null) {
+        setToast({ msg: `Sauvegarde exportée vers : ${result.path}`, variant: 'success' });
       }
     } catch (e) {
-      setExportStatus('error');
-      setError(e instanceof Error ? e.message : String(e));
+      setToast({ msg: e instanceof Error ? e.message : String(e), variant: 'error' });
+    } finally {
+      setBackupExporting(false);
     }
   }
 
@@ -91,22 +87,20 @@ export default function SettingsPage() {
 
   async function handleExcelExport() {
     if (selectedFyId === null) return;
-    setExcelStatus('loading');
-    setExcelPath(null);
+    setExcelExporting(true);
     try {
       const result = await window.api.exportExcel(selectedFyId);
       if (result === null) {
-        setExcelStatus('cancelled');
+        // annulé par l'utilisateur — pas de feedback
       } else if ('error' in result) {
-        setExcelStatus('error');
-        setError(result.error);
+        setToast({ msg: result.error, variant: 'error' });
       } else {
-        setExcelStatus('success');
-        setExcelPath(result.path);
+        setToast({ msg: `Fichier exporté : ${result.path}`, variant: 'success' });
       }
     } catch (e) {
-      setExcelStatus('error');
-      setError(e instanceof Error ? e.message : String(e));
+      setToast({ msg: e instanceof Error ? e.message : String(e), variant: 'error' });
+    } finally {
+      setExcelExporting(false);
     }
   }
 
@@ -148,23 +142,11 @@ export default function SettingsPage() {
 
         <button
           onClick={handleExport}
-          disabled={exportStatus === 'loading'}
+          disabled={backupExporting}
           className={styles.btn}
         >
-          <Download size={14} />{exportStatus === 'loading' ? 'Export en cours…' : 'Exporter une sauvegarde'}
+          <Download size={14} />{backupExporting ? 'Export en cours…' : 'Exporter une sauvegarde'}
         </button>
-
-        {exportStatus === 'success' && exportPath && (
-          <p className={styles.success} role="status">
-            Sauvegarde exportée vers : {exportPath}
-          </p>
-        )}
-        {exportStatus === 'cancelled' && (
-          <p className={styles.hint} role="status">Export annulé.</p>
-        )}
-        {exportStatus === 'error' && (
-          <p className={styles.errorText}>Erreur lors de l&apos;export.</p>
-        )}
 
         <button
           onClick={handleRestore}
@@ -236,21 +218,22 @@ export default function SettingsPage() {
           </select>
           <button
             onClick={handleExcelExport}
-            disabled={excelStatus === 'loading' || selectedFyId === null}
+            disabled={excelExporting || selectedFyId === null}
             className={styles.btn}
           >
-            <FileSpreadsheet size={14} />{excelStatus === 'loading' ? 'Export en cours…' : 'Exporter en Excel'}
+            <FileSpreadsheet size={14} />{excelExporting ? 'Export en cours…' : 'Exporter en Excel'}
           </button>
         </div>
-        {excelStatus === 'success' && excelPath && (
-          <p className={styles.success} role="status">
-            Fichier exporté : {excelPath}
-          </p>
-        )}
-        {excelStatus === 'cancelled' && (
-          <p className={styles.hint} role="status">Export annulé.</p>
-        )}
       </section>
+
+      {toast && (
+        <Toast
+          message={toast.msg}
+          variant={toast.variant}
+          duration={toast.variant === 'error' ? 6000 : 2500}
+          onDismiss={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

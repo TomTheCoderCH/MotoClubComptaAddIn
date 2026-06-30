@@ -4,6 +4,7 @@ import type { FiscalYear, OpeningBalanceSuggestion, ClosingPreview } from '../ty
 import OpeningBalanceModal from '../components/OpeningBalanceModal';
 import ClosingModal from '../components/ClosingModal';
 import ConfirmDialog from '../components/ConfirmDialog';
+import Toast from '../components/Toast';
 import { formatDate } from '../lib/format';
 import styles from './FiscalYearsPage.module.css';
 
@@ -17,7 +18,7 @@ export default function FiscalYearsPage() {
   const [suggestions,     setSuggestions]     = useState<OpeningBalanceSuggestion[]>([]);
   const [closingModal,  setClosingModal]  = useState<{ id: number; year: number; preview: ClosingPreview } | null>(null);
   const [confirmReopen, setConfirmReopen] = useState<{ id: number; year: number } | null>(null);
-  const [exportStatus,  setExportStatus]  = useState<{ id: number; msg: string } | null>(null);
+  const [toast,         setToast]         = useState<{ msg: string; variant: 'success' | 'error' } | null>(null);
 
   useEffect(() => { load(); }, []);
 
@@ -106,16 +107,17 @@ export default function FiscalYearsPage() {
   }
 
   async function handleExportExcel(y: FiscalYear) {
-    setExportStatus(null);
     try {
       const result = await window.api.exportExcel(y.id);
-      if (result && 'path' in result) {
-        setExportStatus({ id: y.id, msg: `Fichier exporté : ${result.path}` });
-      } else if (result && 'error' in result) {
-        setError(result.error);
+      if (result === null) {
+        // annulé par l'utilisateur — pas de feedback
+      } else if ('error' in result) {
+        setToast({ msg: result.error, variant: 'error' });
+      } else {
+        setToast({ msg: `Fichier exporté : ${result.path}`, variant: 'success' });
       }
     } catch (e: unknown) {
-      setError((e as Error).message);
+      setToast({ msg: (e as Error).message, variant: 'error' });
     }
   }
 
@@ -215,9 +217,6 @@ export default function FiscalYearsPage() {
                     >
                       <FileSpreadsheet size={13} />Exporter Excel
                     </button>
-                    {exportStatus?.id === y.id && (
-                      <p role="status" className={styles.exportSuccess}>{exportStatus.msg}</p>
-                    )}
                   </td>
                 </tr>
               ))}
@@ -249,6 +248,15 @@ export default function FiscalYearsPage() {
           message={`Rouvrir l'exercice ${confirmReopen.year} ? Les écritures de clôture seront supprimées et l'exercice repassera en statut ouvert.`}
           onConfirm={handleReopenConfirm}
           onCancel={() => setConfirmReopen(null)}
+        />
+      )}
+
+      {toast && (
+        <Toast
+          message={toast.msg}
+          variant={toast.variant}
+          duration={toast.variant === 'error' ? 6000 : 2500}
+          onDismiss={() => setToast(null)}
         />
       )}
     </div>

@@ -90,11 +90,13 @@ describe('SettingsPage — export', () => {
     expect(await screen.findByText(/Sauvegarde exportée vers/)).toBeInTheDocument();
   });
 
-  it('affiche un message si l\'export est annulé (retour null)', async () => {
+  it('n\'affiche pas de message si l\'export est annulé (retour null)', async () => {
     mockApi({ exportBackup: vi.fn().mockResolvedValue(null) });
     render(<SettingsPage />);
     await userEvent.click(screen.getByRole('button', { name: /Exporter une sauvegarde/ }));
-    expect(await screen.findByText('Export annulé.')).toBeInTheDocument();
+    // retour null = dialog annulé par l'utilisateur — aucun toast
+    expect(screen.queryByText('Export annulé.')).not.toBeInTheDocument();
+    expect(screen.queryByText(/exportée vers/)).not.toBeInTheDocument();
   });
 
   it('affiche un message d\'erreur si l\'export échoue', async () => {
