@@ -118,12 +118,15 @@ function buildAccountLedger(entries: EntryDetail[], accountNumber: string): Ledg
     const ownLines = entry.lines.filter(l => l.accountNumber === accountNumber);
     if (ownLines.length === 0) continue;
     for (const ownLine of ownLines) {
-      if (entry.isOpeningBalance) {
+      // Soldes à nouveau et écritures de clôture : toujours 1 ligne par ligne propre,
+      // pas de décomposition par contrepartie — la clôture est un méga-entry avec
+      // toutes les comptes 3xx/4xx + 900 répétés, qui générerait un produit cartésien.
+      if (entry.isOpeningBalance || entry.isClosingEntry) {
         result.push({
           date: entry.date,
           description: entry.description,
           piece: entry.piece,
-          isOpeningBalance: true,
+          isOpeningBalance: entry.isOpeningBalance,
           debit:  ownLine.debit  !== null ? centsToCHF(ownLine.debit)  : null,
           credit: ownLine.credit !== null ? centsToCHF(ownLine.credit) : null,
         });
