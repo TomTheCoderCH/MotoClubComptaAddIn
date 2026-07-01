@@ -4,7 +4,7 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   build: {
     rollupOptions: {
-      external: ['better-sqlite3', 'electron-devtools-installer', 'pdfkit'],
+      external: ['better-sqlite3', 'electron-devtools-installer', 'pdfkit', 'update-electron-app'],
     },
   },
 });

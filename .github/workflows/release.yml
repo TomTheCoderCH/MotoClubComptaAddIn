@@ -1,0 +1,39 @@
+name: Release
+
+# Déclenché sur chaque tag vX.Y.Z poussé sur le dépôt.
+# Construit l'installeur Windows et publie une GitHub Release.
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write  # nécessaire pour créer/éditer une GitHub Release
+
+jobs:
+  release-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: app
+
+      # electron-forge publish appelle d'abord make (build + package),
+      # puis publie les artefacts sur GitHub Releases via publisher-github.
+      # GITHUB_TOKEN est fourni automatiquement par Actions — pas de secret à configurer.
+      - name: Build and publish
+        run: npm run publish -- --target @electron-forge/publisher-github
+        working-directory: app
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
