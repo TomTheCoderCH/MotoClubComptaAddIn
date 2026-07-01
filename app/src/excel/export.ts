@@ -2,6 +2,11 @@ import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
 import fs from 'node:fs';
 import type Database from 'better-sqlite3';
+import {
+  loadExportData, computeSolde, groupJournalEntries, buildAccountLedger,
+  centsToCHF,
+  type AccountData, type EntryDetail,
+} from '../data/export-data';
 
 const EXCEL_FORBIDDEN = /[*?:\\/[\]]/g;
 
@@ -24,229 +29,23 @@ function sanitizeSheetName(
   }
 }
 
-interface ExportRow {
-  accountNumber: string;
-  accountName: string;
-  accountType: string;
-  normalBalance: string;
-  mustBeZeroAtClosing: number;
-  date: string;
-  description: string;
-  piece: string | null;
-  isClosingEntry: number;
-  debit: number | null;
-  credit: number | null;
-}
-
-interface JournalRow {
-  entryId: number;
-  date: string;
-  piece: string | null;
-  description: string;
-  isOpeningBalance: number;
-  isClosingEntry: number;
-  accountNumber: string;
-  accountName: string;
-  debit: number | null;
-  credit: number | null;
-}
-
-interface AccountData {
-  number: string;
-  name: string;
-  type: string;
-  normalBalance: string;
-  mustBeZeroAtClosing: number;
-  rows: ExportRow[];
-}
-
-// Full entry with all lines — used to build per-account grand-livres with contra info
-interface EntryDetail {
-  entryId: number;
-  date: string;
-  piece: string | null;
-  description: string;
-  isOpeningBalance: boolean;
-  isClosingEntry: boolean;
-  lines: Array<{ accountNumber: string; accountName: string; debit: number | null; credit: number | null }>;
-}
-
-// One row in a per-account grand-livre
-interface LedgerRow {
-  date: string;
-  description: string;
-  piece: string | null;
-  isOpeningBalance: boolean;
-  contra: string;         // nom du compte contrepartie (vide si ouverture/clôture)
-  debit: number | null;   // in CHF
-  credit: number | null;  // in CHF
-}
-
-function groupEntriesWithLines(rows: JournalRow[]): EntryDetail[] {
-  const map = new Map<number, EntryDetail>();
-  for (const r of rows) {
-    if (!map.has(r.entryId)) {
-      map.set(r.entryId, {
-        entryId: r.entryId,
-        date: r.date,
-        piece: r.piece,
-        description: r.description,
-        isOpeningBalance: r.isOpeningBalance === 1,
-        isClosingEntry: r.isClosingEntry === 1,
-        lines: [],
-      });
-    }
-    map.get(r.entryId)!.lines.push({
-      accountNumber: r.accountNumber,
-      accountName: r.accountName,
-      debit: r.debit,
-      credit: r.credit,
-    });
-  }
-  return Array.from(map.values());
-}
-
-// Build the grand-livre rows for a single account.
-//
-// For entries with exactly 1 contra line: show own amount (standard case).
-// For entries with multiple contra lines (e.g. Décompte Twint → Raiffeisen + Frais):
-//   explode into one row per contra using the contra's amount, so the decomposition
-//   is visible exactly as in the journal.
-// Opening balances: show own amount without a contrepartie.
-function buildAccountLedger(entries: EntryDetail[], accountNumber: string): LedgerRow[] {
-  const result: LedgerRow[] = [];
-  for (const entry of entries) {
-    const ownLines = entry.lines.filter(l => l.accountNumber === accountNumber);
-    if (ownLines.length === 0) continue;
-    for (const ownLine of ownLines) {
-      // Soldes à nouveau et écritures de clôture : toujours 1 ligne par ligne propre,
-      // pas de décomposition par contrepartie — la clôture est un méga-entry avec
-      // toutes les comptes 3xx/4xx + 900 répétés, qui générerait un produit cartésien.
-      if (entry.isOpeningBalance || entry.isClosingEntry) {
-        let contra = '';
-        if (entry.isClosingEntry) {
-          // Pour la clôture, trouver la contrepartie par correspondance de montant
-          // sur le côté opposé (ex. D:300 141000 ↔ C:900 141000, D:900 21525 ↔ C:400 21525).
-          // Préférer les comptes non-900 quand disponibles (pour le compte 900 lui-même,
-          // cela révèle le compte réel : D:900 21525 → C:400 Assurances).
-          const isDebit = ownLine.debit !== null;
-          const ownAmt  = isDebit ? ownLine.debit : ownLine.credit;
-          const candidates = entry.lines.filter(l =>
-            l.accountNumber !== accountNumber &&
-            (isDebit ? l.credit === ownAmt : l.debit === ownAmt),
-          );
-          const match = candidates.find(c => c.accountNumber !== '900') ?? candidates[0];
-          contra = match?.accountName ?? '';
-        }
-        result.push({
-          date: entry.date,
-          description: entry.description,
-          piece: entry.piece,
-          isOpeningBalance: entry.isOpeningBalance,
-          contra,
-          debit:  ownLine.debit  !== null ? centsToCHF(ownLine.debit)  : null,
-          credit: ownLine.credit !== null ? centsToCHF(ownLine.credit) : null,
-        });
-        continue;
-      }
-      const isDebit = ownLine.debit !== null;
-      const contraLines = entry.lines.filter(l =>
-        l.accountNumber !== accountNumber &&
-        (isDebit ? l.credit !== null : l.debit !== null),
-      );
-      if (contraLines.length <= 1) {
-        result.push({
-          date: entry.date,
-          description: entry.description,
-          piece: entry.piece,
-          isOpeningBalance: false,
-          contra: contraLines.length === 1 ? contraLines[0].accountName : '',
-          debit:  isDebit  ? centsToCHF(ownLine.debit!)  : null,
-          credit: !isDebit ? centsToCHF(ownLine.credit!) : null,
-        });
-      } else {
-        for (const cl of contraLines) {
-          const cAmt = isDebit ? (cl.credit ?? 0) : (cl.debit ?? 0);
-          result.push({
-            date: entry.date,
-            description: entry.description,
-            piece: entry.piece,
-            isOpeningBalance: false,
-            contra: cl.accountName,
-            debit:  isDebit  ? centsToCHF(cAmt) : null,
-            credit: !isDebit ? centsToCHF(cAmt) : null,
-          });
-        }
-      }
-    }
-  }
-  return result;
-}
-
 export async function exportFiscalYearToExcel(
   db: Database.Database,
   fiscalYearId: number,
   outputPath: string,
 ): Promise<void> {
-  const fy = db.prepare('SELECT year FROM fiscal_years WHERE id = ?').get(fiscalYearId) as
-    | { year: number }
-    | undefined;
-  if (!fy) throw new Error(`Exercice ${fiscalYearId} introuvable`);
-
-  const rows = db.prepare(`
-    SELECT a.number AS accountNumber, a.name AS accountName,
-           a.type AS accountType, a.normal_balance AS normalBalance,
-           a.must_be_zero_at_closing AS mustBeZeroAtClosing,
-           e.date, e.description, e.piece, e.is_closing_entry AS isClosingEntry,
-           l.debit, l.credit
-    FROM accounts a
-    JOIN journal_entry_lines l ON l.account_id = a.id
-    JOIN journal_entries e ON e.id = l.journal_entry_id
-    WHERE e.fiscal_year_id = ?
-    ORDER BY a.number, e.date, e.id
-  `).all(fiscalYearId) as ExportRow[];
-
-  const journalRows = db.prepare(`
-    SELECT e.id AS entryId, e.date, e.piece, e.description,
-           e.is_opening_balance AS isOpeningBalance,
-           e.is_closing_entry AS isClosingEntry,
-           a.number AS accountNumber, a.name AS accountName,
-           l.debit, l.credit
-    FROM journal_entries e
-    JOIN journal_entry_lines l ON l.journal_entry_id = e.id
-    JOIN accounts a ON a.id = l.account_id
-    WHERE e.fiscal_year_id = ?
-    ORDER BY e.is_opening_balance DESC, e.is_closing_entry ASC,
-             e.date, e.id,
-             (l.debit IS NOT NULL) DESC, l.id
-  `).all(fiscalYearId) as JournalRow[];
-
-  const accountMap = new Map<string, AccountData>();
-  for (const row of rows) {
-    if (!accountMap.has(row.accountNumber)) {
-      accountMap.set(row.accountNumber, {
-        number: row.accountNumber,
-        name: row.accountName,
-        type: row.accountType,
-        normalBalance: row.normalBalance,
-        mustBeZeroAtClosing: row.mustBeZeroAtClosing,
-        rows: [],
-      });
-    }
-    accountMap.get(row.accountNumber)!.rows.push(row);
-  }
-
-  const entries = groupEntriesWithLines(journalRows);
+  const data = loadExportData(db, fiscalYearId);
+  const { year, accountMap, journalRows, entries } = data;
 
   const wb = new ExcelJS.Workbook();
   wb.creator = 'MCY Compta';
 
   const usedSheetNames = new Set<string>();
-  addBilanSheet(wb, accountMap, fy.year, usedSheetNames);
-  addAnalyticsSheet(wb, db, fiscalYearId, fy.year, usedSheetNames);
-  addJournalSheet(wb, journalRows, fy.year, usedSheetNames);
+  addBilanSheet(wb, accountMap, year, usedSheetNames);
+  addAnalyticsSheet(wb, db, fiscalYearId, year, usedSheetNames);
+  addJournalSheet(wb, journalRows, year, usedSheetNames);
   for (const account of accountMap.values()) {
-    addAccountSheet(wb, account, entries, fy.year, usedSheetNames);
+    addAccountSheet(wb, account, entries, year, usedSheetNames);
   }
 
   const raw = await wb.xlsx.writeBuffer() as Buffer;
@@ -301,10 +100,6 @@ async function fixNamedRangesOrder(buffer: Buffer): Promise<Buffer> {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-function centsToCHF(cents: number | null): number {
-  return cents !== null ? Math.round(cents) / 100 : 0;
-}
-
 function isoToDate(iso: string): Date {
   const [y, m, d] = iso.split('-').map(Number);
   return new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
@@ -333,18 +128,6 @@ function addBilanSheet(
   ws.getColumn(5).width = 6;
   ws.getColumn(6).width = 28;
   ws.getColumn(7).width = 13;
-
-  // Exclut les écritures de clôture (is_closing_entry=1) pour reproduire le
-  // comportement de getAccountBalancesExcludingClosing : Capital = solde d'ouverture,
-  // Résultat = produits − charges réels avant soldage, même après clôture.
-  function computeSolde(data: AccountData): number {
-    const rows = data.rows.filter(r => r.isClosingEntry === 0);
-    const totalDebit  = rows.reduce((s, r) => s + (r.debit  ?? 0), 0);
-    const totalCredit = rows.reduce((s, r) => s + (r.credit ?? 0), 0);
-    return data.normalBalance === 'DEBIT'
-      ? centsToCHF(totalDebit - totalCredit)
-      : centsToCHF(totalCredit - totalDebit);
-  }
 
   function writePair(
     row: number,
@@ -716,41 +499,12 @@ function addAnalyticsSheet(
 
 // ─── Journal ─────────────────────────────────────────────────────────────────
 
-type JournalSide = { account: string; amount: number };
-
-function groupJournalEntries(rows: JournalRow[]): Array<{
-  entryId: number;
-  date: string;
-  piece: string | null;
-  description: string;
-  isOpeningBalance: boolean;
-  isClosingEntry: boolean;
-  debits: JournalSide[];
-  credits: JournalSide[];
-}> {
-  const map = new Map<number, ReturnType<typeof groupJournalEntries>[number]>();
-  for (const r of rows) {
-    if (!map.has(r.entryId)) {
-      map.set(r.entryId, {
-        entryId: r.entryId,
-        date: r.date,
-        piece: r.piece,
-        description: r.description,
-        isOpeningBalance: r.isOpeningBalance === 1,
-        isClosingEntry: r.isClosingEntry === 1,
-        debits: [],
-        credits: [],
-      });
-    }
-    const entry = map.get(r.entryId)!;
-    const account = r.accountName;
-    if (r.debit !== null)  entry.debits.push({ account, amount: r.debit });
-    if (r.credit !== null) entry.credits.push({ account, amount: r.credit });
-  }
-  return Array.from(map.values());
-}
-
-function addJournalSheet(wb: ExcelJS.Workbook, rows: JournalRow[], year: number, used: Set<string>): void {
+function addJournalSheet(
+  wb: ExcelJS.Workbook,
+  rows: import('../data/export-data').JournalRow[],
+  year: number,
+  used: Set<string>,
+): void {
   const journalName = 'Journal';
   used.add(journalName);
   const ws = wb.addWorksheet(journalName);
@@ -832,12 +586,6 @@ function addJournalSheet(wb: ExcelJS.Workbook, rows: JournalRow[], year: number,
 }
 
 // ─── Feuilles de compte ───────────────────────────────────────────────────────
-//
-// Colonnes : Date | Libellé | Débit CHF | Crédit CHF | [Solde CHF]
-//
-// Pour les écritures à plusieurs contreparties (ex. Décompte Twint → Raiffeisen +
-// Frais Twint), une ligne par contrepartie est générée avec le montant exact de
-// chaque mouvement — la décomposition est ainsi visible telle que dans le journal.
 
 function addAccountSheet(
   wb: ExcelJS.Workbook,

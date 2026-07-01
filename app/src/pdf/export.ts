@@ -1,400 +1,393 @@
 import PDFDocument from 'pdfkit';
 import fs from 'node:fs';
 import type Database from 'better-sqlite3';
-import { formatCHF, formatDate } from '../lib/format';
+import {
+  loadExportData, computeSolde, groupJournalEntries, centsToCHF,
+  type AccountData, type JournalRow,
+} from '../data/export-data';
 
-// A4 dimensions in points (1 pt = 1/72 inch)
-const PW = 595.28;
-const PH = 841.89;
-const M  = 40;           // margin
-const W  = PW - 2 * M;  // usable width ≈ 515
+// ─── Layout constants ─────────────────────────────────────────────────────────
 
-// Colors
-const BLUE_DK    = '#1D4ED8';
-const BLUE_LT    = '#DBEAFE';
-const BLUE_TEXT  = '#1E3A8A';
-const GRAY_ALT   = '#F8FAFC';
-const GRAY_TOTAL = '#E2E8F0';
-const GRAY_LINE  = '#CBD5E1';
-const WHITE      = '#FFFFFF';
-const BLACK      = '#111827';
-const GRAY       = '#6B7280';
-const GREEN      = '#15803D';
-const RED        = '#B91C1C';
+const ML = 40;            // margin left
+const MR = 40;            // margin right
+const MT = 40;            // margin top
+const MB = 40;            // margin bottom
+const PW = 515.28;        // usable width (595.28 − 80)
+const PH = 841.89;        // page height A4
 
-// Row heights
-const RH  = 13;  // normal row
-const HH  = 15;  // section title bar
-const LH  = 11;  // column-label row
+// ─── Colours ─────────────────────────────────────────────────────────────────
 
-// Font sizes
-const FS  = 8;   // normal
-const FSL = 7;   // label / small
-const FSS = 10;  // section title
+const C_HEADER_BG  = '#2E74B5';
+const C_HEADER_FG  = '#FFFFFF';
+const C_COLS_BG    = '#D6E4F0';
+const C_ROW_ALT    = '#F2F7FB';
+const C_GREEN      = '#107C10';
+const C_RED        = '#CC0000';
+const C_LINE       = '#AAAAAA';
 
-// Two-column bilan/P&L layout
-const HALF = (W - 10) / 2;
-const GAP  = 10;
-const XL   = M;
-const XR   = M + HALF + GAP;
-const C_NUM  = 28;
-const C_SLD  = 52;
-const C_NAME = HALF - C_NUM - C_SLD;
+// ─── Row heights ─────────────────────────────────────────────────────────────
 
-// Journal column widths (total = W = 515)
-const JW_DATE   = 55;
-const JW_PIECE  = 28;
-const JW_DESC   = 192;
-const JW_ACCT   = 148;
-const JW_DEBIT  = 46;
-const JW_CREDIT = 46;
+const ROW_H  = 13;   // data row
+const HEAD_H = 16;   // section header bar
+const COL_H  = 13;   // column header row
 
-interface BalRow {
-  number:        string;
-  name:          string;
-  type:          string;
-  class:         number;
-  normalBalance: string;
-  solde:         number;  // centimes
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function fmtChf(n: number): string {
+  return n.toLocaleString('fr-CH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-interface JRow {
-  entryId:        number;
-  date:           string;
-  piece:          string | null;
-  description:    string;
-  isOpeningBalance: number;
-  isClosingEntry:   number;
-  accountNumber:  string;
-  accountName:    string;
-  debit:          number | null;
-  credit:         number | null;
+function isoToDisplay(iso: string): string {
+  const [, m, d] = iso.split('-');
+  return `${d}.${m}`;
 }
+
+// ─── Drawing primitives ───────────────────────────────────────────────────────
+
+function fillRect(doc: PDFKit.PDFDocument, x: number, y: number, w: number, h: number, color: string): void {
+  doc.save().rect(x, y, w, h).fill(color).restore();
+}
+
+function hLine(doc: PDFKit.PDFDocument, y: number, color = C_LINE): void {
+  doc.save().strokeColor(color).lineWidth(0.5)
+    .moveTo(ML, y).lineTo(ML + PW, y).stroke().restore();
+}
+
+function tx(
+  doc: PDFKit.PDFDocument,
+  str: string,
+  x: number, y: number, w: number,
+  opts: { bold?: boolean; italic?: boolean; size?: number; color?: string; align?: PDFKit.Align } = {},
+): void {
+  doc.save()
+    .font(opts.bold ? 'Helvetica-Bold' : opts.italic ? 'Helvetica-Oblique' : 'Helvetica')
+    .fontSize(opts.size ?? 8)
+    .fillColor(opts.color ?? '#000000')
+    .text(str, x + 2, y + 2, { width: Math.max(w - 4, 1), align: opts.align ?? 'left',
+      lineBreak: false, ellipsis: true })
+    .restore();
+}
+
+// ─── Two-column bilan layout ──────────────────────────────────────────────────
+
+// Each half: N°(30) + Compte(157) + Solde(60) = 247 ; gutter = 21
+const COL_W = 247;
+const GAP   = 21;
+const LX    = ML;
+const RX    = ML + COL_W + GAP;
+const C_NUM  = 30;
+const C_NAME = 157;
+const C_AMT  = 60;
+
+function bilanColHeaders(doc: PDFKit.PDFDocument, y: number): void {
+  fillRect(doc, LX, y, COL_W, COL_H, C_COLS_BG);
+  fillRect(doc, RX, y, COL_W, COL_H, C_COLS_BG);
+  for (const baseX of [LX, RX]) {
+    tx(doc, 'N°',        baseX,                   y + 2, C_NUM,  { bold: true, size: 7.5 });
+    tx(doc, 'Compte',    baseX + C_NUM,            y + 2, C_NAME, { bold: true, size: 7.5 });
+    tx(doc, 'Solde CHF', baseX + C_NUM + C_NAME,   y + 2, C_AMT,  { bold: true, size: 7.5, align: 'right' });
+  }
+}
+
+function bilanDataRow(
+  doc: PDFKit.PDFDocument,
+  y: number, alt: boolean,
+  left:  { num?: string; name: string; val: number | null; bold?: boolean } | null,
+  right: { num?: string; name: string; val: number | null; bold?: boolean } | null,
+  topBorder = false,
+): void {
+  if (alt) fillRect(doc, ML, y, PW, ROW_H, C_ROW_ALT);
+  if (topBorder) hLine(doc, y, '#444444');
+
+  const drawSide = (bx: number, item: typeof left) => {
+    if (!item) return;
+    tx(doc, item.num ?? '',   bx,                 y + 1, C_NUM,  { bold: item.bold, size: 7.5 });
+    tx(doc, item.name,        bx + C_NUM,          y + 1, C_NAME, { bold: item.bold, size: 7.5 });
+    if (item.val !== null) {
+      tx(doc, fmtChf(item.val), bx + C_NUM + C_NAME, y + 1, C_AMT,
+        { bold: item.bold, size: 7.5, align: 'right',
+          color: item.val < 0 ? C_RED : '#000000' });
+    }
+  };
+  drawSide(LX, left);
+  drawSide(RX, right);
+}
+
+// ─── Journal column layout ────────────────────────────────────────────────────
+
+// Total: 52+28+155+100+100+80 = 515 = PW
+const J_DATE  = 52;
+const J_PIECE = 28;
+const J_LABEL = 155;
+const J_DEBIT = 100;
+const J_CRED  = 100;
+const J_AMT   = 80;
+
+function journalColHeaders(doc: PDFKit.PDFDocument, y: number): void {
+  fillRect(doc, ML, y, PW, COL_H, C_COLS_BG);
+  let x = ML;
+  const cols: Array<[string, number, PDFKit.Align]> = [
+    ['Date',          J_DATE,  'left'],
+    ['Pièce',         J_PIECE, 'left'],
+    ['Libellé',       J_LABEL, 'left'],
+    ['Débit compte',  J_DEBIT, 'left'],
+    ['Crédit compte', J_CRED,  'left'],
+    ['Montant CHF',   J_AMT,   'right'],
+  ];
+  for (const [label, w, align] of cols) {
+    tx(doc, label, x, y + 1, w, { bold: true, size: 7.5, align });
+    x += w;
+  }
+}
+
+// ─── Section builder helpers ──────────────────────────────────────────────────
+
+function sectionHeaderBar(doc: PDFKit.PDFDocument, label: string, y: number): number {
+  fillRect(doc, ML, y, PW, HEAD_H, C_HEADER_BG);
+  tx(doc, label, ML + 4, y + 3, PW - 8, { bold: true, color: C_HEADER_FG, size: 9 });
+  return y + HEAD_H;
+}
+
+function ensurePage(doc: PDFKit.PDFDocument, need: number): boolean {
+  if (doc.y + need > PH - MB) {
+    doc.addPage();
+    return true;
+  }
+  return false;
+}
+
+// ─── Bilan & Résultat section ─────────────────────────────────────────────────
+
+function addBilanSection(
+  doc: PDFKit.PDFDocument,
+  accountMap: Map<string, AccountData>,
+  year: number,
+): void {
+  const actif    = [...accountMap.values()].filter(a => a.type === 'ACTIF');
+  const passif   = [...accountMap.values()].filter(a => a.type === 'PASSIF' || a.type === 'FONDS_PROPRES');
+  const produits = [...accountMap.values()].filter(a => a.type === 'PRODUIT');
+  const charges  = [...accountMap.values()].filter(a => a.type === 'CHARGE');
+
+  const totalActif    = actif.reduce((s, a) => s + computeSolde(a), 0);
+  const totalPassif   = passif.reduce((s, a) => s + computeSolde(a), 0);
+  const totalProduits = produits.reduce((s, a) => s + computeSolde(a), 0);
+  const totalCharges  = charges.reduce((s, a) => s + computeSolde(a), 0);
+  const netResult     = Math.round((totalProduits - totalCharges) * 100) / 100;
+  const totalPassifFP = Math.round((totalPassif + netResult) * 100) / 100;
+
+  // ── BILAN ─────────────────────────────────────────────────────────────────
+  ensurePage(doc, HEAD_H + COL_H + ROW_H * 2 + 40);
+  let y = doc.y;
+
+  fillRect(doc, LX, y, COL_W, HEAD_H, C_HEADER_BG);
+  tx(doc, 'ACTIF', LX + 4, y + 4, COL_W - 8, { bold: true, color: C_HEADER_FG, size: 8 });
+  fillRect(doc, RX, y, COL_W, HEAD_H, C_HEADER_BG);
+  tx(doc, 'PASSIF & FONDS PROPRES', RX + 4, y + 4, COL_W - 8, { bold: true, color: C_HEADER_FG, size: 8 });
+  y += HEAD_H;
+  bilanColHeaders(doc, y);
+  y += COL_H;
+
+  const rightPassif: Array<{ num?: string; name: string; val: number }> = [
+    ...passif.map(a => ({ num: a.number, name: a.name, val: computeSolde(a) })),
+    { num: '', name: "Résultat de l'exercice", val: netResult },
+  ];
+  const bilanLen = Math.max(actif.length, rightPassif.length);
+
+  for (let i = 0; i < bilanLen; i++) {
+    if (ensurePage(doc, ROW_H + 4)) {
+      y = doc.y;
+      bilanColHeaders(doc, y);
+      y += COL_H;
+    }
+    const la = i < actif.length       ? { num: actif[i].number,     name: actif[i].name,     val: computeSolde(actif[i]) } : null;
+    const rp = i < rightPassif.length ? { num: rightPassif[i].num,  name: rightPassif[i].name, val: rightPassif[i].val }    : null;
+    bilanDataRow(doc, y, i % 2 === 1, la, rp);
+    y += ROW_H;
+  }
+
+  // Totals
+  if (ensurePage(doc, ROW_H + 20)) { y = doc.y; }
+  bilanDataRow(doc, y, false,
+    { name: 'Total actif',       val: totalActif,    bold: true },
+    { name: 'Total passif & FP', val: totalPassifFP, bold: true },
+    true,
+  );
+  y += ROW_H + 4;
+
+  // Balance check
+  const diff = Math.abs(totalActif - totalPassifFP);
+  const balMsg = diff < 0.02 ? 'Bilan équilibré ✓' : `Écart : CHF ${fmtChf(diff)}`;
+  tx(doc, balMsg, ML, y, PW, { italic: true, color: diff < 0.02 ? C_GREEN : C_RED, size: 8 });
+  y += 16;
+
+  doc.y = y + 8;
+
+  // ── COMPTE DE RÉSULTAT ─────────────────────────────────────────────────────
+  ensurePage(doc, HEAD_H + COL_H + ROW_H * 2 + 40);
+  y = doc.y;
+
+  fillRect(doc, LX, y, COL_W, HEAD_H, C_HEADER_BG);
+  tx(doc, 'PRODUITS', LX + 4, y + 4, COL_W - 8, { bold: true, color: C_HEADER_FG, size: 8 });
+  fillRect(doc, RX, y, COL_W, HEAD_H, C_HEADER_BG);
+  tx(doc, 'CHARGES',  RX + 4, y + 4, COL_W - 8, { bold: true, color: C_HEADER_FG, size: 8 });
+  y += HEAD_H;
+
+  fillRect(doc, LX, y, COL_W, COL_H, C_COLS_BG);
+  fillRect(doc, RX, y, COL_W, COL_H, C_COLS_BG);
+  for (const bx of [LX, RX]) {
+    tx(doc, 'N°',         bx,                 y + 2, C_NUM,  { bold: true, size: 7.5 });
+    tx(doc, 'Compte',     bx + C_NUM,          y + 2, C_NAME, { bold: true, size: 7.5 });
+    tx(doc, 'Total CHF',  bx + C_NUM + C_NAME, y + 2, C_AMT,  { bold: true, size: 7.5, align: 'right' });
+  }
+  y += COL_H;
+
+  const plLen = Math.max(produits.length, charges.length);
+  for (let i = 0; i < plLen; i++) {
+    if (ensurePage(doc, ROW_H + 4)) { y = doc.y; }
+    const lp = i < produits.length ? { num: produits[i].number, name: produits[i].name, val: computeSolde(produits[i]) } : null;
+    const rc = i < charges.length  ? { num: charges[i].number,  name: charges[i].name,  val: computeSolde(charges[i])  } : null;
+    bilanDataRow(doc, y, i % 2 === 1, lp, rc);
+    y += ROW_H;
+  }
+
+  if (ensurePage(doc, ROW_H + 20)) { y = doc.y; }
+  bilanDataRow(doc, y, false,
+    { name: 'Total produits', val: totalProduits, bold: true },
+    { name: 'Total charges',  val: totalCharges,  bold: true },
+    true,
+  );
+  y += ROW_H + 4;
+
+  // Résultat net
+  const netLabel = netResult >= 0 ? 'Bénéfice net' : 'Perte nette';
+  tx(doc, `${netLabel} (Produits − Charges)`, ML, y, PW - C_AMT - 4, { bold: true, size: 8 });
+  tx(doc, fmtChf(netResult), ML + PW - C_AMT, y, C_AMT,
+    { bold: true, size: 8, align: 'right', color: netResult >= 0 ? C_GREEN : C_RED });
+  hLine(doc, y, '#444444');
+  y += 14;
+
+  doc.y = y;
+}
+
+// ─── Journal section ──────────────────────────────────────────────────────────
+
+function addJournalSection(doc: PDFKit.PDFDocument, journalRows: JournalRow[], year: number): void {
+  doc.addPage();
+  let y = doc.y;
+  y = sectionHeaderBar(doc, `Journal général — Exercice ${year}`, y);
+  journalColHeaders(doc, y);
+  y += COL_H;
+
+  const grouped = groupJournalEntries(journalRows);
+  let rowIndex  = 0;
+
+  for (const entry of grouped) {
+    const displayDate = isoToDisplay(entry.date);
+
+    type JLine = { date: string; piece: string; desc: string; debit: string; credit: string; amt: number };
+    const lines: JLine[] = [];
+
+    if (entry.isOpeningBalance) {
+      for (const d of entry.debits) {
+        lines.push({ date: displayDate, piece: entry.piece ?? '', desc: entry.description,
+          debit: `${d.accountNumber} ${d.account}`, credit: '', amt: centsToCHF(d.amount) });
+      }
+      for (const cr of entry.credits) {
+        lines.push({ date: displayDate, piece: entry.piece ?? '', desc: entry.description,
+          debit: '', credit: `${cr.accountNumber} ${cr.account}`, amt: centsToCHF(cr.amount) });
+      }
+    } else {
+      const rowCount = Math.max(entry.debits.length, entry.credits.length);
+      for (let i = 0; i < rowCount; i++) {
+        const da  = i < entry.debits.length  ? entry.debits[i]  : entry.debits[entry.debits.length   - 1];
+        const ca  = i < entry.credits.length ? entry.credits[i] : entry.credits[entry.credits.length - 1];
+        const amt = (i < entry.debits.length ? entry.debits[i] : entry.credits[i])?.amount ?? 0;
+        lines.push({ date: displayDate, piece: entry.piece ?? '', desc: entry.description,
+          debit: da ? `${da.accountNumber} ${da.account}` : '',
+          credit: ca ? `${ca.accountNumber} ${ca.account}` : '',
+          amt: centsToCHF(amt) });
+      }
+    }
+
+    for (const lr of lines) {
+      if (doc.y + ROW_H > PH - MB) {
+        doc.addPage();
+        y = doc.y;
+        journalColHeaders(doc, y);
+        y += COL_H;
+        rowIndex = 0;
+      }
+
+      if (rowIndex % 2 === 1) fillRect(doc, ML, y, PW, ROW_H, C_ROW_ALT);
+
+      let x = ML;
+      tx(doc, lr.date,         x, y + 1, J_DATE  - 2, { size: 7.5 }); x += J_DATE;
+      tx(doc, lr.piece,        x, y + 1, J_PIECE - 2, { size: 7.5 }); x += J_PIECE;
+      tx(doc, lr.desc,         x, y + 1, J_LABEL - 2, { size: 7.5 }); x += J_LABEL;
+      tx(doc, lr.debit,        x, y + 1, J_DEBIT - 2, { size: 7.5 }); x += J_DEBIT;
+      tx(doc, lr.credit,       x, y + 1, J_CRED  - 2, { size: 7.5 }); x += J_CRED;
+      tx(doc, fmtChf(lr.amt),  x, y + 1, J_AMT   - 2, { size: 7.5, align: 'right' });
+
+      y += ROW_H;
+      rowIndex++;
+    }
+  }
+
+  hLine(doc, y);
+  doc.y = y + 6;
+}
+
+// ─── Main export function ─────────────────────────────────────────────────────
 
 export async function exportFiscalYearToPdf(
   db: Database.Database,
   fiscalYearId: number,
   outputPath: string,
 ): Promise<void> {
-  const fy = db
-    .prepare('SELECT year, is_closed FROM fiscal_years WHERE id = ?')
-    .get(fiscalYearId) as { year: number; is_closed: number } | undefined;
-  if (!fy) throw new Error(`Exercice ${fiscalYearId} introuvable`);
+  const data = loadExportData(db, fiscalYearId);
+  const { year, isClosed, accountMap, journalRows } = data;
 
-  const BALANCE_SQL = (excludeClosing: boolean) => `
-    SELECT a.number, a.name, a.type, a.class, a.normal_balance AS normalBalance,
-           CASE a.normal_balance
-             WHEN 'DEBIT'  THEN SUM(COALESCE(l.debit,0))  - SUM(COALESCE(l.credit,0))
-             WHEN 'CREDIT' THEN SUM(COALESCE(l.credit,0)) - SUM(COALESCE(l.debit,0))
-           END AS solde
-    FROM accounts a
-    JOIN journal_entry_lines l ON l.account_id = a.id
-    JOIN journal_entries e ON e.id = l.journal_entry_id
-    WHERE e.fiscal_year_id = ?${excludeClosing ? ' AND e.is_closing_entry = 0' : ''}
-    GROUP BY a.id
-    ORDER BY a.number
-  `;
+  const doc = new PDFDocument({
+    size:    'A4',
+    margins: { top: MT, bottom: MB, left: ML, right: MR },
+    info:    { Title: `MCY Compta — Exercice ${year}`, Author: 'MCY Compta' },
+  });
 
-  const allBal = db.prepare(BALANCE_SQL(false)).all(fiscalYearId) as BalRow[];
-  const plBal  = db.prepare(BALANCE_SQL(true)).all(fiscalYearId)  as BalRow[];
-
-  const jRows = db.prepare(`
-    SELECT e.id AS entryId, e.date, e.piece, e.description,
-           e.is_opening_balance AS isOpeningBalance,
-           e.is_closing_entry AS isClosingEntry,
-           a.number AS accountNumber, a.name AS accountName,
-           l.debit, l.credit
-    FROM journal_entries e
-    JOIN journal_entry_lines l ON l.journal_entry_id = e.id
-    JOIN accounts a ON a.id = l.account_id
-    WHERE e.fiscal_year_id = ?
-    ORDER BY e.is_opening_balance DESC, e.is_closing_entry ASC,
-             e.date, e.id, (l.debit IS NOT NULL) DESC, l.id
-  `).all(fiscalYearId) as JRow[];
-
-  // ── Build PDF ────────────────────────────────────────────────────────────
-
-  const doc = new PDFDocument({ size: 'A4', margin: 0, autoFirstPage: true });
   const stream = fs.createWriteStream(outputPath);
   doc.pipe(stream);
 
-  let y = M;
+  // ── Page de couverture ───────────────────────────────────────────────────
+  const today = new Date();
+  const todayStr = today.toLocaleDateString('fr-CH',
+    { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-  // ── Primitive helpers ─────────────────────────────────────────────────────
+  doc.font('Helvetica-Bold').fontSize(18).fillColor(C_HEADER_BG)
+    .text('MCY — Moto Club Yvorne', ML, MT + 30, { width: PW, align: 'center' });
+  doc.moveDown(0.6);
+  doc.font('Helvetica-Bold').fontSize(13).fillColor('#000000')
+    .text(`Rapport de clôture — Exercice ${year}`, { width: PW, align: 'center' });
+  doc.moveDown(0.4);
+  doc.font('Helvetica').fontSize(10).fillColor('#555555')
+    .text(isClosed ? 'Exercice clôturé' : 'Exercice en cours', { width: PW, align: 'center' });
+  doc.moveDown(0.3);
+  doc.font('Helvetica').fontSize(9).fillColor('#777777')
+    .text(`Généré le ${todayStr}`, { width: PW, align: 'center' });
 
-  function np(): void {
-    doc.addPage({ size: 'A4', margin: 0 });
-    y = M;
-  }
+  hLine(doc, doc.y + 10);
+  doc.moveDown(2);
 
-  function ensure(need: number): void {
-    if (y + need > PH - M) np();
-  }
+  // ── Titre Bilan & Résultat ────────────────────────────────────────────────
+  doc.font('Helvetica-Bold').fontSize(11).fillColor('#000000')
+    .text(`Bilan & Résultat — Exercice ${year}`, ML, doc.y, { width: PW });
+  doc.moveDown(0.5);
 
-  function fill(x: number, yp: number, w: number, h: number, c: string): void {
-    doc.save().rect(x, yp, w, h).fill(c).restore();
-  }
+  addBilanSection(doc, accountMap, year);
 
-  function tx(
-    str: string,
-    x: number, yp: number, w: number,
-    opts: {
-      align?: 'left' | 'right' | 'center';
-      bold?: boolean;
-      size?: number;
-      color?: string;
-    } = {},
-  ): void {
-    doc.save()
-      .font(opts.bold ? 'Helvetica-Bold' : 'Helvetica')
-      .fontSize(opts.size ?? FS)
-      .fillColor(opts.color ?? BLACK)
-      .text(str, x + 2, yp + 2, {
-        width: Math.max(w - 4, 1),
-        align: opts.align ?? 'left',
-        lineBreak: false,
-        ellipsis: true,
-      })
-      .restore();
-  }
-
-  function hRule(yp: number, color = GRAY_LINE): void {
-    doc.save().strokeColor(color).lineWidth(0.4)
-      .moveTo(M, yp).lineTo(M + W, yp).stroke().restore();
-  }
-
-  function vRule(x: number, y1: number, y2: number): void {
-    doc.save().strokeColor(GRAY_LINE).lineWidth(0.4)
-      .moveTo(x, y1).lineTo(x, y2).stroke().restore();
-  }
-
-  function sectionBar(title: string): void {
-    fill(M, y, W, HH + 2, BLUE_DK);
-    tx(title, M + 4, y + 2, W - 8, { bold: true, size: FSS, color: WHITE });
-    y += HH + 6;
-  }
-
-  // ── Cover page ────────────────────────────────────────────────────────────
-
-  const coverY = PH / 3 - 50;
-  fill(M, coverY - 10, W, 100, BLUE_LT);
-  tx('MCY -- Moto Club Yvorne', M, coverY, W, {
-    align: 'center', bold: true, size: 22, color: BLUE_DK,
-  });
-  tx('Rapport comptable', M, coverY + 30, W, {
-    align: 'center', size: 14,
-  });
-  tx(`Exercice ${fy.year}`, M, coverY + 50, W, {
-    align: 'center', bold: true, size: 16,
-  });
-  hRule(coverY + 80, BLUE_DK);
-  tx(fy.is_closed ? 'Exercice cloture' : 'Exercice en cours', M, coverY + 88, W, {
-    align: 'center', size: 9, color: GRAY,
-  });
-  const now = new Date();
-  const pad2 = (n: number) => String(n).padStart(2, '0');
-  const todayStr = `${pad2(now.getDate())}.${pad2(now.getMonth() + 1)}.${now.getFullYear()}`;
-  tx(`Genere le ${todayStr}`, M, coverY + 102, W, {
-    align: 'center', size: 9, color: GRAY,
-  });
-
-  // ── Two-column section (Bilan / Compte de résultat) ───────────────────────
-
-  interface ColItem { n: string; name: string; solde: number }
-
-  function twoColSection(
-    title: string,
-    leftHead: string,  leftRows: ColItem[],
-    rightHead: string, rightRows: ColItem[],
-    leftTotal: number, rightTotal: number,
-    resultLabel?: string, resultValue?: number,
-  ): void {
-    np();
-    sectionBar(title);
-
-    const startY = y;
-
-    // Sub-headers
-    fill(XL, y, HALF, HH, BLUE_LT);
-    tx(leftHead,  XL + 2, y + 1, HALF - 4, { bold: true, size: FSL, color: BLUE_TEXT, align: 'center' });
-    fill(XR, y, HALF, HH, BLUE_LT);
-    tx(rightHead, XR + 2, y + 1, HALF - 4, { bold: true, size: FSL, color: BLUE_TEXT, align: 'center' });
-    y += HH;
-
-    // Column labels
-    const colLabelY = y;
-    tx('N', XL + 2, colLabelY, C_NUM - 2, { bold: true, size: FSL, color: '#374151' });
-    tx('Compte', XL + C_NUM + 2, colLabelY, C_NAME - 2, { bold: true, size: FSL, color: '#374151' });
-    tx('CHF', XL + C_NUM + C_NAME + 2, colLabelY, C_SLD - 4, { bold: true, size: FSL, color: '#374151', align: 'right' });
-    tx('N', XR + 2, colLabelY, C_NUM - 2, { bold: true, size: FSL, color: '#374151' });
-    tx('Compte', XR + C_NUM + 2, colLabelY, C_NAME - 2, { bold: true, size: FSL, color: '#374151' });
-    tx('CHF', XR + C_NUM + C_NAME + 2, colLabelY, C_SLD - 4, { bold: true, size: FSL, color: '#374151', align: 'right' });
-    y += LH;
-    hRule(y);
-
-    const extraRight: ColItem[] = resultLabel !== undefined && resultValue !== undefined
-      ? [{ n: '', name: resultLabel, solde: resultValue }]
-      : [];
-    const rightAll = [...rightRows, ...extraRight];
-    const len = Math.max(leftRows.length, rightAll.length);
-
-    for (let i = 0; i < len; i++) {
-      ensure(RH);
-      const alt = i % 2 === 1;
-      if (alt) {
-        fill(XL, y, HALF, RH, GRAY_ALT);
-        fill(XR, y, HALF, RH, GRAY_ALT);
-      }
-      if (i < leftRows.length) {
-        const r = leftRows[i];
-        tx(r.n, XL + 2, y, C_NUM - 2);
-        tx(r.name, XL + C_NUM + 2, y, C_NAME - 2);
-        tx(formatCHF(r.solde), XL + C_NUM + C_NAME + 2, y, C_SLD - 4, { align: 'right' });
-      }
-      if (i < rightAll.length) {
-        const r = rightAll[i];
-        const isResult = i === rightRows.length && resultLabel !== undefined;
-        const clr = isResult ? (resultValue! >= 0 ? GREEN : RED) : BLACK;
-        tx(r.n, XR + 2, y, C_NUM - 2, { color: clr });
-        tx(r.name, XR + C_NUM + 2, y, C_NAME - 2, { color: clr, bold: isResult });
-        tx(formatCHF(r.solde), XR + C_NUM + C_NAME + 2, y, C_SLD - 4, { align: 'right', color: clr, bold: isResult });
-      }
-      y += RH;
-    }
-
-    // Total row
-    ensure(RH + 4);
-    hRule(y);
-    y += 2;
-    fill(XL, y, HALF, RH, GRAY_TOTAL);
-    tx('TOTAL', XL + 2, y, C_NUM + C_NAME - 2, { bold: true });
-    tx(formatCHF(leftTotal), XL + C_NUM + C_NAME + 2, y, C_SLD - 4, { bold: true, align: 'right' });
-    fill(XR, y, HALF, RH, GRAY_TOTAL);
-    tx('TOTAL', XR + 2, y, C_NUM + C_NAME - 2, { bold: true });
-    tx(formatCHF(rightTotal), XR + C_NUM + C_NAME + 2, y, C_SLD - 4, { bold: true, align: 'right' });
-    y += RH + 4;
-
-    // Vertical divider for the entire two-column area
-    vRule(M + HALF + GAP / 2, startY, y);
-  }
-
-  // ── Compute balances ──────────────────────────────────────────────────────
-
-  const actif   = allBal.filter(r => r.class === 1 && r.solde !== 0)
-                         .map(r => ({ n: r.number, name: r.name, solde: r.solde }));
-  const passif  = allBal.filter(r => r.class === 2 && r.type !== 'FONDS_PROPRES' && r.solde !== 0)
-                         .map(r => ({ n: r.number, name: r.name, solde: r.solde }));
-  const fp      = allBal.filter(r => r.type === 'FONDS_PROPRES' && r.solde !== 0)
-                         .map(r => ({ n: r.number, name: r.name, solde: r.solde }));
-
-  const produits = plBal.filter(r => r.class === 3).reduce((s, r) => s + r.solde, 0);
-  const charges  = plBal.filter(r => r.class === 4).reduce((s, r) => s + r.solde, 0);
-  const resultat = produits - charges;
-
-  const totalActif  = actif.reduce((s, r) => s + r.solde, 0);
-  const totalPassif = passif.reduce((s, r) => s + r.solde, 0)
-                    + fp.reduce((s, r) => s + r.solde, 0)
-                    + resultat;
-
-  const chargesItems  = plBal.filter(r => r.class === 4 && r.solde !== 0)
-                              .map(r => ({ n: r.number, name: r.name, solde: r.solde }));
-  const produitsItems = plBal.filter(r => r.class === 3 && r.solde !== 0)
-                              .map(r => ({ n: r.number, name: r.name, solde: r.solde }));
-
-  // ── Bilan ─────────────────────────────────────────────────────────────────
-
-  twoColSection(
-    `BILAN AU 31 DECEMBRE ${fy.year}`,
-    'ACTIF',            [...actif],
-    'PASSIF + FP',      [...passif, ...fp],
-    totalActif, totalPassif,
-    resultat >= 0 ? 'Benefice net' : 'Perte nette', resultat,
-  );
-
-  // ── Compte de résultat ────────────────────────────────────────────────────
-
-  twoColSection(
-    `COMPTE DE RESULTAT -- EXERCICE ${fy.year}`,
-    'CHARGES',  chargesItems,
-    'PRODUITS', produitsItems,
-    charges, produits,
-    resultat >= 0 ? 'Benefice' : 'Perte', Math.abs(resultat),
-  );
-
-  // ── Journal général ───────────────────────────────────────────────────────
-
-  function journalHeader(suite: boolean): void {
-    sectionBar(`JOURNAL GENERAL -- EXERCICE ${fy.year}${suite ? ' (suite)' : ''}`);
-    fill(M, y, W, LH, BLUE_LT);
-    let xj = M;
-    tx('Date',   xj + 2, y, JW_DATE  - 2, { bold: true, size: FSL, color: BLUE_TEXT }); xj += JW_DATE;
-    tx('Piece',  xj + 2, y, JW_PIECE - 2, { bold: true, size: FSL, color: BLUE_TEXT }); xj += JW_PIECE;
-    tx('Libelle',xj + 2, y, JW_DESC  - 2, { bold: true, size: FSL, color: BLUE_TEXT }); xj += JW_DESC;
-    tx('Compte', xj + 2, y, JW_ACCT  - 2, { bold: true, size: FSL, color: BLUE_TEXT }); xj += JW_ACCT;
-    tx('Debit',  xj + 2, y, JW_DEBIT - 2, { bold: true, size: FSL, color: BLUE_TEXT, align: 'right' }); xj += JW_DEBIT;
-    tx('Credit', xj + 2, y, JW_CREDIT - 2, { bold: true, size: FSL, color: BLUE_TEXT, align: 'right' });
-    y += LH;
-    hRule(y);
-  }
-
-  np();
-  journalHeader(false);
-
-  let totalDebit  = 0;
-  let totalCredit = 0;
-  let entryColorIdx = 0;
-  let prevEntryId = -1;
-  let firstEntry = true;
-
-  for (const r of jRows) {
-    const isNewEntry = r.entryId !== prevEntryId;
-
-    // Page break check
-    if (y + RH > PH - M - 20) {
-      np();
-      journalHeader(true);
-      entryColorIdx = 0;
-      firstEntry = true;
-    }
-
-    if (isNewEntry) {
-      if (!firstEntry) {
-        hRule(y, GRAY_ALT);  // thin separator between entries
-        entryColorIdx++;
-      }
-      firstEntry = false;
-    }
-
-    const alt = entryColorIdx % 2 === 1;
-    if (alt) fill(M, y, W, RH, GRAY_ALT);
-
-    let xj = M;
-    tx(isNewEntry ? formatDate(r.date) : '',                   xj + 2, y, JW_DATE  - 2); xj += JW_DATE;
-    tx(isNewEntry && r.piece ? r.piece : '',                   xj + 2, y, JW_PIECE - 2); xj += JW_PIECE;
-    tx(isNewEntry ? r.description : '',                        xj + 2, y, JW_DESC  - 2); xj += JW_DESC;
-    tx(`${r.accountNumber} ${r.accountName}`,                  xj + 2, y, JW_ACCT  - 2); xj += JW_ACCT;
-    tx(r.debit  !== null ? formatCHF(r.debit)  : '', xj + 2, y, JW_DEBIT  - 2, { align: 'right' }); xj += JW_DEBIT;
-    tx(r.credit !== null ? formatCHF(r.credit) : '', xj + 2, y, JW_CREDIT - 2, { align: 'right' });
-
-    if (r.debit  !== null) totalDebit  += r.debit;
-    if (r.credit !== null) totalCredit += r.credit;
-
-    prevEntryId = r.entryId;
-    y += RH;
-  }
-
-  // Journal total row
-  ensure(RH + 4);
-  hRule(y);
-  y += 2;
-  fill(M, y, W, RH, GRAY_TOTAL);
-  tx('TOTAL', M + 2, y, JW_DATE + JW_PIECE + JW_DESC + JW_ACCT - 2, { bold: true });
-  const xTot = M + JW_DATE + JW_PIECE + JW_DESC + JW_ACCT;
-  tx(formatCHF(totalDebit),  xTot + 2, y, JW_DEBIT  - 2, { bold: true, align: 'right' });
-  tx(formatCHF(totalCredit), xTot + JW_DEBIT + 2, y, JW_CREDIT - 2, { bold: true, align: 'right' });
-  y += RH;
+  // ── Journal général ────────────────────────────────────────────────────
+  addJournalSection(doc, journalRows, year);
 
   doc.end();
+
   await new Promise<void>((resolve, reject) => {
     stream.on('finish', resolve);
     stream.on('error', reject);
