@@ -1,49 +1,42 @@
 import PDFDocument from 'pdfkit';
 import fs from 'node:fs';
+import path from 'node:path';
 import type Database from 'better-sqlite3';
 import {
   loadExportData, computeSolde, groupJournalEntries, buildAccountLedger, centsToCHF,
   type AccountData, type EntryDetail, type JournalRow,
 } from '../data/export-data';
 
-// ─── Layout constants ─────────────────────────────────────────────────────────
-
-const ML = 40;    // margin left & right
-const MT = 40;    // margin top
-const MB = 40;    // margin bottom
-const PW = 515.28; // usable width (595.28 − 2 × 40)
-const PH = 841.89; // page height A4
-
-// ─── Colours ─────────────────────────────────────────────────────────────────
-
-const C_HEADER_BG  = '#2E74B5';
-const C_HEADER_FG  = '#FFFFFF';
-const C_COLS_BG    = '#D6E4F0';
-const C_ROW_ALT    = '#F2F7FB';
-const C_GREEN      = '#107C10';
-const C_RED        = '#CC0000';
-const C_LINE       = '#AAAAAA';
-
-// ─── Row heights ─────────────────────────────────────────────────────────────
-
-const ROW_H  = 13;   // data row
-const HEAD_H = 16;   // section header bar
-const COL_H  = 13;   // column header row
-const ACCT_H = 14;   // per-account header bar
-
-// ─── Number formatter ────────────────────────────────────────────────────────
+// ─── Polices ──────────────────────────────────────────────────────────────────
 //
-// toLocaleString('fr-CH') peut produire   (espace fine insécable) comme
-// séparateur de milliers selon la version ICU. Ce caractère n'est pas dans
-// l'encodage WinAnsi de Helvetica (PDFKit) et s'affiche comme '/'.
-// On utilise donc un formateur manuel avec l'apostrophe ASCII standard.
+// On embarque Arial (TTF Windows) plutôt que d'utiliser Helvetica intégré.
+// Helvetica utilise l'encodage WinAnsi qui ne contient pas U+202F (espace
+// fine insécable), produit par toLocaleString('fr-CH') comme séparateur de
+// milliers — ce caractère s'affichait comme '/'.  Les polices TTF embarquées
+// utilisent un CIDFont Unicode qui couvre tous les caractères.
+//
+// Arial est présent sur tout Windows depuis XP.
+
+const FONTS_DIR = path.join(process.env['WINDIR'] ?? 'C:\\Windows', 'Fonts');
+const FONT_R  = path.join(FONTS_DIR, 'arial.ttf');
+const FONT_B  = path.join(FONTS_DIR, 'arialbd.ttf');
+const FONT_I  = path.join(FONTS_DIR, 'ariali.ttf');
+const FONT_BI = path.join(FONTS_DIR, 'arialbi.ttf');
+
+function font(bold?: boolean, italic?: boolean): string {
+  if (bold && italic) return FONT_BI;
+  if (bold)           return FONT_B;
+  if (italic)         return FONT_I;
+  return FONT_R;
+}
+
+// ─── Formatage des montants ───────────────────────────────────────────────────
+//
+// toLocaleString('fr-CH') produit l'espace fine insécable U+202F comme
+// séparateur de milliers — désormais supporté grâce aux polices TTF.
 
 function fmtChf(n: number): string {
-  const abs  = Math.abs(n);
-  const sign = n < 0 ? '-' : '';
-  const [int, dec] = abs.toFixed(2).split('.');
-  const grouped = int.replace(/\B(?=(\d{3})+(?!\d))/g, "'");
-  return `${sign}${grouped}.${dec}`;
+  return n.toLocaleString('fr-CH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function isoToDisplay(iso: string): string {
@@ -51,7 +44,32 @@ function isoToDisplay(iso: string): string {
   return `${d}.${m}`;
 }
 
-// ─── Drawing primitives ───────────────────────────────────────────────────────
+// ─── Layout constants ─────────────────────────────────────────────────────────
+
+const ML = 40;      // margin left & right
+const MT = 40;      // margin top
+const MB = 40;      // margin bottom
+const PW = 515.28;  // usable width (595.28 − 2×40)
+const PH = 841.89;  // page height A4
+
+// ─── Couleurs ─────────────────────────────────────────────────────────────────
+
+const C_HEADER_BG = '#2E74B5';
+const C_HEADER_FG = '#FFFFFF';
+const C_COLS_BG   = '#D6E4F0';
+const C_ROW_ALT   = '#F2F7FB';
+const C_GREEN     = '#107C10';
+const C_RED       = '#CC0000';
+const C_LINE      = '#AAAAAA';
+
+// ─── Hauteurs de ligne ────────────────────────────────────────────────────────
+
+const ROW_H  = 13;  // ligne de données (hauteur minimale)
+const HEAD_H = 16;  // barre de section
+const COL_H  = 13;  // en-tête de colonnes
+const ACCT_H = 14;  // en-tête par compte
+
+// ─── Primitives graphiques ────────────────────────────────────────────────────
 
 function fillRect(doc: PDFKit.PDFDocument, x: number, y: number, w: number, h: number, color: string): void {
   doc.save().rect(x, y, w, h).fill(color).restore();
@@ -62,9 +80,11 @@ function hLine(doc: PDFKit.PDFDocument, y: number, color = C_LINE): void {
     .moveTo(ML, y).lineTo(ML + PW, y).stroke().restore();
 }
 
-// tx — texte dans une cellule avec clip strict pour éviter tout débordement.
-// Le clip sur (x, y, w, h) garantit qu'aucun texte ne sort de la cellule,
-// même si PDFKit décide de wrapper malgré lineBreak:false.
+// tx — affiche du texte dans une cellule.
+// Si multiline=true (défaut false) : le texte peut s'enrouler sur plusieurs
+// lignes et la cellule s'agrandit (hauteur calculée par l'appelant via cellH).
+// Si multiline=false : lineBreak=false + ellipsis=true pour les cellules à
+// hauteur fixe (en-têtes, bilan) où le débordement doit être tronqué.
 function tx(
   doc: PDFKit.PDFDocument,
   str: string,
@@ -72,47 +92,65 @@ function tx(
   opts: {
     bold?: boolean; italic?: boolean;
     size?: number; color?: string; align?: PDFKit.Align;
-    clipH?: number;  // hauteur de clip — par défaut ROW_H
+    multiline?: boolean;
   } = {},
 ): void {
   if (!str) return;
-  const h = opts.clipH ?? ROW_H;
-  doc.save();
-  doc.rect(x, y, w, h).clip();
-  doc.font(opts.bold ? 'Helvetica-Bold' : opts.italic ? 'Helvetica-Oblique' : 'Helvetica')
+  const multiline = opts.multiline ?? false;
+  doc.save()
+    .font(font(opts.bold, opts.italic))
     .fontSize(opts.size ?? 8)
     .fillColor(opts.color ?? '#000000')
     .text(str, x + 2, y + 2, {
       width:     Math.max(w - 4, 1),
       align:     opts.align ?? 'left',
-      lineBreak: false,
-      ellipsis:  true,
-    });
-  doc.restore();
+      lineBreak: multiline,
+      ellipsis:  !multiline,
+    })
+    .restore();
 }
 
-// ─── Page management ─────────────────────────────────────────────────────────
+// cellH — calcule la hauteur nécessaire pour un texte dans une colonne donnée.
+// Utilisé pour pré-calculer la hauteur des lignes de données variables.
+function cellH(
+  doc: PDFKit.PDFDocument,
+  str: string,
+  w: number,
+  opts: { bold?: boolean; size?: number } = {},
+): number {
+  if (!str) return ROW_H;
+  doc.font(font(opts.bold));
+  doc.fontSize(opts.size ?? 8);
+  const h = doc.heightOfString(str, { width: Math.max(w - 4, 1) }) + 4; // +4 : padding vertical
+  return Math.max(h, ROW_H);
+}
 
-function ensurePage(doc: PDFKit.PDFDocument, need: number): boolean {
-  if (doc.y + need > PH - MB) {
+// rowH — hauteur maximale sur toutes les cellules d'une ligne.
+function rowH(doc: PDFKit.PDFDocument, cells: Array<{ str: string; w: number; size?: number; bold?: boolean }>): number {
+  return cells.reduce((max, c) => Math.max(max, cellH(doc, c.str, c.w, { size: c.size, bold: c.bold })), ROW_H);
+}
+
+// ─── Gestion des pages ────────────────────────────────────────────────────────
+
+function ensurePage(doc: PDFKit.PDFDocument, y: number, need: number): number {
+  if (y + need > PH - MB) {
     doc.addPage();
-    return true;
+    return MT;
   }
-  return false;
+  return y;
 }
 
 function sectionHeaderBar(doc: PDFKit.PDFDocument, label: string, y: number): number {
   fillRect(doc, ML, y, PW, HEAD_H, C_HEADER_BG);
-  tx(doc, label, ML + 4, y + 3, PW - 8,
-    { bold: true, color: C_HEADER_FG, size: 9, clipH: HEAD_H });
+  tx(doc, label, ML + 4, y + 3, PW - 8, { bold: true, color: C_HEADER_FG, size: 9 });
   return y + HEAD_H;
 }
 
-// ─── Two-column bilan layout ──────────────────────────────────────────────────
+// ─── Disposition bilan deux colonnes ─────────────────────────────────────────
 
-// Each half: N°(30) + Compte(157) + Solde(60) = 247 ; gutter = 21.28
+// Chaque moitié : N°(30) + Compte(157) + Solde(60) = 247 ; espacement = 21
 const COL_W = 247;
-const GAP   = Math.round(PW - 2 * COL_W);  // = 21
+const GAP   = Math.round(PW - 2 * COL_W);
 const LX    = ML;
 const RX    = ML + COL_W + GAP;
 const C_NUM  = 30;
@@ -123,10 +161,9 @@ function bilanColHeaders(doc: PDFKit.PDFDocument, y: number): void {
   fillRect(doc, LX, y, COL_W, COL_H, C_COLS_BG);
   fillRect(doc, RX, y, COL_W, COL_H, C_COLS_BG);
   for (const bx of [LX, RX]) {
-    tx(doc, 'N°',        bx,                 y + 1, C_NUM,  { bold: true, size: 7.5, clipH: COL_H });
-    tx(doc, 'Compte',    bx + C_NUM,          y + 1, C_NAME, { bold: true, size: 7.5, clipH: COL_H });
-    tx(doc, 'Solde CHF', bx + C_NUM + C_NAME, y + 1, C_AMT,
-      { bold: true, size: 7.5, align: 'right', clipH: COL_H });
+    tx(doc, 'N°',        bx,                 y + 1, C_NUM,  { bold: true, size: 7.5 });
+    tx(doc, 'Compte',    bx + C_NUM,          y + 1, C_NAME, { bold: true, size: 7.5 });
+    tx(doc, 'Solde CHF', bx + C_NUM + C_NAME, y + 1, C_AMT,  { bold: true, size: 7.5, align: 'right' });
   }
 }
 
@@ -137,28 +174,26 @@ function bilanDataRow(
   right: { num?: string; name: string; val: number | null; bold?: boolean } | null,
   topBorder = false,
 ): void {
+  // Les noms de compte (C_NAME = 157pt) tiennent sur une ligne : pas d'auto-expand
   if (alt) fillRect(doc, ML, y, PW, ROW_H, C_ROW_ALT);
   if (topBorder) hLine(doc, y, '#444444');
 
   const drawSide = (bx: number, item: typeof left) => {
     if (!item) return;
-    tx(doc, item.num ?? '',    bx,                 y + 1, C_NUM,
-      { bold: item.bold, size: 7.5 });
-    tx(doc, item.name,         bx + C_NUM,          y + 1, C_NAME,
-      { bold: item.bold, size: 7.5 });
-    if (item.val !== null) {
+    tx(doc, item.num ?? '',    bx,                 y + 1, C_NUM,  { bold: item.bold, size: 7.5 });
+    tx(doc, item.name,         bx + C_NUM,          y + 1, C_NAME, { bold: item.bold, size: 7.5 });
+    if (item.val !== null)
       tx(doc, fmtChf(item.val), bx + C_NUM + C_NAME, y + 1, C_AMT,
         { bold: item.bold, size: 7.5, align: 'right',
           color: item.val < 0 ? C_RED : '#000000' });
-    }
   };
   drawSide(LX, left);
   drawSide(RX, right);
 }
 
-// ─── Journal column layout ────────────────────────────────────────────────────
+// ─── Colonnes Journal ─────────────────────────────────────────────────────────
 
-// Total: 52+28+155+100+100+80 = 515 = PW
+// 52+28+155+100+100+80 = 515 = PW
 const J_DATE  = 52;
 const J_PIECE = 28;
 const J_LABEL = 155;
@@ -178,14 +213,14 @@ function journalColHeaders(doc: PDFKit.PDFDocument, y: number): void {
   ];
   let x = ML;
   for (const [label, w, align] of cols) {
-    tx(doc, label, x, y + 1, w, { bold: true, size: 7.5, align, clipH: COL_H });
+    tx(doc, label, x, y + 1, w, { bold: true, size: 7.5, align });
     x += w;
   }
 }
 
-// ─── Account ledger column layout ─────────────────────────────────────────────
+// ─── Colonnes Grand-livre ─────────────────────────────────────────────────────
 
-// Total: 50+170+130+83+82 = 515 = PW
+// 50+170+130+83+82 = 515 = PW
 const A_DATE  = 50;
 const A_LABEL = 170;
 const A_CONTR = 130;
@@ -203,18 +238,14 @@ function accountColHeaders(doc: PDFKit.PDFDocument, y: number): void {
   ];
   let x = ML;
   for (const [label, w, align] of cols) {
-    tx(doc, label, x, y + 1, w, { bold: true, size: 7.5, align, clipH: COL_H });
+    tx(doc, label, x, y + 1, w, { bold: true, size: 7.5, align });
     x += w;
   }
 }
 
-// ─── Bilan & Résultat section ─────────────────────────────────────────────────
+// ─── Section Bilan & Résultat ─────────────────────────────────────────────────
 
-function addBilanSection(
-  doc: PDFKit.PDFDocument,
-  accountMap: Map<string, AccountData>,
-  year: number,
-): void {
+function addBilanSection(doc: PDFKit.PDFDocument, accountMap: Map<string, AccountData>, year: number): void {
   const actif    = [...accountMap.values()].filter(a => a.type === 'ACTIF');
   const passif   = [...accountMap.values()].filter(a => a.type === 'PASSIF' || a.type === 'FONDS_PROPRES');
   const produits = [...accountMap.values()].filter(a => a.type === 'PRODUIT');
@@ -228,15 +259,12 @@ function addBilanSection(
   const totalPassifFP = Math.round((totalPassif + netResult) * 100) / 100;
 
   // ── BILAN ─────────────────────────────────────────────────────────────────
-  ensurePage(doc, HEAD_H + COL_H + ROW_H * 2 + 40);
-  let y = doc.y;
+  let y = ensurePage(doc, doc.y, HEAD_H + COL_H + ROW_H * 2 + 40);
 
   fillRect(doc, LX, y, COL_W, HEAD_H, C_HEADER_BG);
-  tx(doc, 'ACTIF', LX + 4, y + 4, COL_W - 8,
-    { bold: true, color: C_HEADER_FG, size: 8, clipH: HEAD_H });
+  tx(doc, 'ACTIF', LX + 4, y + 4, COL_W - 8, { bold: true, color: C_HEADER_FG, size: 8 });
   fillRect(doc, RX, y, COL_W, HEAD_H, C_HEADER_BG);
-  tx(doc, 'PASSIF & FONDS PROPRES', RX + 4, y + 4, COL_W - 8,
-    { bold: true, color: C_HEADER_FG, size: 8, clipH: HEAD_H });
+  tx(doc, 'PASSIF & FONDS PROPRES', RX + 4, y + 4, COL_W - 8, { bold: true, color: C_HEADER_FG, size: 8 });
   y += HEAD_H;
   bilanColHeaders(doc, y);
   y += COL_H;
@@ -248,79 +276,63 @@ function addBilanSection(
   const bilanLen = Math.max(actif.length, rightPassif.length);
 
   for (let i = 0; i < bilanLen; i++) {
-    if (ensurePage(doc, ROW_H + 4)) {
-      y = doc.y;
-      bilanColHeaders(doc, y);
-      y += COL_H;
-    }
-    const la = i < actif.length       ? { num: actif[i].number,      name: actif[i].name,      val: computeSolde(actif[i]) }   : null;
-    const rp = i < rightPassif.length ? { num: rightPassif[i].num,   name: rightPassif[i].name, val: rightPassif[i].val }      : null;
+    y = ensurePage(doc, y, ROW_H + 4);
+    if (doc.y === MT && y === MT) { bilanColHeaders(doc, y); y += COL_H; }
+    const la = i < actif.length       ? { num: actif[i].number, name: actif[i].name, val: computeSolde(actif[i]) } : null;
+    const rp = i < rightPassif.length ? { num: rightPassif[i].num, name: rightPassif[i].name, val: rightPassif[i].val } : null;
     bilanDataRow(doc, y, i % 2 === 1, la, rp);
     y += ROW_H;
   }
 
-  if (ensurePage(doc, ROW_H + 20)) { y = doc.y; }
+  y = ensurePage(doc, y, ROW_H + 20);
   bilanDataRow(doc, y, false,
     { name: 'Total actif',       val: totalActif,    bold: true },
-    { name: 'Total passif & FP', val: totalPassifFP, bold: true },
-    true,
-  );
+    { name: 'Total passif & FP', val: totalPassifFP, bold: true }, true);
   y += ROW_H + 4;
 
-  // Balance check
   const diff   = Math.abs(totalActif - totalPassifFP);
   const balMsg = diff < 0.02 ? 'Bilan équilibré ✓' : `Écart : CHF ${fmtChf(diff)}`;
-  tx(doc, balMsg, ML, y, PW,
-    { italic: true, color: diff < 0.02 ? C_GREEN : C_RED, size: 8, clipH: 14 });
+  tx(doc, balMsg, ML, y, PW, { italic: true, color: diff < 0.02 ? C_GREEN : C_RED, size: 8 });
   y += 16;
   doc.y = y + 8;
 
   // ── COMPTE DE RÉSULTAT ─────────────────────────────────────────────────────
-  ensurePage(doc, HEAD_H + COL_H + ROW_H * 2 + 40);
-  y = doc.y;
+  y = ensurePage(doc, doc.y, HEAD_H + COL_H + ROW_H * 2 + 40);
 
   fillRect(doc, LX, y, COL_W, HEAD_H, C_HEADER_BG);
-  tx(doc, 'PRODUITS', LX + 4, y + 4, COL_W - 8,
-    { bold: true, color: C_HEADER_FG, size: 8, clipH: HEAD_H });
+  tx(doc, 'PRODUITS', LX + 4, y + 4, COL_W - 8, { bold: true, color: C_HEADER_FG, size: 8 });
   fillRect(doc, RX, y, COL_W, HEAD_H, C_HEADER_BG);
-  tx(doc, 'CHARGES',  RX + 4, y + 4, COL_W - 8,
-    { bold: true, color: C_HEADER_FG, size: 8, clipH: HEAD_H });
+  tx(doc, 'CHARGES',  RX + 4, y + 4, COL_W - 8, { bold: true, color: C_HEADER_FG, size: 8 });
   y += HEAD_H;
 
   fillRect(doc, LX, y, COL_W, COL_H, C_COLS_BG);
   fillRect(doc, RX, y, COL_W, COL_H, C_COLS_BG);
   for (const bx of [LX, RX]) {
-    tx(doc, 'N°',        bx,                 y + 1, C_NUM,  { bold: true, size: 7.5, clipH: COL_H });
-    tx(doc, 'Compte',    bx + C_NUM,          y + 1, C_NAME, { bold: true, size: 7.5, clipH: COL_H });
-    tx(doc, 'Total CHF', bx + C_NUM + C_NAME, y + 1, C_AMT,
-      { bold: true, size: 7.5, align: 'right', clipH: COL_H });
+    tx(doc, 'N°',        bx,                 y + 1, C_NUM,  { bold: true, size: 7.5 });
+    tx(doc, 'Compte',    bx + C_NUM,          y + 1, C_NAME, { bold: true, size: 7.5 });
+    tx(doc, 'Total CHF', bx + C_NUM + C_NAME, y + 1, C_AMT,  { bold: true, size: 7.5, align: 'right' });
   }
   y += COL_H;
 
   const plLen = Math.max(produits.length, charges.length);
   for (let i = 0; i < plLen; i++) {
-    if (ensurePage(doc, ROW_H + 4)) { y = doc.y; }
+    y = ensurePage(doc, y, ROW_H + 4);
     const lp = i < produits.length ? { num: produits[i].number, name: produits[i].name, val: computeSolde(produits[i]) } : null;
     const rc = i < charges.length  ? { num: charges[i].number,  name: charges[i].name,  val: computeSolde(charges[i])  } : null;
     bilanDataRow(doc, y, i % 2 === 1, lp, rc);
     y += ROW_H;
   }
 
-  if (ensurePage(doc, ROW_H + 20)) { y = doc.y; }
+  y = ensurePage(doc, y, ROW_H + 20);
   bilanDataRow(doc, y, false,
     { name: 'Total produits', val: totalProduits, bold: true },
-    { name: 'Total charges',  val: totalCharges,  bold: true },
-    true,
-  );
+    { name: 'Total charges',  val: totalCharges,  bold: true }, true);
   y += ROW_H + 4;
 
-  // Résultat net
   const netLabel = netResult >= 0 ? 'Bénéfice net' : 'Perte nette';
-  tx(doc, `${netLabel} (Produits − Charges)`, ML, y, PW - C_AMT - 4,
-    { bold: true, size: 8, clipH: 14 });
+  tx(doc, `${netLabel} (Produits − Charges)`, ML, y, PW - C_AMT - 4, { bold: true, size: 8 });
   tx(doc, fmtChf(netResult), ML + PW - C_AMT, y, C_AMT,
-    { bold: true, size: 8, align: 'right',
-      color: netResult >= 0 ? C_GREEN : C_RED, clipH: 14 });
+    { bold: true, size: 8, align: 'right', color: netResult >= 0 ? C_GREEN : C_RED });
   hLine(doc, y, '#444444');
   y += 14;
   doc.y = y;
@@ -330,7 +342,7 @@ function addBilanSection(
 
 function addJournalSection(doc: PDFKit.PDFDocument, journalRows: JournalRow[], year: number): void {
   doc.addPage();
-  let y = doc.y;
+  let y = MT;
   y = sectionHeaderBar(doc, `Journal général — Exercice ${year}`, y);
   journalColHeaders(doc, y);
   y += COL_H;
@@ -345,14 +357,12 @@ function addJournalSection(doc: PDFKit.PDFDocument, journalRows: JournalRow[], y
     const lines: JLine[] = [];
 
     if (entry.isOpeningBalance) {
-      for (const d of entry.debits) {
+      for (const d of entry.debits)
         lines.push({ date: displayDate, piece: entry.piece ?? '', desc: entry.description,
           debit: `${d.accountNumber} ${d.account}`, credit: '', amt: centsToCHF(d.amount) });
-      }
-      for (const cr of entry.credits) {
+      for (const cr of entry.credits)
         lines.push({ date: displayDate, piece: entry.piece ?? '', desc: entry.description,
           debit: '', credit: `${cr.accountNumber} ${cr.account}`, amt: centsToCHF(cr.amount) });
-      }
     } else {
       const rowCount = Math.max(entry.debits.length, entry.credits.length);
       for (let i = 0; i < rowCount; i++) {
@@ -367,25 +377,35 @@ function addJournalSection(doc: PDFKit.PDFDocument, journalRows: JournalRow[], y
     }
 
     for (const lr of lines) {
-      if (doc.y + ROW_H > PH - MB) {
+      // Calcul de la hauteur de ligne selon le contenu réel (auto-expand)
+      const rh = rowH(doc, [
+        { str: lr.date,        w: J_DATE,  size: 7.5 },
+        { str: lr.piece,       w: J_PIECE, size: 7.5 },
+        { str: lr.desc,        w: J_LABEL, size: 7.5 },
+        { str: lr.debit,       w: J_DEBIT, size: 7.5 },
+        { str: lr.credit,      w: J_CRED,  size: 7.5 },
+        { str: fmtChf(lr.amt), w: J_AMT,   size: 7.5 },
+      ]);
+
+      if (y + rh > PH - MB) {
         doc.addPage();
-        y = doc.y;
+        y = MT;
         journalColHeaders(doc, y);
         y += COL_H;
         rowIndex = 0;
       }
 
-      if (rowIndex % 2 === 1) fillRect(doc, ML, y, PW, ROW_H, C_ROW_ALT);
+      if (rowIndex % 2 === 1) fillRect(doc, ML, y, PW, rh, C_ROW_ALT);
 
       let x = ML;
-      tx(doc, lr.date,        x, y + 1, J_DATE,  { size: 7.5 }); x += J_DATE;
-      tx(doc, lr.piece,       x, y + 1, J_PIECE, { size: 7.5 }); x += J_PIECE;
-      tx(doc, lr.desc,        x, y + 1, J_LABEL, { size: 7.5 }); x += J_LABEL;
-      tx(doc, lr.debit,       x, y + 1, J_DEBIT, { size: 7.5 }); x += J_DEBIT;
-      tx(doc, lr.credit,      x, y + 1, J_CRED,  { size: 7.5 }); x += J_CRED;
-      tx(doc, fmtChf(lr.amt), x, y + 1, J_AMT,   { size: 7.5, align: 'right' });
+      tx(doc, lr.date,        x, y + 1, J_DATE,  { size: 7.5, multiline: true }); x += J_DATE;
+      tx(doc, lr.piece,       x, y + 1, J_PIECE, { size: 7.5, multiline: true }); x += J_PIECE;
+      tx(doc, lr.desc,        x, y + 1, J_LABEL, { size: 7.5, multiline: true }); x += J_LABEL;
+      tx(doc, lr.debit,       x, y + 1, J_DEBIT, { size: 7.5, multiline: true }); x += J_DEBIT;
+      tx(doc, lr.credit,      x, y + 1, J_CRED,  { size: 7.5, multiline: true }); x += J_CRED;
+      tx(doc, fmtChf(lr.amt), x, y + 1, J_AMT,   { size: 7.5, multiline: true, align: 'right' });
 
-      y += ROW_H;
+      y += rh;
       rowIndex++;
     }
   }
@@ -394,7 +414,7 @@ function addJournalSection(doc: PDFKit.PDFDocument, journalRows: JournalRow[], y
   doc.y = y + 6;
 }
 
-// ─── Feuilles de compte (grand-livre par compte) ──────────────────────────────
+// ─── Grand-livre par compte ───────────────────────────────────────────────────
 
 function addAccountsSection(
   doc: PDFKit.PDFDocument,
@@ -403,21 +423,20 @@ function addAccountsSection(
   year: number,
 ): void {
   doc.addPage();
+  let y = MT;
 
   for (const account of accountMap.values()) {
     const ledgerRows = buildAccountLedger(entries, account.number);
     if (ledgerRows.length === 0) continue;
 
-    // Ensure enough room for account header + column header + at least one row
-    ensurePage(doc, ACCT_H + COL_H + ROW_H + 4);
-    let y = doc.y;
+    // En-tête de compte + colonne : au moins une ligne de données
+    y = ensurePage(doc, y, ACCT_H + COL_H + ROW_H + 4);
 
-    // Account header bar (lighter shade to differentiate from section headers)
+    // En-tête du compte
     fillRect(doc, ML, y, PW, ACCT_H, '#4A90C4');
-    tx(doc, `${account.number}  ${account.name}`, ML + 6, y + 3, PW - 12,
-      { bold: true, color: C_HEADER_FG, size: 8.5, clipH: ACCT_H });
+    tx(doc, `${account.number}  ${account.name} — Exercice ${year}`, ML + 6, y + 3, PW - 12,
+      { bold: true, color: C_HEADER_FG, size: 8.5 });
     y += ACCT_H;
-
     accountColHeaders(doc, y);
     y += COL_H;
 
@@ -426,56 +445,59 @@ function addAccountsSection(
     let rowIdx      = 0;
 
     for (const row of ledgerRows) {
-      if (doc.y + ROW_H > PH - MB) {
+      const debitStr  = row.debit  !== null ? fmtChf(row.debit)  : '';
+      const creditStr = row.credit !== null ? fmtChf(row.credit) : '';
+
+      const rh = rowH(doc, [
+        { str: isoToDisplay(row.date), w: A_DATE,  size: 7.5 },
+        { str: row.description,        w: A_LABEL, size: 7.5 },
+        { str: row.contra,             w: A_CONTR, size: 7.5 },
+        { str: debitStr,               w: A_DEBIT, size: 7.5 },
+        { str: creditStr,              w: A_CRED,  size: 7.5 },
+      ]);
+
+      if (y + rh > PH - MB) {
         doc.addPage();
-        y = doc.y;
-        // Reprint account header + col headers on continuation page
+        y = MT;
         fillRect(doc, ML, y, PW, ACCT_H, '#4A90C4');
         tx(doc, `${account.number}  ${account.name} (suite)`, ML + 6, y + 3, PW - 12,
-          { bold: true, color: C_HEADER_FG, size: 8.5, clipH: ACCT_H });
+          { bold: true, color: C_HEADER_FG, size: 8.5 });
         y += ACCT_H;
         accountColHeaders(doc, y);
         y += COL_H;
         rowIdx = 0;
       }
 
-      if (rowIdx % 2 === 1) fillRect(doc, ML, y, PW, ROW_H, C_ROW_ALT);
-
-      const debitStr  = row.debit  !== null ? fmtChf(row.debit)  : '';
-      const creditStr = row.credit !== null ? fmtChf(row.credit) : '';
+      if (rowIdx % 2 === 1) fillRect(doc, ML, y, PW, rh, C_ROW_ALT);
 
       let x = ML;
-      tx(doc, isoToDisplay(row.date), x, y + 1, A_DATE,  { size: 7.5 }); x += A_DATE;
-      tx(doc, row.description,        x, y + 1, A_LABEL, { size: 7.5 }); x += A_LABEL;
-      tx(doc, row.contra,             x, y + 1, A_CONTR, { size: 7.5, italic: row.isOpeningBalance }); x += A_CONTR;
-      tx(doc, debitStr,               x, y + 1, A_DEBIT, { size: 7.5, align: 'right' }); x += A_DEBIT;
-      tx(doc, creditStr,              x, y + 1, A_CRED,  { size: 7.5, align: 'right' });
+      tx(doc, isoToDisplay(row.date), x, y + 1, A_DATE,  { size: 7.5, multiline: true }); x += A_DATE;
+      tx(doc, row.description,        x, y + 1, A_LABEL, { size: 7.5, multiline: true }); x += A_LABEL;
+      tx(doc, row.contra,             x, y + 1, A_CONTR, { size: 7.5, multiline: true, italic: row.isOpeningBalance }); x += A_CONTR;
+      tx(doc, debitStr,               x, y + 1, A_DEBIT, { size: 7.5, multiline: true, align: 'right' }); x += A_DEBIT;
+      tx(doc, creditStr,              x, y + 1, A_CRED,  { size: 7.5, multiline: true, align: 'right' });
 
       if (row.debit  !== null) totalDebit  += row.debit;
       if (row.credit !== null) totalCredit += row.credit;
 
-      y += ROW_H;
+      y += rh;
       rowIdx++;
     }
 
-    // Totals row for this account
-    ensurePage(doc, ROW_H + 4);
-    if (doc.y + ROW_H > PH - MB) {
-      y = doc.y;
-    }
+    // Ligne de totaux du compte
+    y = ensurePage(doc, y, ROW_H + 4);
     hLine(doc, y, '#888888');
     fillRect(doc, ML, y, PW, ROW_H, '#E8EFF6');
-
     let x = ML + A_DATE + A_LABEL + A_CONTR;
     tx(doc, fmtChf(totalDebit),  x, y + 1, A_DEBIT, { bold: true, size: 7.5, align: 'right' }); x += A_DEBIT;
     tx(doc, fmtChf(totalCredit), x, y + 1, A_CRED,  { bold: true, size: 7.5, align: 'right' });
-    y += ROW_H + 6;  // small gap between accounts
+    y += ROW_H + 6;  // espace entre comptes
 
     doc.y = y;
   }
 }
 
-// ─── Main export function ─────────────────────────────────────────────────────
+// ─── Export principal ─────────────────────────────────────────────────────────
 
 export async function exportFiscalYearToPdf(
   db: Database.Database,
@@ -499,32 +521,31 @@ export async function exportFiscalYearToPdf(
   const todayStr = today.toLocaleDateString('fr-CH',
     { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-  doc.font('Helvetica-Bold').fontSize(18).fillColor(C_HEADER_BG)
+  doc.font(FONT_B).fontSize(18).fillColor(C_HEADER_BG)
     .text('MCY — Moto Club Yvorne', ML, MT + 30, { width: PW, align: 'center' });
   doc.moveDown(0.6);
-  doc.font('Helvetica-Bold').fontSize(13).fillColor('#000000')
+  doc.font(FONT_B).fontSize(13).fillColor('#000000')
     .text(`Rapport de clôture — Exercice ${year}`, { width: PW, align: 'center' });
   doc.moveDown(0.4);
-  doc.font('Helvetica').fontSize(10).fillColor('#555555')
+  doc.font(FONT_R).fontSize(10).fillColor('#555555')
     .text(isClosed ? 'Exercice clôturé' : 'Exercice en cours', { width: PW, align: 'center' });
   doc.moveDown(0.3);
-  doc.font('Helvetica').fontSize(9).fillColor('#777777')
+  doc.font(FONT_R).fontSize(9).fillColor('#777777')
     .text(`Généré le ${todayStr}`, { width: PW, align: 'center' });
 
   hLine(doc, doc.y + 10);
   doc.moveDown(2);
 
-  // ── Bilan & Résultat ────────────────────────────────────────────────────
-  doc.font('Helvetica-Bold').fontSize(11).fillColor('#000000')
+  // ── Bilan & Résultat ─────────────────────────────────────────────────────
+  doc.font(FONT_B).fontSize(11).fillColor('#000000')
     .text(`Bilan & Résultat — Exercice ${year}`, ML, doc.y, { width: PW });
   doc.moveDown(0.5);
-
   addBilanSection(doc, accountMap, year);
 
-  // ── Journal général ────────────────────────────────────────────────────
+  // ── Journal général ───────────────────────────────────────────────────────
   addJournalSection(doc, journalRows, year);
 
-  // ── Feuilles de compte ─────────────────────────────────────────────────
+  // ── Grand-livre par compte ────────────────────────────────────────────────
   addAccountsSection(doc, accountMap, entries, year);
 
   doc.end();
