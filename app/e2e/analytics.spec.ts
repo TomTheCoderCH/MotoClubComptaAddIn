@@ -50,10 +50,11 @@ test('affiche ✓ Bilan équilibré après une écriture simple', async ({ windo
 });
 
 test('affiche les recettes d\'un groupe nommé avec le montant correct', async ({ window }) => {
-  // Assigne le groupe "Marché" au compte 330 Événement — Marché Villageois
+  // Le groupe "Marché" est déjà assigné au compte 330 par le seed.
+  // On vérifie tout de même via l'UI que le groupe est bien présent.
   await window.getByRole('button', { name: 'Plan comptable' }).click();
   await expect(window.getByRole('heading', { level: 1, name: 'Plan comptable' })).toBeVisible();
-  // 330 et 430 portent le même nom → cibler la ligne 330 explicitement
+  // 330 et 430 portent le même nom "Marché Villageois" → cibler la ligne 330 explicitement
   await window.getByRole('row', { name: /330/ }).getByRole('button', { name: /Modifier/ }).click();
   await window.getByLabel('Groupe analytique').fill('Marché');
   await window.getByRole('button', { name: 'Enregistrer' }).click();
@@ -72,7 +73,7 @@ test('affiche les recettes d\'un groupe nommé avec le montant correct', async (
   await dialog.getByLabel('Libellé').fill('Recettes Marché');
   await dialog.getByLabel('Compte ligne 1').selectOption({ label: '101 — Raiffeisen' });
   await dialog.getByLabel('Débit ligne 1').fill('500.00');
-  await dialog.getByLabel('Compte ligne 2').selectOption({ label: '330 — Événement — Marché Villageois' });
+  await dialog.getByLabel('Compte ligne 2').selectOption({ label: '330 — Marché Villageois' });
   await dialog.getByLabel('Crédit ligne 2').fill('500.00');
   await window.getByRole('button', { name: "Enregistrer l'écriture" }).click();
   await expect(window.getByRole('dialog')).not.toBeVisible();

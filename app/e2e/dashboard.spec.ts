@@ -39,7 +39,7 @@ test('panel Twint affiche les données réelles après saisie d\'encaissements',
   await dialog.getByLabel('Libellé').fill('Encaissement Twint');
   await dialog.getByLabel('Compte ligne 1').selectOption({ label: '102 — Twint' });
   await dialog.getByLabel('Débit ligne 1').fill('100.00');
-  await dialog.getByLabel('Compte ligne 2').selectOption({ label: '310 — Vente boissons — local' });
+  await dialog.getByLabel('Compte ligne 2').selectOption({ label: '310 — Vente boissons (local)' });
   await dialog.getByLabel('Crédit ligne 2').fill('100.00');
   await window.getByRole('button', { name: "Enregistrer l'écriture" }).click();
   await expect(window.getByRole('dialog')).not.toBeVisible();
