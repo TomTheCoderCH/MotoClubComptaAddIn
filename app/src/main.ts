@@ -2,6 +2,7 @@ import { app, BrowserWindow, dialog, session } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
 import started from 'electron-squirrel-startup';
+import { updateElectronApp } from 'update-electron-app';
 import { openDatabase, getDb, getDbDir, isDbOpen, hasDbChanges } from './db';
 import { registerIpcHandlers } from './ipc-handlers';
 import { performBackup, pruneBackups } from './backup';
@@ -20,6 +21,12 @@ if (process.env['NODE_ENV'] === 'test' && process.env['MCY_TEST_USERDATA']) {
 app.commandLine.appendSwitch('lang', 'fr-CH');
 
 if (started) app.quit();
+
+// Vérifie les nouvelles versions sur GitHub Releases et installe silencieusement.
+// No-op en mode développement (app.isPackaged = false) et pendant les tests E2E.
+if (app.isPackaged) {
+  updateElectronApp();
+}
 
 let isQuitting = false;
 
