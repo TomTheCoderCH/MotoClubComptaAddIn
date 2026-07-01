@@ -42,11 +42,17 @@ function fontMono(bold?: boolean): string {
 
 // ─── Formatage des montants ───────────────────────────────────────────────────
 //
-// toLocaleString('fr-CH') produit l'espace fine insécable U+202F comme
-// séparateur de milliers — supporté par les polices TTF embarquées.
+// Notation comptable suisse traditionnelle : apostrophe ' comme séparateur
+// de milliers, virgule comme séparateur décimal (ex. 1'494,26).
+// On n'utilise pas toLocaleString('fr-CH') car il produit U+202F (espace fine
+// insécable) absent de JetBrains Mono — s'afficherait en boîte.
 
 function fmtChf(n: number): string {
-  return n.toLocaleString('fr-CH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const abs  = Math.abs(n);
+  const sign = n < 0 ? '-' : '';
+  const [intPart, decPart] = abs.toFixed(2).split('.');
+  const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, "'");
+  return `${sign}${grouped},${decPart}`;
 }
 
 function isoToDisplay(iso: string): string {
