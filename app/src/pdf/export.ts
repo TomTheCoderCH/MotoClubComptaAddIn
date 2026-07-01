@@ -2,18 +2,17 @@ import PDFDocument from 'pdfkit';
 import fs from 'node:fs';
 import type Database from 'better-sqlite3';
 import {
-  loadExportData, computeSolde, groupJournalEntries, centsToCHF,
-  type AccountData, type JournalRow,
+  loadExportData, computeSolde, groupJournalEntries, buildAccountLedger, centsToCHF,
+  type AccountData, type EntryDetail, type JournalRow,
 } from '../data/export-data';
 
 // ─── Layout constants ─────────────────────────────────────────────────────────
 
-const ML = 40;            // margin left
-const MR = 40;            // margin right
-const MT = 40;            // margin top
-const MB = 40;            // margin bottom
-const PW = 515.28;        // usable width (595.28 − 80)
-const PH = 841.89;        // page height A4
+const ML = 40;    // margin left & right
+const MT = 40;    // margin top
+const MB = 40;    // margin bottom
+const PW = 515.28; // usable width (595.28 − 2 × 40)
+const PH = 841.89; // page height A4
 
 // ─── Colours ─────────────────────────────────────────────────────────────────
 
@@ -30,11 +29,21 @@ const C_LINE       = '#AAAAAA';
 const ROW_H  = 13;   // data row
 const HEAD_H = 16;   // section header bar
 const COL_H  = 13;   // column header row
+const ACCT_H = 14;   // per-account header bar
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Number formatter ────────────────────────────────────────────────────────
+//
+// toLocaleString('fr-CH') peut produire   (espace fine insécable) comme
+// séparateur de milliers selon la version ICU. Ce caractère n'est pas dans
+// l'encodage WinAnsi de Helvetica (PDFKit) et s'affiche comme '/'.
+// On utilise donc un formateur manuel avec l'apostrophe ASCII standard.
 
 function fmtChf(n: number): string {
-  return n.toLocaleString('fr-CH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const abs  = Math.abs(n);
+  const sign = n < 0 ? '-' : '';
+  const [int, dec] = abs.toFixed(2).split('.');
+  const grouped = int.replace(/\B(?=(\d{3})+(?!\d))/g, "'");
+  return `${sign}${grouped}.${dec}`;
 }
 
 function isoToDisplay(iso: string): string {
@@ -53,26 +62,57 @@ function hLine(doc: PDFKit.PDFDocument, y: number, color = C_LINE): void {
     .moveTo(ML, y).lineTo(ML + PW, y).stroke().restore();
 }
 
+// tx — texte dans une cellule avec clip strict pour éviter tout débordement.
+// Le clip sur (x, y, w, h) garantit qu'aucun texte ne sort de la cellule,
+// même si PDFKit décide de wrapper malgré lineBreak:false.
 function tx(
   doc: PDFKit.PDFDocument,
   str: string,
   x: number, y: number, w: number,
-  opts: { bold?: boolean; italic?: boolean; size?: number; color?: string; align?: PDFKit.Align } = {},
+  opts: {
+    bold?: boolean; italic?: boolean;
+    size?: number; color?: string; align?: PDFKit.Align;
+    clipH?: number;  // hauteur de clip — par défaut ROW_H
+  } = {},
 ): void {
-  doc.save()
-    .font(opts.bold ? 'Helvetica-Bold' : opts.italic ? 'Helvetica-Oblique' : 'Helvetica')
+  if (!str) return;
+  const h = opts.clipH ?? ROW_H;
+  doc.save();
+  doc.rect(x, y, w, h).clip();
+  doc.font(opts.bold ? 'Helvetica-Bold' : opts.italic ? 'Helvetica-Oblique' : 'Helvetica')
     .fontSize(opts.size ?? 8)
     .fillColor(opts.color ?? '#000000')
-    .text(str, x + 2, y + 2, { width: Math.max(w - 4, 1), align: opts.align ?? 'left',
-      lineBreak: false, ellipsis: true })
-    .restore();
+    .text(str, x + 2, y + 2, {
+      width:     Math.max(w - 4, 1),
+      align:     opts.align ?? 'left',
+      lineBreak: false,
+      ellipsis:  true,
+    });
+  doc.restore();
+}
+
+// ─── Page management ─────────────────────────────────────────────────────────
+
+function ensurePage(doc: PDFKit.PDFDocument, need: number): boolean {
+  if (doc.y + need > PH - MB) {
+    doc.addPage();
+    return true;
+  }
+  return false;
+}
+
+function sectionHeaderBar(doc: PDFKit.PDFDocument, label: string, y: number): number {
+  fillRect(doc, ML, y, PW, HEAD_H, C_HEADER_BG);
+  tx(doc, label, ML + 4, y + 3, PW - 8,
+    { bold: true, color: C_HEADER_FG, size: 9, clipH: HEAD_H });
+  return y + HEAD_H;
 }
 
 // ─── Two-column bilan layout ──────────────────────────────────────────────────
 
-// Each half: N°(30) + Compte(157) + Solde(60) = 247 ; gutter = 21
+// Each half: N°(30) + Compte(157) + Solde(60) = 247 ; gutter = 21.28
 const COL_W = 247;
-const GAP   = 21;
+const GAP   = Math.round(PW - 2 * COL_W);  // = 21
 const LX    = ML;
 const RX    = ML + COL_W + GAP;
 const C_NUM  = 30;
@@ -82,10 +122,11 @@ const C_AMT  = 60;
 function bilanColHeaders(doc: PDFKit.PDFDocument, y: number): void {
   fillRect(doc, LX, y, COL_W, COL_H, C_COLS_BG);
   fillRect(doc, RX, y, COL_W, COL_H, C_COLS_BG);
-  for (const baseX of [LX, RX]) {
-    tx(doc, 'N°',        baseX,                   y + 2, C_NUM,  { bold: true, size: 7.5 });
-    tx(doc, 'Compte',    baseX + C_NUM,            y + 2, C_NAME, { bold: true, size: 7.5 });
-    tx(doc, 'Solde CHF', baseX + C_NUM + C_NAME,   y + 2, C_AMT,  { bold: true, size: 7.5, align: 'right' });
+  for (const bx of [LX, RX]) {
+    tx(doc, 'N°',        bx,                 y + 1, C_NUM,  { bold: true, size: 7.5, clipH: COL_H });
+    tx(doc, 'Compte',    bx + C_NUM,          y + 1, C_NAME, { bold: true, size: 7.5, clipH: COL_H });
+    tx(doc, 'Solde CHF', bx + C_NUM + C_NAME, y + 1, C_AMT,
+      { bold: true, size: 7.5, align: 'right', clipH: COL_H });
   }
 }
 
@@ -101,8 +142,10 @@ function bilanDataRow(
 
   const drawSide = (bx: number, item: typeof left) => {
     if (!item) return;
-    tx(doc, item.num ?? '',   bx,                 y + 1, C_NUM,  { bold: item.bold, size: 7.5 });
-    tx(doc, item.name,        bx + C_NUM,          y + 1, C_NAME, { bold: item.bold, size: 7.5 });
+    tx(doc, item.num ?? '',    bx,                 y + 1, C_NUM,
+      { bold: item.bold, size: 7.5 });
+    tx(doc, item.name,         bx + C_NUM,          y + 1, C_NAME,
+      { bold: item.bold, size: 7.5 });
     if (item.val !== null) {
       tx(doc, fmtChf(item.val), bx + C_NUM + C_NAME, y + 1, C_AMT,
         { bold: item.bold, size: 7.5, align: 'right',
@@ -125,7 +168,6 @@ const J_AMT   = 80;
 
 function journalColHeaders(doc: PDFKit.PDFDocument, y: number): void {
   fillRect(doc, ML, y, PW, COL_H, C_COLS_BG);
-  let x = ML;
   const cols: Array<[string, number, PDFKit.Align]> = [
     ['Date',          J_DATE,  'left'],
     ['Pièce',         J_PIECE, 'left'],
@@ -134,26 +176,36 @@ function journalColHeaders(doc: PDFKit.PDFDocument, y: number): void {
     ['Crédit compte', J_CRED,  'left'],
     ['Montant CHF',   J_AMT,   'right'],
   ];
+  let x = ML;
   for (const [label, w, align] of cols) {
-    tx(doc, label, x, y + 1, w, { bold: true, size: 7.5, align });
+    tx(doc, label, x, y + 1, w, { bold: true, size: 7.5, align, clipH: COL_H });
     x += w;
   }
 }
 
-// ─── Section builder helpers ──────────────────────────────────────────────────
+// ─── Account ledger column layout ─────────────────────────────────────────────
 
-function sectionHeaderBar(doc: PDFKit.PDFDocument, label: string, y: number): number {
-  fillRect(doc, ML, y, PW, HEAD_H, C_HEADER_BG);
-  tx(doc, label, ML + 4, y + 3, PW - 8, { bold: true, color: C_HEADER_FG, size: 9 });
-  return y + HEAD_H;
-}
+// Total: 50+170+130+83+82 = 515 = PW
+const A_DATE  = 50;
+const A_LABEL = 170;
+const A_CONTR = 130;
+const A_DEBIT = 83;
+const A_CRED  = 82;
 
-function ensurePage(doc: PDFKit.PDFDocument, need: number): boolean {
-  if (doc.y + need > PH - MB) {
-    doc.addPage();
-    return true;
+function accountColHeaders(doc: PDFKit.PDFDocument, y: number): void {
+  fillRect(doc, ML, y, PW, COL_H, C_COLS_BG);
+  const cols: Array<[string, number, PDFKit.Align]> = [
+    ['Date',         A_DATE,  'left'],
+    ['Libellé',      A_LABEL, 'left'],
+    ['Contrepartie', A_CONTR, 'left'],
+    ['Débit CHF',    A_DEBIT, 'right'],
+    ['Crédit CHF',   A_CRED,  'right'],
+  ];
+  let x = ML;
+  for (const [label, w, align] of cols) {
+    tx(doc, label, x, y + 1, w, { bold: true, size: 7.5, align, clipH: COL_H });
+    x += w;
   }
-  return false;
 }
 
 // ─── Bilan & Résultat section ─────────────────────────────────────────────────
@@ -180,9 +232,11 @@ function addBilanSection(
   let y = doc.y;
 
   fillRect(doc, LX, y, COL_W, HEAD_H, C_HEADER_BG);
-  tx(doc, 'ACTIF', LX + 4, y + 4, COL_W - 8, { bold: true, color: C_HEADER_FG, size: 8 });
+  tx(doc, 'ACTIF', LX + 4, y + 4, COL_W - 8,
+    { bold: true, color: C_HEADER_FG, size: 8, clipH: HEAD_H });
   fillRect(doc, RX, y, COL_W, HEAD_H, C_HEADER_BG);
-  tx(doc, 'PASSIF & FONDS PROPRES', RX + 4, y + 4, COL_W - 8, { bold: true, color: C_HEADER_FG, size: 8 });
+  tx(doc, 'PASSIF & FONDS PROPRES', RX + 4, y + 4, COL_W - 8,
+    { bold: true, color: C_HEADER_FG, size: 8, clipH: HEAD_H });
   y += HEAD_H;
   bilanColHeaders(doc, y);
   y += COL_H;
@@ -199,13 +253,12 @@ function addBilanSection(
       bilanColHeaders(doc, y);
       y += COL_H;
     }
-    const la = i < actif.length       ? { num: actif[i].number,     name: actif[i].name,     val: computeSolde(actif[i]) } : null;
-    const rp = i < rightPassif.length ? { num: rightPassif[i].num,  name: rightPassif[i].name, val: rightPassif[i].val }    : null;
+    const la = i < actif.length       ? { num: actif[i].number,      name: actif[i].name,      val: computeSolde(actif[i]) }   : null;
+    const rp = i < rightPassif.length ? { num: rightPassif[i].num,   name: rightPassif[i].name, val: rightPassif[i].val }      : null;
     bilanDataRow(doc, y, i % 2 === 1, la, rp);
     y += ROW_H;
   }
 
-  // Totals
   if (ensurePage(doc, ROW_H + 20)) { y = doc.y; }
   bilanDataRow(doc, y, false,
     { name: 'Total actif',       val: totalActif,    bold: true },
@@ -215,11 +268,11 @@ function addBilanSection(
   y += ROW_H + 4;
 
   // Balance check
-  const diff = Math.abs(totalActif - totalPassifFP);
+  const diff   = Math.abs(totalActif - totalPassifFP);
   const balMsg = diff < 0.02 ? 'Bilan équilibré ✓' : `Écart : CHF ${fmtChf(diff)}`;
-  tx(doc, balMsg, ML, y, PW, { italic: true, color: diff < 0.02 ? C_GREEN : C_RED, size: 8 });
+  tx(doc, balMsg, ML, y, PW,
+    { italic: true, color: diff < 0.02 ? C_GREEN : C_RED, size: 8, clipH: 14 });
   y += 16;
-
   doc.y = y + 8;
 
   // ── COMPTE DE RÉSULTAT ─────────────────────────────────────────────────────
@@ -227,17 +280,20 @@ function addBilanSection(
   y = doc.y;
 
   fillRect(doc, LX, y, COL_W, HEAD_H, C_HEADER_BG);
-  tx(doc, 'PRODUITS', LX + 4, y + 4, COL_W - 8, { bold: true, color: C_HEADER_FG, size: 8 });
+  tx(doc, 'PRODUITS', LX + 4, y + 4, COL_W - 8,
+    { bold: true, color: C_HEADER_FG, size: 8, clipH: HEAD_H });
   fillRect(doc, RX, y, COL_W, HEAD_H, C_HEADER_BG);
-  tx(doc, 'CHARGES',  RX + 4, y + 4, COL_W - 8, { bold: true, color: C_HEADER_FG, size: 8 });
+  tx(doc, 'CHARGES',  RX + 4, y + 4, COL_W - 8,
+    { bold: true, color: C_HEADER_FG, size: 8, clipH: HEAD_H });
   y += HEAD_H;
 
   fillRect(doc, LX, y, COL_W, COL_H, C_COLS_BG);
   fillRect(doc, RX, y, COL_W, COL_H, C_COLS_BG);
   for (const bx of [LX, RX]) {
-    tx(doc, 'N°',         bx,                 y + 2, C_NUM,  { bold: true, size: 7.5 });
-    tx(doc, 'Compte',     bx + C_NUM,          y + 2, C_NAME, { bold: true, size: 7.5 });
-    tx(doc, 'Total CHF',  bx + C_NUM + C_NAME, y + 2, C_AMT,  { bold: true, size: 7.5, align: 'right' });
+    tx(doc, 'N°',        bx,                 y + 1, C_NUM,  { bold: true, size: 7.5, clipH: COL_H });
+    tx(doc, 'Compte',    bx + C_NUM,          y + 1, C_NAME, { bold: true, size: 7.5, clipH: COL_H });
+    tx(doc, 'Total CHF', bx + C_NUM + C_NAME, y + 1, C_AMT,
+      { bold: true, size: 7.5, align: 'right', clipH: COL_H });
   }
   y += COL_H;
 
@@ -260,16 +316,17 @@ function addBilanSection(
 
   // Résultat net
   const netLabel = netResult >= 0 ? 'Bénéfice net' : 'Perte nette';
-  tx(doc, `${netLabel} (Produits − Charges)`, ML, y, PW - C_AMT - 4, { bold: true, size: 8 });
+  tx(doc, `${netLabel} (Produits − Charges)`, ML, y, PW - C_AMT - 4,
+    { bold: true, size: 8, clipH: 14 });
   tx(doc, fmtChf(netResult), ML + PW - C_AMT, y, C_AMT,
-    { bold: true, size: 8, align: 'right', color: netResult >= 0 ? C_GREEN : C_RED });
+    { bold: true, size: 8, align: 'right',
+      color: netResult >= 0 ? C_GREEN : C_RED, clipH: 14 });
   hLine(doc, y, '#444444');
   y += 14;
-
   doc.y = y;
 }
 
-// ─── Journal section ──────────────────────────────────────────────────────────
+// ─── Journal général ──────────────────────────────────────────────────────────
 
 function addJournalSection(doc: PDFKit.PDFDocument, journalRows: JournalRow[], year: number): void {
   doc.addPage();
@@ -303,8 +360,8 @@ function addJournalSection(doc: PDFKit.PDFDocument, journalRows: JournalRow[], y
         const ca  = i < entry.credits.length ? entry.credits[i] : entry.credits[entry.credits.length - 1];
         const amt = (i < entry.debits.length ? entry.debits[i] : entry.credits[i])?.amount ?? 0;
         lines.push({ date: displayDate, piece: entry.piece ?? '', desc: entry.description,
-          debit: da ? `${da.accountNumber} ${da.account}` : '',
-          credit: ca ? `${ca.accountNumber} ${ca.account}` : '',
+          debit:  da ? `${da.accountNumber} ${da.account}`  : '',
+          credit: ca ? `${ca.accountNumber} ${ca.account}`  : '',
           amt: centsToCHF(amt) });
       }
     }
@@ -321,12 +378,12 @@ function addJournalSection(doc: PDFKit.PDFDocument, journalRows: JournalRow[], y
       if (rowIndex % 2 === 1) fillRect(doc, ML, y, PW, ROW_H, C_ROW_ALT);
 
       let x = ML;
-      tx(doc, lr.date,         x, y + 1, J_DATE  - 2, { size: 7.5 }); x += J_DATE;
-      tx(doc, lr.piece,        x, y + 1, J_PIECE - 2, { size: 7.5 }); x += J_PIECE;
-      tx(doc, lr.desc,         x, y + 1, J_LABEL - 2, { size: 7.5 }); x += J_LABEL;
-      tx(doc, lr.debit,        x, y + 1, J_DEBIT - 2, { size: 7.5 }); x += J_DEBIT;
-      tx(doc, lr.credit,       x, y + 1, J_CRED  - 2, { size: 7.5 }); x += J_CRED;
-      tx(doc, fmtChf(lr.amt),  x, y + 1, J_AMT   - 2, { size: 7.5, align: 'right' });
+      tx(doc, lr.date,        x, y + 1, J_DATE,  { size: 7.5 }); x += J_DATE;
+      tx(doc, lr.piece,       x, y + 1, J_PIECE, { size: 7.5 }); x += J_PIECE;
+      tx(doc, lr.desc,        x, y + 1, J_LABEL, { size: 7.5 }); x += J_LABEL;
+      tx(doc, lr.debit,       x, y + 1, J_DEBIT, { size: 7.5 }); x += J_DEBIT;
+      tx(doc, lr.credit,      x, y + 1, J_CRED,  { size: 7.5 }); x += J_CRED;
+      tx(doc, fmtChf(lr.amt), x, y + 1, J_AMT,   { size: 7.5, align: 'right' });
 
       y += ROW_H;
       rowIndex++;
@@ -337,6 +394,87 @@ function addJournalSection(doc: PDFKit.PDFDocument, journalRows: JournalRow[], y
   doc.y = y + 6;
 }
 
+// ─── Feuilles de compte (grand-livre par compte) ──────────────────────────────
+
+function addAccountsSection(
+  doc: PDFKit.PDFDocument,
+  accountMap: Map<string, AccountData>,
+  entries: EntryDetail[],
+  year: number,
+): void {
+  doc.addPage();
+
+  for (const account of accountMap.values()) {
+    const ledgerRows = buildAccountLedger(entries, account.number);
+    if (ledgerRows.length === 0) continue;
+
+    // Ensure enough room for account header + column header + at least one row
+    ensurePage(doc, ACCT_H + COL_H + ROW_H + 4);
+    let y = doc.y;
+
+    // Account header bar (lighter shade to differentiate from section headers)
+    fillRect(doc, ML, y, PW, ACCT_H, '#4A90C4');
+    tx(doc, `${account.number}  ${account.name}`, ML + 6, y + 3, PW - 12,
+      { bold: true, color: C_HEADER_FG, size: 8.5, clipH: ACCT_H });
+    y += ACCT_H;
+
+    accountColHeaders(doc, y);
+    y += COL_H;
+
+    let totalDebit  = 0;
+    let totalCredit = 0;
+    let rowIdx      = 0;
+
+    for (const row of ledgerRows) {
+      if (doc.y + ROW_H > PH - MB) {
+        doc.addPage();
+        y = doc.y;
+        // Reprint account header + col headers on continuation page
+        fillRect(doc, ML, y, PW, ACCT_H, '#4A90C4');
+        tx(doc, `${account.number}  ${account.name} (suite)`, ML + 6, y + 3, PW - 12,
+          { bold: true, color: C_HEADER_FG, size: 8.5, clipH: ACCT_H });
+        y += ACCT_H;
+        accountColHeaders(doc, y);
+        y += COL_H;
+        rowIdx = 0;
+      }
+
+      if (rowIdx % 2 === 1) fillRect(doc, ML, y, PW, ROW_H, C_ROW_ALT);
+
+      const debitStr  = row.debit  !== null ? fmtChf(row.debit)  : '';
+      const creditStr = row.credit !== null ? fmtChf(row.credit) : '';
+
+      let x = ML;
+      tx(doc, isoToDisplay(row.date), x, y + 1, A_DATE,  { size: 7.5 }); x += A_DATE;
+      tx(doc, row.description,        x, y + 1, A_LABEL, { size: 7.5 }); x += A_LABEL;
+      tx(doc, row.contra,             x, y + 1, A_CONTR, { size: 7.5, italic: row.isOpeningBalance }); x += A_CONTR;
+      tx(doc, debitStr,               x, y + 1, A_DEBIT, { size: 7.5, align: 'right' }); x += A_DEBIT;
+      tx(doc, creditStr,              x, y + 1, A_CRED,  { size: 7.5, align: 'right' });
+
+      if (row.debit  !== null) totalDebit  += row.debit;
+      if (row.credit !== null) totalCredit += row.credit;
+
+      y += ROW_H;
+      rowIdx++;
+    }
+
+    // Totals row for this account
+    ensurePage(doc, ROW_H + 4);
+    if (doc.y + ROW_H > PH - MB) {
+      y = doc.y;
+    }
+    hLine(doc, y, '#888888');
+    fillRect(doc, ML, y, PW, ROW_H, '#E8EFF6');
+
+    let x = ML + A_DATE + A_LABEL + A_CONTR;
+    tx(doc, fmtChf(totalDebit),  x, y + 1, A_DEBIT, { bold: true, size: 7.5, align: 'right' }); x += A_DEBIT;
+    tx(doc, fmtChf(totalCredit), x, y + 1, A_CRED,  { bold: true, size: 7.5, align: 'right' });
+    y += ROW_H + 6;  // small gap between accounts
+
+    doc.y = y;
+  }
+}
+
 // ─── Main export function ─────────────────────────────────────────────────────
 
 export async function exportFiscalYearToPdf(
@@ -345,11 +483,11 @@ export async function exportFiscalYearToPdf(
   outputPath: string,
 ): Promise<void> {
   const data = loadExportData(db, fiscalYearId);
-  const { year, isClosed, accountMap, journalRows } = data;
+  const { year, isClosed, accountMap, journalRows, entries } = data;
 
   const doc = new PDFDocument({
     size:    'A4',
-    margins: { top: MT, bottom: MB, left: ML, right: MR },
+    margins: { top: MT, bottom: MB, left: ML, right: ML },
     info:    { Title: `MCY Compta — Exercice ${year}`, Author: 'MCY Compta' },
   });
 
@@ -357,7 +495,7 @@ export async function exportFiscalYearToPdf(
   doc.pipe(stream);
 
   // ── Page de couverture ───────────────────────────────────────────────────
-  const today = new Date();
+  const today    = new Date();
   const todayStr = today.toLocaleDateString('fr-CH',
     { day: '2-digit', month: '2-digit', year: 'numeric' });
 
@@ -376,7 +514,7 @@ export async function exportFiscalYearToPdf(
   hLine(doc, doc.y + 10);
   doc.moveDown(2);
 
-  // ── Titre Bilan & Résultat ────────────────────────────────────────────────
+  // ── Bilan & Résultat ────────────────────────────────────────────────────
   doc.font('Helvetica-Bold').fontSize(11).fillColor('#000000')
     .text(`Bilan & Résultat — Exercice ${year}`, ML, doc.y, { width: PW });
   doc.moveDown(0.5);
@@ -385,6 +523,9 @@ export async function exportFiscalYearToPdf(
 
   // ── Journal général ────────────────────────────────────────────────────
   addJournalSection(doc, journalRows, year);
+
+  // ── Feuilles de compte ─────────────────────────────────────────────────
+  addAccountsSection(doc, accountMap, entries, year);
 
   doc.end();
 
