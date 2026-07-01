@@ -12,6 +12,9 @@ const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
     name: 'MCYCompta',
+    // Polices Inter embarquées — copiées dans resources/fonts/ à côté de l'asar.
+    // Accessibles via process.resourcesPath en prod, app.getAppPath()/resources en dev.
+    extraResources: [{ from: 'resources/fonts/', to: 'fonts/' }],
     executableName: 'mcy-compta',
     win32metadata: {
       CompanyName: 'MCY — Moto Club Yvorne',

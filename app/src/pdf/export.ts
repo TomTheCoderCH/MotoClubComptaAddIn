@@ -1,33 +1,34 @@
 import PDFDocument from 'pdfkit';
 import fs from 'node:fs';
 import path from 'node:path';
+import { app } from 'electron';
 import type Database from 'better-sqlite3';
 import {
   loadExportData, computeSolde, groupJournalEntries, buildAccountLedger, centsToCHF,
   type AccountData, type EntryDetail, type JournalRow,
 } from '../data/export-data';
 
-// ─── Polices ──────────────────────────────────────────────────────────────────
+// ─── Polices Inter embarquées ─────────────────────────────────────────────────
 //
-// On embarque Arial (TTF Windows) plutôt que d'utiliser Helvetica intégré.
-// Helvetica utilise l'encodage WinAnsi qui ne contient pas U+202F (espace
-// fine insécable), produit par toLocaleString('fr-CH') comme séparateur de
-// milliers — ce caractère s'affichait comme '/'.  Les polices TTF embarquées
-// utilisent un CIDFont Unicode qui couvre tous les caractères.
+// Inter (SIL OFL 1.1) — même famille que l'UI de l'application, couvre
+// Unicode complet dont U+202F (espace fine insécable, séparateur fr-CH).
 //
-// Arial est présent sur tout Windows depuis XP.
+// Chemin résolu à l'exécution pour fonctionner en dev et en production
+// packagée cross-platform (Windows / macOS / Linux) :
+//   dev  → <app.getAppPath()>/resources/fonts/
+//   prod → <process.resourcesPath>/fonts/    (extraResources dans forge.config.ts)
 
-const FONTS_DIR = path.join(process.env['WINDIR'] ?? 'C:\\Windows', 'Fonts');
-const FONT_R  = path.join(FONTS_DIR, 'arial.ttf');
-const FONT_B  = path.join(FONTS_DIR, 'arialbd.ttf');
-const FONT_I  = path.join(FONTS_DIR, 'ariali.ttf');
-const FONT_BI = path.join(FONTS_DIR, 'arialbi.ttf');
+function fontsDir(): string {
+  return app.isPackaged
+    ? path.join(process.resourcesPath, 'fonts')
+    : path.join(app.getAppPath(), 'resources', 'fonts');
+}
 
 function font(bold?: boolean, italic?: boolean): string {
-  if (bold && italic) return FONT_BI;
-  if (bold)           return FONT_B;
-  if (italic)         return FONT_I;
-  return FONT_R;
+  if (bold && italic) return path.join(fontsDir(), 'Inter-BoldItalic.ttf');
+  if (bold)           return path.join(fontsDir(), 'Inter-Bold.ttf');
+  if (italic)         return path.join(fontsDir(), 'Inter-Italic.ttf');
+  return path.join(fontsDir(), 'Inter-Regular.ttf');
 }
 
 // ─── Formatage des montants ───────────────────────────────────────────────────
