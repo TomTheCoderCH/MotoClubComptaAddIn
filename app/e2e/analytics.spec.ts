@@ -48,3 +48,39 @@ test('affiche ✓ Bilan équilibré après une écriture simple', async ({ windo
 
   await expect(window.getByText('✓ Bilan équilibré')).toBeVisible();
 });
+
+test('affiche les recettes d\'un groupe nommé avec le montant correct', async ({ window }) => {
+  // Assigne le groupe "Marché" au compte 330 Événement — Marché Villageois
+  await window.getByRole('button', { name: 'Plan comptable' }).click();
+  await expect(window.getByRole('heading', { level: 1, name: 'Plan comptable' })).toBeVisible();
+  // 330 et 430 portent le même nom → cibler la ligne 330 explicitement
+  await window.getByRole('row', { name: /330/ }).getByRole('button', { name: /Modifier/ }).click();
+  await window.getByLabel('Groupe analytique').fill('Marché');
+  await window.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(window.getByRole('dialog')).not.toBeVisible();
+
+  // Crée un exercice et une écriture : D 101 500 / C 330 500 (recette Marché)
+  await window.getByRole('button', { name: 'Exercices' }).click();
+  await window.getByLabel('Année').fill('2025');
+  await window.getByRole('button', { name: /Créer l'exercice 2025/ }).click();
+  await expect(window.getByRole('cell', { name: '2025', exact: true })).toBeVisible();
+
+  await window.getByRole('button', { name: 'Journal' }).click();
+  await window.getByRole('button', { name: /Nouvelle écriture/ }).click();
+  const dialog = window.getByRole('dialog');
+  await dialog.getByLabel('Date').fill('2025-06-01');
+  await dialog.getByLabel('Libellé').fill('Recettes Marché');
+  await dialog.getByLabel('Compte ligne 1').selectOption({ label: '101 — Raiffeisen' });
+  await dialog.getByLabel('Débit ligne 1').fill('500.00');
+  await dialog.getByLabel('Compte ligne 2').selectOption({ label: '330 — Événement — Marché Villageois' });
+  await dialog.getByLabel('Crédit ligne 2').fill('500.00');
+  await window.getByRole('button', { name: "Enregistrer l'écriture" }).click();
+  await expect(window.getByRole('dialog')).not.toBeVisible();
+
+  // Le groupe "Marché" apparaît avec 500.00 de recettes dans la page Analytique
+  await window.getByRole('button', { name: 'Analytique' }).click();
+  await expect(window.getByRole('heading', { level: 1, name: 'Analytique' })).toBeVisible();
+  const groupRow = window.getByRole('row').filter({ hasText: 'Marché' });
+  await expect(groupRow).toBeVisible();
+  await expect(groupRow.getByRole('cell', { name: '500.00' }).first()).toBeVisible();
+});

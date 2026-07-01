@@ -520,7 +520,9 @@ app/
 
 - [x] Tests E2E étendus — 32 tests (14 nouveaux) : `journal-entry.spec.ts` + 4 tests (modifier, supprimer, filtrer, Ctrl+N) ; `analytics.spec.ts` nouveau (Analytique, Non groupés, Bilan complet, ✓ Bilan équilibré) ; `accounts.spec.ts` nouveau (créer compte, modifier groupe, groupe dans Analytique) ; `help.spec.ts` nouveau (Aide ouvre drawer, Escape ferme drawer, Escape ferme modale journal) — 555 tests Vitest + 32 E2E ; correctif scoping dialog pour getByLabel('Date'/'Libellé') conflictuels avec JournalFilters
 
-#### Couverture E2E actuelle (35 tests)
+- [x] Tests E2E complets — 41 tests (9 nouveaux) : raccourcis clavier (`Entrée`, `Ctrl+S`, `Ctrl+Entrée`), soldes à nouveau (badge "Saisis"), Analytique groupe nommé (`getByRole('row', { name: /330/ })` pour disambiguïser 330 vs 430), Dashboard Twint données réelles, Grand-livre (solde courant progressif, tiret contrepartie solde à nouveau), Paramètres (sections et liste vide) — 555 tests Vitest + 41 E2E
+
+#### Couverture E2E actuelle (41 tests)
 
 | Fichier | Test |
 |---|---|
@@ -537,12 +539,15 @@ app/
 | `analytics.spec.ts` | Affiche la section Non groupés avec des mouvements sur des comptes sans groupe |
 | `analytics.spec.ts` | Affiche le titre Bilan complet |
 | `analytics.spec.ts` | Affiche ✓ Bilan équilibré après une écriture simple |
+| `analytics.spec.ts` | Affiche les recettes d'un groupe nommé avec le montant correct |
 | `dashboard.spec.ts` | Affiche le titre Tableau de bord par défaut |
 | `dashboard.spec.ts` | Affiche les cartes Caisse, Raiffeisen et Résultat après création d'exercice |
 | `dashboard.spec.ts` | Panel Twint affiche message d'absence de mouvement si aucune écriture Twint |
+| `dashboard.spec.ts` | Panel Twint affiche les données réelles après saisie d'encaissements |
 | `fiscal-year.spec.ts` | Crée un exercice et vérifie son statut ouvert |
 | `fiscal-year.spec.ts` | Clôture un exercice vide puis le rouvre |
 | `fiscal-year.spec.ts` | Ne peut pas créer deux fois le même exercice |
+| `fiscal-year.spec.ts` | Saisir les soldes à nouveau affiche le badge Saisis |
 | `fiscal-year.spec.ts` | La clôture avec une écriture affiche un bénéfice |
 | `help.spec.ts` | Le bouton Aide ouvre le drawer d'aide |
 | `help.spec.ts` | Escape ferme le drawer d'aide |
@@ -559,22 +564,22 @@ app/
 | `balance.spec.ts` | Les soldes reflètent les écritures saisies |
 | `balance.spec.ts` | La page Soldes affiche le message d'absence d'exercice |
 | `balance.spec.ts` | Cliquer sur un compte ouvre son grand-livre |
+| `balance.spec.ts` | Le grand-livre affiche le solde courant progressif |
+| `balance.spec.ts` | La contrepartie du solde à nouveau affiche un tiret |
+| `settings.spec.ts` | La page Paramètres affiche les sections et la liste vide des sauvegardes |
 
 #### Non couvert par les E2E (à planifier)
 
 | Fonctionnalité | Scénarios à couvrir |
 |---|---|
-| **Soldes à nouveau** | Saisir les soldes à nouveau après création d'un 2ᵉ exercice |
-| **Analytique** | Affichage P&L par groupe nommé (avec une écriture sur le groupe) |
-| **Paramètres** | Export sauvegarde manuelle ; liste des sauvegardes automatiques |
-| **Dashboard Twint** | Panel Twint avec données réelles (encaissements + frais) |
-| **Grand-livre** | Solde courant progressif (comptes de bilan) ; masquage contreparties sur soldes à nouveau |
+| **Paramètres avancés** | Export sauvegarde manuelle (dialog fichier) ; restauration depuis une sauvegarde |
+| **Journal — raccourcis** | `Ctrl+S` depuis le champ libellé (non-dernier champ) |
 
 #### Prochaines étapes planifiées
 
 - [x] **Packaging / distribution** — `electron-forge make` → `MCYCompta-Setup.exe` (Squirrel.Windows, ~151 MB). Node.js 22 requis (v26 bloque l'extraction zip). Correctif `packagerConfig.ignore` obligatoire : VitePlugin exclut les contenus `node_modules` via `filterFunc`  quand `isModule()=false` ; la fonction `ignore` personnalisée passe `/node_modules` et `/node_modules/*` pour que le Pruner galactus gère seul l'exclusion des devDependencies. `.nvmrc` = `22` dans `app/`.
 - [ ] **Rapport PDF** — générer un PDF de clôture (journal + bilan + compte de résultat) en complément de l'Excel. Plus portable pour archivage officiel et transmission à un comptable externe.
-- [x] **Compléter la couverture E2E — raccourcis clavier** — `Entrée` sur dernier montant ajoute une ligne ; `Ctrl+S` enregistre et ferme ; `Ctrl+Entrée` enregistre et réouvre un formulaire vide — 35 E2E.
+- [x] **Couverture E2E complète** — 41 tests couvrant tous les scénarios principaux (raccourcis, soldes à nouveau, analytique groupe, grand-livre, paramètres, dashboard Twint).
 
 > Note : les données 2025 ont été saisies manuellement dans la DB — la comptabilité réelle est déjà dans SQLite.
 
