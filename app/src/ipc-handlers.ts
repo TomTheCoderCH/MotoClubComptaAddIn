@@ -2,6 +2,7 @@ import { ipcMain, dialog, BrowserWindow } from 'electron';
 import { copyFileSync } from 'node:fs';
 import path from 'node:path';
 import { exportFiscalYearToExcel } from './excel/export';
+import { exportFiscalYearToPdf } from './pdf/export';
 import {
   getAllAccounts,
   getActiveAccounts,
@@ -207,6 +208,28 @@ export function registerIpcHandlers(): void {
 
     try {
       await exportFiscalYearToExcel(getDb(), fiscalYearId, result.filePath);
+      return { path: result.filePath };
+    } catch (e) {
+      return { error: (e as Error).message };
+    }
+  });
+
+  // ─── Export PDF ──────────────────────────────────────────────────────────────
+  ipcMain.handle('pdf:export', async (_e, fiscalYearId: number) => {
+    const fy = getDb()
+      .prepare('SELECT year FROM fiscal_years WHERE id = ?')
+      .get(fiscalYearId) as { year: number } | undefined;
+    if (!fy) throw new Error(`Exercice ${fiscalYearId} introuvable`);
+
+    const result = await dialog.showSaveDialog({
+      title: 'Exporter le rapport PDF',
+      defaultPath: `mcy-compta-${fy.year}.pdf`,
+      filters: [{ name: 'Document PDF', extensions: ['pdf'] }],
+    });
+    if (result.canceled || !result.filePath) return null;
+
+    try {
+      await exportFiscalYearToPdf(getDb(), fiscalYearId, result.filePath);
       return { path: result.filePath };
     } catch (e) {
       return { error: (e as Error).message };

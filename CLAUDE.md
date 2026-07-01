@@ -578,7 +578,7 @@ app/
 #### Prochaines étapes planifiées
 
 - [x] **Packaging / distribution** — `electron-forge make` → `MCYCompta-Setup.exe` (Squirrel.Windows, ~151 MB). Node.js 22 requis (v26 bloque l'extraction zip). Correctif `packagerConfig.ignore` obligatoire : VitePlugin exclut les contenus `node_modules` via `filterFunc`  quand `isModule()=false` ; la fonction `ignore` personnalisée passe `/node_modules` et `/node_modules/*` pour que le Pruner galactus gère seul l'exclusion des devDependencies. `.nvmrc` = `22` dans `app/`.
-- [ ] **Rapport PDF** — générer un PDF de clôture (journal + bilan + compte de résultat) en complément de l'Excel. Plus portable pour archivage officiel et transmission à un comptable externe.
+- [x] **Rapport PDF** — `pdfkit` (externalisé Vite) ; `app/src/pdf/export.ts` ; handler IPC `pdf:export` ; bouton "Exporter PDF" dans FiscalYearsPage ; PDF multi-pages : page de garde, Bilan deux colonnes (Actif/Passif+FP + résultat net coloré), Compte de résultat (Charges/Produits), Journal général avec alternance de couleur par écriture et pagination automatique — 559 tests Vitest.
 - [x] **Couverture E2E complète** — 41 tests couvrant tous les scénarios principaux (raccourcis, soldes à nouveau, analytique groupe, grand-livre, paramètres, dashboard Twint).
 
 > Note : les données 2025 ont été saisies manuellement dans la DB — la comptabilité réelle est déjà dans SQLite.

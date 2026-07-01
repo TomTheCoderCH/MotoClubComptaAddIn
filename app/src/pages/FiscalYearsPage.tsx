@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, ClipboardList, Lock, LockOpen, FileSpreadsheet } from 'lucide-react';
+import { Plus, ClipboardList, Lock, LockOpen, FileSpreadsheet, FileText } from 'lucide-react';
 import type { FiscalYear, OpeningBalanceSuggestion, ClosingPreview } from '../types';
 import OpeningBalanceModal from '../components/OpeningBalanceModal';
 import ClosingModal from '../components/ClosingModal';
@@ -121,6 +121,21 @@ export default function FiscalYearsPage() {
     }
   }
 
+  async function handleExportPdf(y: FiscalYear) {
+    try {
+      const result = await window.api.exportPdf(y.id);
+      if (result === null) {
+        // annulé
+      } else if ('error' in result) {
+        setToast({ msg: result.error, variant: 'error' });
+      } else {
+        setToast({ msg: `PDF exporté : ${result.path}`, variant: 'success' });
+      }
+    } catch (e: unknown) {
+      setToast({ msg: (e as Error).message, variant: 'error' });
+    }
+  }
+
   const yearAlreadyExists = years.some(y => y.year === newYear);
 
   return (
@@ -216,6 +231,13 @@ export default function FiscalYearsPage() {
                       className={styles.btnExport}
                     >
                       <FileSpreadsheet size={13} />Exporter Excel
+                    </button>
+                    {' '}
+                    <button
+                      onClick={() => handleExportPdf(y)}
+                      className={styles.btnExport}
+                    >
+                      <FileText size={13} />Exporter PDF
                     </button>
                   </td>
                 </tr>

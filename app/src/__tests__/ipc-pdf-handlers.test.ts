@@ -58,7 +58,7 @@ vi.mock('../pdf/export', () => ({
 
 import { dialog } from 'electron';
 import { getDb } from '../db';
-import { exportFiscalYearToExcel } from '../excel/export';
+import { exportFiscalYearToPdf } from '../pdf/export';
 import { registerIpcHandlers } from '../ipc-handlers';
 
 beforeEach(() => {
@@ -73,12 +73,12 @@ async function call(channel: string, ...args: unknown[]): Promise<unknown> {
   return fn(null, ...args);
 }
 
-describe('excel:export', () => {
-  it('enregistre le canal excel:export', () => {
-    expect(handlers.has('excel:export')).toBe(true);
+describe('pdf:export', () => {
+  it('enregistre le canal pdf:export', () => {
+    expect(handlers.has('pdf:export')).toBe(true);
   });
 
-  it('retourne null si l\'utilisateur annule le dialog', async () => {
+  it("retourne null si l'utilisateur annule le dialog", async () => {
     vi.mocked(dialog.showSaveDialog).mockResolvedValue({
       canceled: true,
       filePath: undefined,
@@ -87,43 +87,43 @@ describe('excel:export', () => {
       prepare: vi.fn().mockReturnValue({ get: vi.fn().mockReturnValue({ year: 2025 }) }),
     };
     vi.mocked(getDb).mockReturnValue(fakeDb as any);
-    const result = await call('excel:export', 1);
+    const result = await call('pdf:export', 1);
     expect(result).toBeNull();
-    expect(exportFiscalYearToExcel).not.toHaveBeenCalled();
+    expect(exportFiscalYearToPdf).not.toHaveBeenCalled();
   });
 
-  it('retourne { path } si l\'export réussit', async () => {
+  it("retourne { path } si l'export réussit", async () => {
     vi.mocked(dialog.showSaveDialog).mockResolvedValue({
       canceled: false,
-      filePath: 'C:/tmp/mcy-compta-2025.xlsx',
+      filePath: 'C:/tmp/mcy-compta-2025.pdf',
     } as Electron.SaveDialogReturnValue);
     const fakeDb = {
       prepare: vi.fn().mockReturnValue({ get: vi.fn().mockReturnValue({ year: 2025 }) }),
     };
     vi.mocked(getDb).mockReturnValue(fakeDb as any);
-    vi.mocked(exportFiscalYearToExcel).mockResolvedValue(undefined);
+    vi.mocked(exportFiscalYearToPdf).mockResolvedValue(undefined);
 
-    const result = await call('excel:export', 1);
-    expect(result).toEqual({ path: 'C:/tmp/mcy-compta-2025.xlsx' });
-    expect(exportFiscalYearToExcel).toHaveBeenCalledWith(
+    const result = await call('pdf:export', 1);
+    expect(result).toEqual({ path: 'C:/tmp/mcy-compta-2025.pdf' });
+    expect(exportFiscalYearToPdf).toHaveBeenCalledWith(
       fakeDb,
       1,
-      'C:/tmp/mcy-compta-2025.xlsx',
+      'C:/tmp/mcy-compta-2025.pdf',
     );
   });
 
-  it('retourne { error } si exportFiscalYearToExcel lève une exception', async () => {
+  it('retourne { error } si exportFiscalYearToPdf lève une exception', async () => {
     vi.mocked(dialog.showSaveDialog).mockResolvedValue({
       canceled: false,
-      filePath: 'C:/tmp/mcy-compta-2025.xlsx',
+      filePath: 'C:/tmp/mcy-compta-2025.pdf',
     } as Electron.SaveDialogReturnValue);
     const fakeDb = {
       prepare: vi.fn().mockReturnValue({ get: vi.fn().mockReturnValue({ year: 2025 }) }),
     };
     vi.mocked(getDb).mockReturnValue(fakeDb as any);
-    vi.mocked(exportFiscalYearToExcel).mockRejectedValue(new Error('Disk full'));
+    vi.mocked(exportFiscalYearToPdf).mockRejectedValue(new Error('Espace disque insuffisant'));
 
-    const result = await call('excel:export', 1);
-    expect(result).toEqual({ error: 'Disk full' });
+    const result = await call('pdf:export', 1);
+    expect(result).toEqual({ error: 'Espace disque insuffisant' });
   });
 });

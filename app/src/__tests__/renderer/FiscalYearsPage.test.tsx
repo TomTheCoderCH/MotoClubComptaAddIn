@@ -33,6 +33,7 @@ function mockApi(years: FiscalYear[] = []) {
     closeFiscalYear:    vi.fn().mockResolvedValue(undefined),
     reopenFiscalYear:   vi.fn().mockResolvedValue(undefined),
     exportExcel:        vi.fn().mockResolvedValue(null),
+    exportPdf:          vi.fn().mockResolvedValue(null),
   });
 }
 
