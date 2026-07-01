@@ -568,6 +568,14 @@ app/
 | **Dashboard Twint** | Panel Twint avec données réelles (encaissements + frais) |
 | **Grand-livre** | Solde courant progressif (comptes de bilan) ; masquage contreparties sur soldes à nouveau |
 
+#### Prochaines étapes planifiées
+
+- [x] **Packaging / distribution** — `electron-forge make` → `MCYCompta-Setup.exe` (Squirrel.Windows, ~151 MB). Node.js 22 requis (v26 bloque l'extraction zip). Correctif `packagerConfig.ignore` obligatoire : VitePlugin exclut les contenus `node_modules` via `filterFunc`  quand `isModule()=false` ; la fonction `ignore` personnalisée passe `/node_modules` et `/node_modules/*` pour que le Pruner galactus gère seul l'exclusion des devDependencies. `.nvmrc` = `22` dans `app/`.
+- [ ] **Rapport PDF** — générer un PDF de clôture (journal + bilan + compte de résultat) en complément de l'Excel. Plus portable pour archivage officiel et transmission à un comptable externe.
+- [ ] **Compléter la couverture E2E** — raccourcis clavier (`Entrée`, `Ctrl+S`, `Ctrl+Entrée`), soldes à nouveau, grand-livre avec solde courant progressif.
+
+> Note : les données 2025 ont été saisies manuellement dans la DB — la comptabilité réelle est déjà dans SQLite.
+
 #### Idées futures (non planifiées)
 
 - [ ] **Vite 5→8 + `@vitejs/plugin-react` 5→6** — bloqué : `@electron-forge/plugin-vite` v8 encore en alpha. À revisiter quand une version stable est publiée.
@@ -575,6 +583,7 @@ app/
 ### Notes techniques actives
 
 - `@vitejs/plugin-react` est en **v5.x** — ESM-only, compatible grâce au renommage de `vite.renderer.config.ts` → **`vite.renderer.config.mts`** (force le mode ESM dans esbuild). Sans le `.mts`, Vite 5 échoue avec `"ESM file cannot be loaded by require"`. Le `vitest.config.ts` n'est pas affecté car Vitest 4.x utilise son propre Vite 8.x en interne.
+- **Packaging** : `npm run make` (depuis `app/`, Node.js 22 via `nvm use 22`) → `out/make/squirrel.windows/x64/MCYCompta-Setup.exe`. Contrainte : `packagerConfig.ignore` personnalisé dans `forge.config.ts` — voir commentaire inline pour l'explication du bug VitePlugin/Pruner. `setupExe: 'MCYCompta-Setup.exe'` dans MakerSquirrel (pas `exe`, qui désignerait l'exécutable source).
 - `better-sqlite3` est externalisé du bundle Vite (main) et reconstruit via `rebuildConfig` dans `forge.config.ts`
 - Les montants sont stockés en **centimes** (INTEGER) — jamais de float pour les montants CHF
 - `better-sqlite3` compilé pour Electron (NODE_MODULE_VERSION 146) ne tourne pas dans le Node système. Le script `pretest` exécute `npm rebuild better-sqlite3` pour le recompiler pour Node avant les tests. Le script `prestart` exécute `npm run rebuild` (= `electron-rebuild -f -w better-sqlite3`) pour le recompiler pour Electron avant `npm start` — nécessaire car `electron-forge start` ne déclenche pas le `rebuildConfig` de manière fiable.

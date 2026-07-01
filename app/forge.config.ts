@@ -13,13 +13,37 @@ const config: ForgeConfig = {
     asar: true,
     name: 'MCYCompta',
     executableName: 'mcy-compta',
+    win32metadata: {
+      CompanyName: 'MCY — Moto Club Yvorne',
+      FileDescription: 'Application de comptabilité MCY',
+      ProductName: 'MCY Compta',
+      InternalName: 'mcy-compta',
+    },
+    // Custom ignore: VitePlugin's default exclude function (file => !file.startsWith('/.vite'))
+    // applies to FILES inside node_modules when isModule() is false, stripping all module
+    // contents and leaving only empty directories. Setting ignore here prevents VitePlugin from
+    // overriding it; /node_modules/ paths return false (include) so filterFunc passes them
+    // through, while @electron/packager's Pruner still excludes non-production module dirs.
+    ignore: (file: string) => {
+      if (!file) return false;
+      if (file.startsWith('/.vite') || file === '/package.json') return false;
+      // Include node_modules directory itself AND its contents.
+      // fs.copy calls filter with '/node_modules' (no trailing slash) for the dir,
+      // then '/node_modules/<pkg>/...' for its contents — both must return false (include).
+      if (file === '/node_modules' || file.startsWith('/node_modules/')) return false;
+      return true;
+    },
   },
   rebuildConfig: {
     forceRebuild: true,
     extraModules: ['better-sqlite3'],
   },
   makers: [
-    new MakerSquirrel({}),
+    new MakerSquirrel({
+      name: 'MCYCompta',
+      authors: 'Thomas Merli — MCY Moto Club Yvorne',
+      setupExe: 'MCYCompta-Setup.exe',
+    }),
     new MakerZIP({}, ['darwin']),
     new MakerRpm({}),
     new MakerDeb({}),
