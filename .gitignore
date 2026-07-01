@@ -136,4 +136,4 @@ dist
 app/test-results
 
 # Excel temp files
-Documents/~*.xlsx
+Documents/
