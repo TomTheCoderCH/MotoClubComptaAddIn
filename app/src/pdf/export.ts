@@ -522,23 +522,23 @@ export async function exportFiscalYearToPdf(
   const todayStr = today.toLocaleDateString('fr-CH',
     { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-  doc.font(FONT_B).fontSize(18).fillColor(C_HEADER_BG)
+  doc.font(font(true)).fontSize(18).fillColor(C_HEADER_BG)
     .text('MCY — Moto Club Yvorne', ML, MT + 30, { width: PW, align: 'center' });
   doc.moveDown(0.6);
-  doc.font(FONT_B).fontSize(13).fillColor('#000000')
+  doc.font(font(true)).fontSize(13).fillColor('#000000')
     .text(`Rapport de clôture — Exercice ${year}`, { width: PW, align: 'center' });
   doc.moveDown(0.4);
-  doc.font(FONT_R).fontSize(10).fillColor('#555555')
+  doc.font(font()).fontSize(10).fillColor('#555555')
     .text(isClosed ? 'Exercice clôturé' : 'Exercice en cours', { width: PW, align: 'center' });
   doc.moveDown(0.3);
-  doc.font(FONT_R).fontSize(9).fillColor('#777777')
+  doc.font(font()).fontSize(9).fillColor('#777777')
     .text(`Généré le ${todayStr}`, { width: PW, align: 'center' });
 
   hLine(doc, doc.y + 10);
   doc.moveDown(2);
 
   // ── Bilan & Résultat ─────────────────────────────────────────────────────
-  doc.font(FONT_B).fontSize(11).fillColor('#000000')
+  doc.font(font(true)).fontSize(11).fillColor('#000000')
     .text(`Bilan & Résultat — Exercice ${year}`, ML, doc.y, { width: PW });
   doc.moveDown(0.5);
   addBilanSection(doc, accountMap, year);
