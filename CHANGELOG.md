@@ -6,6 +6,15 @@ Versioning selon [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.1.1] — 2026-07-01
+
+### Corrigé
+
+- **CI** : `package-lock.json` synchronisé avec les nouveaux packages (`@electron-forge/publisher-github`, `update-electron-app`)
+- **CI** : suppression de `--target` dans la commande `publish` — forge utilise maintenant le publisher configuré dans `forge.config.ts` avec les bonnes métadonnées `owner`/`name`
+
+---
+
 ## [1.1.0] — 2026-07-01
 
 ### Ajouté

@@ -1,7 +1,7 @@
 {
   "name": "mcy-compta",
   "productName": "MCY Compta",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Application de comptabilité pour le Moto Club Yvorne (La Bécane Vuargnérane)",
   "main": ".vite/build/main.js",
   "private": true,
