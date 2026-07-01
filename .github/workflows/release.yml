@@ -30,10 +30,12 @@ jobs:
         working-directory: app
 
       # electron-forge publish appelle d'abord make (build + package),
-      # puis publie les artefacts sur GitHub Releases via publisher-github.
+      # puis publie les artefacts sur GitHub Releases via le publisher-github
+      # configuré dans forge.config.ts (owner/name/prerelease/draft).
+      # Sans --target : forge lit la liste publishers[] de forge.config.ts.
       # GITHUB_TOKEN est fourni automatiquement par Actions — pas de secret à configurer.
       - name: Build and publish
-        run: npm run publish -- --target @electron-forge/publisher-github
+        run: npm run publish
         working-directory: app
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
