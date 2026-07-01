@@ -155,7 +155,9 @@ On ne commite **jamais** directement sur `main`.
 
 | Tag | Commit | Date | Description |
 |---|---|---|---|
-| `v1.0.0` | `14d3b6c` | 2026-07-01 | Première version stable — toutes les fonctionnalités principales livrées |
+| `v1.0.0` | `185854f` | 2026-07-01 | Première version stable — toutes les fonctionnalités principales livrées |
+| `v1.0.1` | `ae74971` | 2026-07-01 | Logo club sur la page de garde PDF, mise en page centrée |
+| `v1.1.2` | `cc38064` | 2026-07-01 | CI/CD GitHub Actions + mise à jour automatique Electron |
 
 ---
 
@@ -607,6 +609,8 @@ app/
 - [x] **Rapport PDF** — `pdfkit` (externalisé Vite) ; `app/src/pdf/export.ts` ; handler IPC `pdf:export` ; bouton "Exporter PDF" dans FiscalYearsPage ; PDF multi-pages : page de garde, Bilan deux colonnes (Actif/Passif+FP + résultat net coloré), Compte de résultat (Charges/Produits), Journal général, Grand-livre par compte enchaîné. Service partagé `data/export-data.ts` mutualisé avec l'export Excel. Polices embarquées dans `app/resources/fonts/` (Inter 4.1 SIL OFL pour le texte + JetBrains Mono 2.304 Apache 2.0 pour les montants, –1 pt) ; `extraResources` dans `forge.config.ts` → cross-platform. Formatage montants : `1'494,26` (apostrophe + virgule, notation comptable suisse). Hauteur de ligne auto-expand via `doc.heightOfString()` — les cellules s'agrandissent si le texte déborde — 559 tests Vitest.
 - [x] **Couverture E2E complète** — 41 tests couvrant tous les scénarios principaux (raccourcis, soldes à nouveau, analytique groupe, grand-livre, paramètres, dashboard Twint).
 - [x] **Synchronisation plan comptable seed ↔ DB** — noms simplifiés (suppression préfixe "Événement —"), groupes analytiques inclus dans le seed, `account_group` ajouté à l'INSERT — `app/src/db/seed.ts`.
+- [x] **Logo PDF** — logo du club (`app/resources/images/logo_twint.png`) centré sur la page de garde PDF (fit 260×163 pt, ratio préservé) ; `imagesDir()` cross-platform (dev/prod) ; `resources/images/` ajouté aux `extraResources` Electron Forge — v1.0.1.
+- [x] **CI/CD GitHub Actions + mise à jour automatique** — `.github/workflows/release.yml` déclenché sur tag `v*` : build Windows, publication GitHub Release avec release notes extraites du CHANGELOG, upload assets Squirrel. `@electron-forge/publisher-github` dans `forge.config.ts`. `update-electron-app` dans `main.ts` (packaged uniquement). Release notes injectées via `softprops/action-gh-release` avant l'upload des assets — v1.1.2.
 
 > Note : les données 2025 ont été saisies manuellement dans la DB — la comptabilité réelle est déjà dans SQLite.
 
@@ -623,3 +627,6 @@ app/
 - `better-sqlite3` compilé pour Electron (NODE_MODULE_VERSION 146) ne tourne pas dans le Node système. Le script `pretest` exécute `npm rebuild better-sqlite3` pour le recompiler pour Node avant les tests. Le script `prestart` exécute `npm run rebuild` (= `electron-rebuild -f -w better-sqlite3`) pour le recompiler pour Electron avant `npm start` — nécessaire car `electron-forge start` ne déclenche pas le `rebuildConfig` de manière fiable.
 - Les tests Vitest n'incluent que `src/**` (`include: ['src/**/*.{test,spec}.{ts,tsx}']`) pour éviter de ramasser les specs Playwright du dossier `e2e/`.
 - **Tests E2E** : `npm run test:e2e` → `pretest:e2e` rebuild better-sqlite3 pour Electron → `build:e2e` via `scripts/build-for-e2e.mjs` (produit `.vite/build/main.js` + `.vite/renderer/main_window/` avec `base: './'` pour les chemins relatifs en `file://`) → Playwright lance l'app avec un répertoire temporaire isolé. L'isolation E2E utilise la variable d'env `MCY_TEST_USERDATA` (pas `APPDATA+app.getName()` — `app.getName()` peut retourner "Electron" quand lancé depuis un .js brut sans package.json adjacent). `main.ts` appelle `app.setPath('userData', process.env['MCY_TEST_USERDATA'])` avant `app.ready` quand `NODE_ENV=test`. `electron-fixture.ts` place `settings.json` directement dans `userDataDir` (sous-dossier `userdata/` du répertoire temp). Playwright workers = 1 (séquentiel, les instances Electron concurrentes interfèrent). Après `test:e2e`, relancer `npm test` recompile automatiquement pour Node via `pretest`.
+- **CI/CD** : `.github/workflows/release.yml` déclenché sur tag `v*`. Flux : `npm ci` → extraction des release notes depuis CHANGELOG (`softprops/action-gh-release` crée la release avec le body) → `npm run publish` (`@electron-forge/publisher-github` trouve la release existante et uploade les assets). Le publisher est configuré dans `forge.config.ts` (`publishers[]`) — ne pas utiliser `--target` sur la CLI (crée une instance sans config). **Incompatibilité** : le ruleset GitHub "Immutable releases" publie une release verrouillée au push du tag avant que forge puisse uploader — désactiver ce ruleset.
+- **Mise à jour automatique** : `update-electron-app` importé dans `main.ts`, appelé après le guard Squirrel, uniquement si `app.isPackaged`. Lit le champ `repository` de `package.json` pour détecter le dépôt. No-op en dev et pendant les tests E2E. Externalisé du bundle Vite dans `vite.main.config.ts`.
+- **MCP GitHub** : `@modelcontextprotocol/server-github` (paquet npm) enregistré via `claude mcp add` → stocké dans `~/.claude.json`. Ne pas confondre avec `@github/github-mcp-server` (binaire Go, absent de npm). Désactiver le plugin `github@claude-plugins-official` pour éviter les conflits de nommage.
