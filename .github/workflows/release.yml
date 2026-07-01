@@ -29,11 +29,36 @@ jobs:
         run: npm ci
         working-directory: app
 
-      # electron-forge publish appelle d'abord make (build + package),
-      # puis publie les artefacts sur GitHub Releases via le publisher-github
-      # configuré dans forge.config.ts (owner/name/prerelease/draft).
-      # Sans --target : forge lit la liste publishers[] de forge.config.ts.
-      # GITHUB_TOKEN est fourni automatiquement par Actions — pas de secret à configurer.
+      # Extrait la section du CHANGELOG correspondant à la version du tag courant.
+      # Le résultat est passé comme body à la GitHub Release.
+      - name: Extract release notes from CHANGELOG
+        id: notes
+        shell: pwsh
+        run: |
+          $version = (Get-Content app/package.json | ConvertFrom-Json).version
+          $content = Get-Content CHANGELOG.md -Raw -Encoding UTF8
+          # Capture tout ce qui est entre "## [X.Y.Z]" et le prochain "## [" ou fin de fichier
+          if ($content -match "(?s)## \[$([regex]::Escape($version))\][^\n]*\n(.*?)(?=\n## \[|\z)") {
+            $notes = $matches[1].Trim()
+          } else {
+            $notes = "Version $version"
+          }
+          # Écriture multilignes dans GITHUB_OUTPUT
+          "body<<EOF" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          $notes        | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "EOF"         | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      # Crée la GitHub Release avec les notes avant que forge n'uploade les assets.
+      # electron-forge publisher-github trouve la release existante et y ajoute les fichiers.
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body: ${{ steps.notes.outputs.body }}
+          draft: false
+          prerelease: false
+
+      # electron-forge publish trouve la release créée ci-dessus et uploade
+      # MCYCompta-Setup.exe, .nupkg et RELEASES (nécessaire pour l'auto-update Squirrel).
       - name: Build and publish
         run: npm run publish
         working-directory: app

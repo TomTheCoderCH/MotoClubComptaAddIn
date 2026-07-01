@@ -6,21 +6,13 @@ Versioning selon [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [1.1.1] — 2026-07-01
-
-### Corrigé
-
-- **CI** : `package-lock.json` synchronisé avec les nouveaux packages (`@electron-forge/publisher-github`, `update-electron-app`)
-- **CI** : suppression de `--target` dans la commande `publish` — forge utilise maintenant le publisher configuré dans `forge.config.ts` avec les bonnes métadonnées `owner`/`name`
-
----
-
-## [1.1.0] — 2026-07-01
+## [1.1.2] — 2026-07-01
 
 ### Ajouté
 
-- **CI/CD GitHub Actions** (`.github/workflows/release.yml`) : build Windows automatique et publication de la GitHub Release sur chaque tag `v*`. L'installeur `MCYCompta-Setup.exe` et le fichier `RELEASES` (Squirrel) sont uploadés sans intervention manuelle.
-- **Mise à jour automatique** : l'application vérifie les nouvelles releases GitHub au démarrage (`update-electron-app`) et installe silencieusement en arrière-plan. Un redémarrage est proposé à l'utilisateur quand la mise à jour est prête. Désactivé en mode développement.
+- **CI/CD GitHub Actions** (`.github/workflows/release.yml`) : build Windows automatique et publication de la GitHub Release sur chaque push de tag `v*`. L'installeur `MCYCompta-Setup.exe`, le package Squirrel `.nupkg` et le fichier `RELEASES` sont générés et uploadés sans intervention manuelle.
+- **Mise à jour automatique** : l'application vérifie les nouvelles releases GitHub au démarrage (`update-electron-app`) et installe silencieusement en arrière-plan. Un redémarrage est proposé à l'utilisateur quand la mise à jour est prête. Désactivé en mode développement et lors des tests E2E.
+- **Release notes** : le contenu du CHANGELOG est injecté automatiquement dans chaque GitHub Release via le workflow.
 
 ---
 
