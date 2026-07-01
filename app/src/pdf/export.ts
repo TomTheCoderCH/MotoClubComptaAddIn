@@ -96,6 +96,10 @@ function hLine(doc: PDFKit.PDFDocument, y: number, color = C_LINE): void {
     .moveTo(ML, y).lineTo(ML + PW, y).stroke().restore();
 }
 
+// JetBrains Mono a une hauteur de capitale visuellement plus grande qu'Inter
+// à corps égal. On réduit de 1 pt pour harmoniser l'apparence dans les tableaux.
+const MONO_SIZE_OFFSET = -1;
+
 // tx — affiche du texte dans une cellule.
 // mono=true : utilise JetBrains Mono (montants CHF) pour l'alignement décimal.
 // multiline=true : le texte peut s'enrouler et la cellule s'agrandit (hauteur
@@ -113,10 +117,11 @@ function tx(
 ): void {
   if (!str) return;
   const multiline = opts.multiline ?? false;
-  const f = opts.mono ? fontMono(opts.bold) : font(opts.bold, opts.italic);
+  const f    = opts.mono ? fontMono(opts.bold) : font(opts.bold, opts.italic);
+  const size = (opts.size ?? 8) + (opts.mono ? MONO_SIZE_OFFSET : 0);
   doc.save()
     .font(f)
-    .fontSize(opts.size ?? 8)
+    .fontSize(size)
     .fillColor(opts.color ?? '#000000')
     .text(str, x + 2, y + 2, {
       width:     Math.max(w - 4, 1),
@@ -137,7 +142,8 @@ function cellH(
 ): number {
   if (!str) return ROW_H;
   doc.font(opts.mono ? fontMono(opts.bold) : font(opts.bold));
-  doc.fontSize(opts.size ?? 8);
+  const size = (opts.size ?? 8) + (opts.mono ? MONO_SIZE_OFFSET : 0);
+  doc.fontSize(size);
   const h = doc.heightOfString(str, { width: Math.max(w - 4, 1) }) + 4; // +4 : padding vertical
   return Math.max(h, ROW_H);
 }
