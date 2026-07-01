@@ -120,6 +120,67 @@ test('raccourci Ctrl+N ouvre le formulaire de nouvelle écriture', async ({ wind
   await expect(window.getByRole('dialog')).toBeVisible();
 });
 
+test('Entrée sur le dernier montant ajoute une ligne', async ({ window }) => {
+  await setupYear(window);
+  await goToJournal(window);
+
+  await window.getByRole('button', { name: /Nouvelle écriture/ }).click();
+  const dialog = window.getByRole('dialog');
+
+  await dialog.getByLabel('Compte ligne 1').selectOption({ label: '101 — Raiffeisen' });
+  await dialog.getByLabel('Débit ligne 1').fill('100.00');
+  await dialog.getByLabel('Compte ligne 2').selectOption({ label: '300 — Cotisations membres' });
+  await dialog.getByLabel('Crédit ligne 2').fill('100.00');
+  // Enter sur le dernier champ montant de la dernière ligne
+  await dialog.getByLabel('Crédit ligne 2').press('Enter');
+
+  await expect(dialog.getByLabel('Compte ligne 3')).toBeVisible();
+});
+
+test('Ctrl+S enregistre et ferme la modale', async ({ window }) => {
+  await setupYear(window);
+  await goToJournal(window);
+
+  await window.getByRole('button', { name: /Nouvelle écriture/ }).click();
+  const dialog = window.getByRole('dialog');
+  await dialog.getByLabel('Date').fill('2025-05-01');
+  await dialog.getByLabel('Libellé').fill('Test Ctrl+S');
+  await dialog.getByLabel('Compte ligne 1').selectOption({ label: '101 — Raiffeisen' });
+  await dialog.getByLabel('Débit ligne 1').fill('50.00');
+  await dialog.getByLabel('Compte ligne 2').selectOption({ label: '300 — Cotisations membres' });
+  await dialog.getByLabel('Crédit ligne 2').fill('50.00');
+
+  await window.keyboard.press('Control+s');
+
+  await expect(window.getByRole('dialog')).not.toBeVisible();
+  await expect(window.getByRole('cell', { name: 'Test Ctrl+S', exact: true })).toBeVisible();
+});
+
+test('Ctrl+Entrée enregistre et réouvre un formulaire vide', async ({ window }) => {
+  await setupYear(window);
+  await goToJournal(window);
+
+  await window.getByRole('button', { name: /Nouvelle écriture/ }).click();
+  const dialog = window.getByRole('dialog');
+  await dialog.getByLabel('Date').fill('2025-06-01');
+  await dialog.getByLabel('Libellé').fill('Test Ctrl+Entrée');
+  await dialog.getByLabel('Compte ligne 1').selectOption({ label: '101 — Raiffeisen' });
+  await dialog.getByLabel('Débit ligne 1').fill('75.00');
+  await dialog.getByLabel('Compte ligne 2').selectOption({ label: '300 — Cotisations membres' });
+  await dialog.getByLabel('Crédit ligne 2').fill('75.00');
+
+  await window.keyboard.press('Control+Enter');
+
+  // La modale reste ouverte avec le formulaire réinitialisé
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByLabel('Libellé')).toHaveValue('');
+
+  // Fermer la modale puis vérifier l'écriture dans le journal
+  await window.keyboard.press('Escape');
+  await expect(window.getByRole('dialog')).not.toBeVisible();
+  await expect(window.getByRole('cell', { name: 'Test Ctrl+Entrée', exact: true })).toBeVisible();
+});
+
 test('le bouton de nouvelle écriture est absent sur un exercice clôturé', async ({ window }) => {
   await setupYear(window);
 

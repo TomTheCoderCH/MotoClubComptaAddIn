@@ -520,7 +520,7 @@ app/
 
 - [x] Tests E2E étendus — 32 tests (14 nouveaux) : `journal-entry.spec.ts` + 4 tests (modifier, supprimer, filtrer, Ctrl+N) ; `analytics.spec.ts` nouveau (Analytique, Non groupés, Bilan complet, ✓ Bilan équilibré) ; `accounts.spec.ts` nouveau (créer compte, modifier groupe, groupe dans Analytique) ; `help.spec.ts` nouveau (Aide ouvre drawer, Escape ferme drawer, Escape ferme modale journal) — 555 tests Vitest + 32 E2E ; correctif scoping dialog pour getByLabel('Date'/'Libellé') conflictuels avec JournalFilters
 
-#### Couverture E2E actuelle (32 tests)
+#### Couverture E2E actuelle (35 tests)
 
 | Fichier | Test |
 |---|---|
@@ -552,6 +552,9 @@ app/
 | `journal-entry.spec.ts` | Supprime une écriture |
 | `journal-entry.spec.ts` | Filtre les écritures par libellé |
 | `journal-entry.spec.ts` | Raccourci Ctrl+N ouvre le formulaire de nouvelle écriture |
+| `journal-entry.spec.ts` | Entrée sur le dernier montant ajoute une ligne |
+| `journal-entry.spec.ts` | Ctrl+S enregistre et ferme la modale |
+| `journal-entry.spec.ts` | Ctrl+Entrée enregistre et réouvre un formulaire vide |
 | `journal-entry.spec.ts` | Le bouton de nouvelle écriture est absent sur un exercice clôturé |
 | `balance.spec.ts` | Les soldes reflètent les écritures saisies |
 | `balance.spec.ts` | La page Soldes affiche le message d'absence d'exercice |
@@ -561,7 +564,6 @@ app/
 
 | Fonctionnalité | Scénarios à couvrir |
 |---|---|
-| **Journal — raccourcis** | `Entrée` sur dernier montant ajoute une ligne ; `Ctrl+S` enregistre et ferme ; `Ctrl+Entrée` enregistre et ouvre une nouvelle écriture |
 | **Soldes à nouveau** | Saisir les soldes à nouveau après création d'un 2ᵉ exercice |
 | **Analytique** | Affichage P&L par groupe nommé (avec une écriture sur le groupe) |
 | **Paramètres** | Export sauvegarde manuelle ; liste des sauvegardes automatiques |
@@ -572,7 +574,7 @@ app/
 
 - [x] **Packaging / distribution** — `electron-forge make` → `MCYCompta-Setup.exe` (Squirrel.Windows, ~151 MB). Node.js 22 requis (v26 bloque l'extraction zip). Correctif `packagerConfig.ignore` obligatoire : VitePlugin exclut les contenus `node_modules` via `filterFunc`  quand `isModule()=false` ; la fonction `ignore` personnalisée passe `/node_modules` et `/node_modules/*` pour que le Pruner galactus gère seul l'exclusion des devDependencies. `.nvmrc` = `22` dans `app/`.
 - [ ] **Rapport PDF** — générer un PDF de clôture (journal + bilan + compte de résultat) en complément de l'Excel. Plus portable pour archivage officiel et transmission à un comptable externe.
-- [ ] **Compléter la couverture E2E** — raccourcis clavier (`Entrée`, `Ctrl+S`, `Ctrl+Entrée`), soldes à nouveau, grand-livre avec solde courant progressif.
+- [x] **Compléter la couverture E2E — raccourcis clavier** — `Entrée` sur dernier montant ajoute une ligne ; `Ctrl+S` enregistre et ferme ; `Ctrl+Entrée` enregistre et réouvre un formulaire vide — 35 E2E.
 
 > Note : les données 2025 ont été saisies manuellement dans la DB — la comptabilité réelle est déjà dans SQLite.
 
