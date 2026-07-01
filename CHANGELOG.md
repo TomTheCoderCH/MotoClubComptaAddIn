@@ -6,6 +6,14 @@ Versioning selon [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.0.1] — 2026-07-01
+
+### Amélioré
+
+- **PDF — Page de garde** : logo du club centré sur la page (rapport 260×163 pt, aspect ratio préservé) avec titre, statut et date positionnés dessous. Le contenu du rapport démarre sur une nouvelle page séparée.
+
+---
+
 ## [1.0.0] — 2026-07-01
 
 Première version stable. Toutes les fonctionnalités essentielles au suivi comptable du MCY sont livrées et couvertes par des tests automatisés (559 Vitest + 41 E2E Playwright).

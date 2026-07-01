@@ -24,6 +24,12 @@ function fontsDir(): string {
     : path.join(app.getAppPath(), 'resources', 'fonts');
 }
 
+function imagesDir(): string {
+  return app.isPackaged
+    ? path.join(process.resourcesPath, 'images')
+    : path.join(app.getAppPath(), 'resources', 'images');
+}
+
 function font(bold?: boolean, italic?: boolean): string {
   if (bold && italic) return path.join(fontsDir(), 'Inter-BoldItalic.ttf');
   if (bold)           return path.join(fontsDir(), 'Inter-Bold.ttf');
@@ -544,24 +550,38 @@ export async function exportFiscalYearToPdf(
   const todayStr = today.toLocaleDateString('fr-CH',
     { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-  doc.font(font(true)).fontSize(18).fillColor(C_HEADER_BG)
-    .text('MCY — Moto Club Yvorne', ML, MT + 30, { width: PW, align: 'center' });
-  doc.moveDown(0.6);
-  doc.font(font(true)).fontSize(13).fillColor('#000000')
-    .text(`Rapport de clôture — Exercice ${year}`, { width: PW, align: 'center' });
-  doc.moveDown(0.4);
-  doc.font(font()).fontSize(10).fillColor('#555555')
-    .text(isClosed ? 'Exercice clôturé' : 'Exercice en cours', { width: PW, align: 'center' });
-  doc.moveDown(0.3);
-  doc.font(font()).fontSize(9).fillColor('#777777')
-    .text(`Généré le ${todayStr}`, { width: PW, align: 'center' });
+  // Logo centré verticalement : calcul du bloc total pour centrage sur la page.
+  // Ratio logo ≈ 1.598:1 (paysage) — fit=[260,163] respecte le ratio sans déformer.
+  const LOGO_W  = 260;
+  const LOGO_H  = 163;
+  const BLOCK_H = LOGO_H + 28 + 30 + 22 + 18 + 16 + 14;  // logo + gaps + lignes de texte
+  const startY  = Math.floor((PH - BLOCK_H) / 2);
+  const logoX   = ML + Math.floor((PW - LOGO_W) / 2);
 
-  hLine(doc, doc.y + 10);
-  doc.moveDown(2);
+  doc.image(path.join(imagesDir(), 'logo_twint.png'), logoX, startY, {
+    fit: [LOGO_W, LOGO_H], align: 'center', valign: 'center',
+  });
+
+  let cy = startY + LOGO_H + 28;
+  doc.font(font(true)).fontSize(20).fillColor(C_HEADER_BG)
+    .text('MCY — Moto Club Yvorne', ML, cy, { width: PW, align: 'center', lineBreak: false });
+  cy += 30;
+  doc.font(font(true)).fontSize(14).fillColor('#000000')
+    .text(`Rapport de clôture — Exercice ${year}`, ML, cy, { width: PW, align: 'center', lineBreak: false });
+  cy += 22;
+  doc.font(font()).fontSize(10).fillColor('#555555')
+    .text(isClosed ? 'Exercice clôturé' : 'Exercice en cours', ML, cy, { width: PW, align: 'center', lineBreak: false });
+  cy += 18;
+  hLine(doc, cy);
+  cy += 16;
+  doc.font(font()).fontSize(9).fillColor('#777777')
+    .text(`Généré le ${todayStr}`, ML, cy, { width: PW, align: 'center', lineBreak: false });
+
+  doc.addPage();
 
   // ── Bilan & Résultat ─────────────────────────────────────────────────────
   doc.font(font(true)).fontSize(11).fillColor('#000000')
-    .text(`Bilan & Résultat — Exercice ${year}`, ML, doc.y, { width: PW });
+    .text(`Bilan & Résultat — Exercice ${year}`, ML, MT, { width: PW });
   doc.moveDown(0.5);
   addBilanSection(doc, accountMap, year);
 
