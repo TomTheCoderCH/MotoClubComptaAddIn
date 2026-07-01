@@ -133,11 +133,37 @@ Le classeur contient 11 feuilles correspondant aux comptes suivants :
 
 ---
 
+## Workflow de développement et versioning
+
+### Stratégie de branches (à partir de v1.0.0)
+
+- **`main`** — branche de production stable. Ne reçoit que des merges de branches `feature/` ou `fix/` finalisées. Chaque merge sur `main` correspond à une release taguée (SemVer).
+- **`feature/<nom>`** — tout nouveau développement démarre dans une branche dédiée créée depuis `main`.
+- **`fix/<nom>`** — correctifs urgents en branche dédiée.
+
+On ne commite **jamais** directement sur `main`.
+
+### Versioning (SemVer)
+
+| Incrément | Quand |
+|---|---|
+| **MAJOR** (x.0.0) | Refonte structurelle ou changement d'architecture incompatible |
+| **MINOR** (1.x.0) | Nouvelle fonctionnalité ajoutée de manière rétrocompatible |
+| **PATCH** (1.0.x) | Correctif, amélioration mineure, mise à jour de dépendances |
+
+### Historique des versions
+
+| Tag | Commit | Date | Description |
+|---|---|---|---|
+| `v1.0.0` | `14d3b6c` | 2026-07-01 | Première version stable — toutes les fonctionnalités principales livrées |
+
+---
+
 ## Notes techniques
 
 - Environnement : Windows 11, Python (venv disponible), Excel
 - `openpyxl` installé dans le venv pour lire/écrire des fichiers Excel
-- Dépôt git : branche `main`
+- Dépôt git : branche `main` (production) — développements en branches `feature/`
 
 ### Dossiers historiques (à ignorer)
 
@@ -174,35 +200,35 @@ Tous les montants en CHF.
 
 ### Classe 3 — Produits (comptes de résultat)
 
-| N° | Intitulé | Nature |
-|---|---|---|
-| 300 | Cotisations membres | CHF 30/an/membre |
-| 310 | Vente boissons — local | Ventes mensuelles au local |
-| 320 | Événement — Assemblée générale | Ventes vin et divers à l'AG |
-| 330 | Événement — Marché Villageois | Recettes du marché |
-| 340 | Événement — Broche | Recettes de la broche |
-| 350 | Événement — Sorties | Remboursements participants, tournées |
-| 360 | Événement — Souper fin d'année | Recettes du souper |
-| 370 | Location matériel | Location tente et autre matériel |
-| 390 | Produits divers | Crédits, remboursements assureurs, etc. |
+| N° | Intitulé | Nature | Groupe analytique |
+|---|---|---|---|
+| 300 | Cotisations membres | CHF 30/an/membre | — |
+| 310 | Vente boissons (local) | Ventes mensuelles au local | Boissons local |
+| 320 | Assemblée générale | Ventes vin et divers à l'AG | Assemblée générale |
+| 330 | Marché Villageois | Recettes du marché | Marché |
+| 340 | Broche | Recettes de la broche | Broche |
+| 350 | Sorties | Remboursements participants, tournées | Sorties |
+| 360 | Souper fin d'année | Recettes du souper | Souper |
+| 370 | Location matériel | Location tente et autre matériel | — |
+| 390 | Produits divers | Crédits, remboursements assureurs, etc. | — |
 
 ### Classe 4 — Charges (comptes de résultat)
 
-| N° | Intitulé | Nature |
-|---|---|---|
-| 400 | Assurances | RC AXA et autres |
-| 401 | Frais bancaires | Taxes compte Raiffeisen, taxe VISA |
-| 402 | Frais Twint | Commission ~1.3% sur transactions |
-| 410 | Électricité — local | Romande Energie (acomptes + solde) |
-| 411 | Achats boissons — local | Réapprovisionnement du local |
-| 420 | Événement — Assemblée générale | Vin, nourriture, envois |
-| 430 | Événement — Marché Villageois | Achats denrées, patente, matériel |
-| 440 | Événement — Broche | Viande, boissons, divers |
-| 450 | Événement — Sorties | Repas, transports, cafés |
-| 460 | Événement — Souper fin d'année | Vin, nourriture, divers |
-| 470 | Cadeaux et dons membres | Ex. départ d'un membre (Hôtel Cailler) |
-| 480 | Achats matériel | Petit équipement (verres, plastifieuse…) |
-| 490 | Charges diverses | Tout ce qui ne rentre pas ailleurs |
+| N° | Intitulé | Nature | Groupe analytique |
+|---|---|---|---|
+| 400 | Assurances | RC AXA et autres | — |
+| 401 | Frais bancaires | Taxes compte Raiffeisen, taxe VISA | — |
+| 402 | Frais Twint | Commission ~1.3% sur transactions | — |
+| 410 | Électricité | Romande Energie (acomptes + solde) | — |
+| 411 | Achats boissons (local) | Réapprovisionnement du local | Boissons local |
+| 420 | Assemblée générale | Vin, nourriture, envois | Assemblée générale |
+| 430 | Marché Villageois | Achats denrées, patente, matériel | Marché |
+| 440 | Broche | Viande, boissons, divers | Broche |
+| 450 | Sorties | Repas, transports, cafés | Sorties |
+| 460 | Souper fin d'année | Vin, nourriture, divers | Souper |
+| 470 | Cadeaux et dons | Ex. départ d'un membre | — |
+| 480 | Achats matériel | Petit équipement (verres, plastifieuse…) | — |
+| 490 | Charges diverses | Tout ce qui ne rentre pas ailleurs | — |
 
 ### Classe 9 — Clôture
 
@@ -578,8 +604,9 @@ app/
 #### Prochaines étapes planifiées
 
 - [x] **Packaging / distribution** — `electron-forge make` → `MCYCompta-Setup.exe` (Squirrel.Windows, ~151 MB). Node.js 22 requis (v26 bloque l'extraction zip). Correctif `packagerConfig.ignore` obligatoire : VitePlugin exclut les contenus `node_modules` via `filterFunc`  quand `isModule()=false` ; la fonction `ignore` personnalisée passe `/node_modules` et `/node_modules/*` pour que le Pruner galactus gère seul l'exclusion des devDependencies. `.nvmrc` = `22` dans `app/`.
-- [x] **Rapport PDF** — `pdfkit` (externalisé Vite) ; `app/src/pdf/export.ts` ; handler IPC `pdf:export` ; bouton "Exporter PDF" dans FiscalYearsPage ; PDF multi-pages : page de garde, Bilan deux colonnes (Actif/Passif+FP + résultat net coloré), Compte de résultat (Charges/Produits), Journal général avec alternance de couleur par écriture et pagination automatique — 559 tests Vitest.
+- [x] **Rapport PDF** — `pdfkit` (externalisé Vite) ; `app/src/pdf/export.ts` ; handler IPC `pdf:export` ; bouton "Exporter PDF" dans FiscalYearsPage ; PDF multi-pages : page de garde, Bilan deux colonnes (Actif/Passif+FP + résultat net coloré), Compte de résultat (Charges/Produits), Journal général, Grand-livre par compte enchaîné. Service partagé `data/export-data.ts` mutualisé avec l'export Excel. Polices embarquées dans `app/resources/fonts/` (Inter 4.1 SIL OFL pour le texte + JetBrains Mono 2.304 Apache 2.0 pour les montants, –1 pt) ; `extraResources` dans `forge.config.ts` → cross-platform. Formatage montants : `1'494,26` (apostrophe + virgule, notation comptable suisse). Hauteur de ligne auto-expand via `doc.heightOfString()` — les cellules s'agrandissent si le texte déborde — 559 tests Vitest.
 - [x] **Couverture E2E complète** — 41 tests couvrant tous les scénarios principaux (raccourcis, soldes à nouveau, analytique groupe, grand-livre, paramètres, dashboard Twint).
+- [x] **Synchronisation plan comptable seed ↔ DB** — noms simplifiés (suppression préfixe "Événement —"), groupes analytiques inclus dans le seed, `account_group` ajouté à l'INSERT — `app/src/db/seed.ts`.
 
 > Note : les données 2025 ont été saisies manuellement dans la DB — la comptabilité réelle est déjà dans SQLite.
 
