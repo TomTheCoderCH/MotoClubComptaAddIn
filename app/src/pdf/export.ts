@@ -31,10 +31,19 @@ function font(bold?: boolean, italic?: boolean): string {
   return path.join(fontsDir(), 'Inter-Regular.ttf');
 }
 
+// JetBrains Mono (Apache 2.0) — police monospace pour les colonnes de montants.
+// En monospace, chaque caractère a la même largeur : avec align:'right', la
+// virgule décimale tombe toujours au même X quelle que soit la valeur.
+function fontMono(bold?: boolean): string {
+  return bold
+    ? path.join(fontsDir(), 'JetBrainsMono-Bold.ttf')
+    : path.join(fontsDir(), 'JetBrainsMono-Regular.ttf');
+}
+
 // ─── Formatage des montants ───────────────────────────────────────────────────
 //
 // toLocaleString('fr-CH') produit l'espace fine insécable U+202F comme
-// séparateur de milliers — désormais supporté grâce aux polices TTF.
+// séparateur de milliers — supporté par les polices TTF embarquées.
 
 function fmtChf(n: number): string {
   return n.toLocaleString('fr-CH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -82,24 +91,25 @@ function hLine(doc: PDFKit.PDFDocument, y: number, color = C_LINE): void {
 }
 
 // tx — affiche du texte dans une cellule.
-// Si multiline=true (défaut false) : le texte peut s'enrouler sur plusieurs
-// lignes et la cellule s'agrandit (hauteur calculée par l'appelant via cellH).
-// Si multiline=false : lineBreak=false + ellipsis=true pour les cellules à
-// hauteur fixe (en-têtes, bilan) où le débordement doit être tronqué.
+// mono=true : utilise JetBrains Mono (montants CHF) pour l'alignement décimal.
+// multiline=true : le texte peut s'enrouler et la cellule s'agrandit (hauteur
+// calculée par l'appelant via cellH). multiline=false : lineBreak=false +
+// ellipsis=true (cellules à hauteur fixe).
 function tx(
   doc: PDFKit.PDFDocument,
   str: string,
   x: number, y: number, w: number,
   opts: {
-    bold?: boolean; italic?: boolean;
+    bold?: boolean; italic?: boolean; mono?: boolean;
     size?: number; color?: string; align?: PDFKit.Align;
     multiline?: boolean;
   } = {},
 ): void {
   if (!str) return;
   const multiline = opts.multiline ?? false;
+  const f = opts.mono ? fontMono(opts.bold) : font(opts.bold, opts.italic);
   doc.save()
-    .font(font(opts.bold, opts.italic))
+    .font(f)
     .fontSize(opts.size ?? 8)
     .fillColor(opts.color ?? '#000000')
     .text(str, x + 2, y + 2, {
@@ -117,18 +127,18 @@ function cellH(
   doc: PDFKit.PDFDocument,
   str: string,
   w: number,
-  opts: { bold?: boolean; size?: number } = {},
+  opts: { bold?: boolean; mono?: boolean; size?: number } = {},
 ): number {
   if (!str) return ROW_H;
-  doc.font(font(opts.bold));
+  doc.font(opts.mono ? fontMono(opts.bold) : font(opts.bold));
   doc.fontSize(opts.size ?? 8);
   const h = doc.heightOfString(str, { width: Math.max(w - 4, 1) }) + 4; // +4 : padding vertical
   return Math.max(h, ROW_H);
 }
 
 // rowH — hauteur maximale sur toutes les cellules d'une ligne.
-function rowH(doc: PDFKit.PDFDocument, cells: Array<{ str: string; w: number; size?: number; bold?: boolean }>): number {
-  return cells.reduce((max, c) => Math.max(max, cellH(doc, c.str, c.w, { size: c.size, bold: c.bold })), ROW_H);
+function rowH(doc: PDFKit.PDFDocument, cells: Array<{ str: string; w: number; size?: number; bold?: boolean; mono?: boolean }>): number {
+  return cells.reduce((max, c) => Math.max(max, cellH(doc, c.str, c.w, { size: c.size, bold: c.bold, mono: c.mono })), ROW_H);
 }
 
 // ─── Gestion des pages ────────────────────────────────────────────────────────
@@ -185,7 +195,7 @@ function bilanDataRow(
     tx(doc, item.name,         bx + C_NUM,          y + 1, C_NAME, { bold: item.bold, size: 7.5 });
     if (item.val !== null)
       tx(doc, fmtChf(item.val), bx + C_NUM + C_NAME, y + 1, C_AMT,
-        { bold: item.bold, size: 7.5, align: 'right',
+        { mono: true, bold: item.bold, size: 7.5, align: 'right',
           color: item.val < 0 ? C_RED : '#000000' });
   };
   drawSide(LX, left);
@@ -333,7 +343,7 @@ function addBilanSection(doc: PDFKit.PDFDocument, accountMap: Map<string, Accoun
   const netLabel = netResult >= 0 ? 'Bénéfice net' : 'Perte nette';
   tx(doc, `${netLabel} (Produits − Charges)`, ML, y, PW - C_AMT - 4, { bold: true, size: 8 });
   tx(doc, fmtChf(netResult), ML + PW - C_AMT, y, C_AMT,
-    { bold: true, size: 8, align: 'right', color: netResult >= 0 ? C_GREEN : C_RED });
+    { mono: true, bold: true, size: 8, align: 'right', color: netResult >= 0 ? C_GREEN : C_RED });
   hLine(doc, y, '#444444');
   y += 14;
   doc.y = y;
@@ -385,7 +395,7 @@ function addJournalSection(doc: PDFKit.PDFDocument, journalRows: JournalRow[], y
         { str: lr.desc,        w: J_LABEL, size: 7.5 },
         { str: lr.debit,       w: J_DEBIT, size: 7.5 },
         { str: lr.credit,      w: J_CRED,  size: 7.5 },
-        { str: fmtChf(lr.amt), w: J_AMT,   size: 7.5 },
+        { str: fmtChf(lr.amt), w: J_AMT,   size: 7.5, mono: true },
       ]);
 
       if (y + rh > PH - MB) {
@@ -404,7 +414,7 @@ function addJournalSection(doc: PDFKit.PDFDocument, journalRows: JournalRow[], y
       tx(doc, lr.desc,        x, y + 1, J_LABEL, { size: 7.5, multiline: true }); x += J_LABEL;
       tx(doc, lr.debit,       x, y + 1, J_DEBIT, { size: 7.5, multiline: true }); x += J_DEBIT;
       tx(doc, lr.credit,      x, y + 1, J_CRED,  { size: 7.5, multiline: true }); x += J_CRED;
-      tx(doc, fmtChf(lr.amt), x, y + 1, J_AMT,   { size: 7.5, multiline: true, align: 'right' });
+      tx(doc, fmtChf(lr.amt), x, y + 1, J_AMT,   { mono: true, size: 7.5, multiline: true, align: 'right' });
 
       y += rh;
       rowIndex++;
@@ -453,8 +463,8 @@ function addAccountsSection(
         { str: isoToDisplay(row.date), w: A_DATE,  size: 7.5 },
         { str: row.description,        w: A_LABEL, size: 7.5 },
         { str: row.contra,             w: A_CONTR, size: 7.5 },
-        { str: debitStr,               w: A_DEBIT, size: 7.5 },
-        { str: creditStr,              w: A_CRED,  size: 7.5 },
+        { str: debitStr,               w: A_DEBIT, size: 7.5, mono: true },
+        { str: creditStr,              w: A_CRED,  size: 7.5, mono: true },
       ]);
 
       if (y + rh > PH - MB) {
@@ -475,8 +485,8 @@ function addAccountsSection(
       tx(doc, isoToDisplay(row.date), x, y + 1, A_DATE,  { size: 7.5, multiline: true }); x += A_DATE;
       tx(doc, row.description,        x, y + 1, A_LABEL, { size: 7.5, multiline: true }); x += A_LABEL;
       tx(doc, row.contra,             x, y + 1, A_CONTR, { size: 7.5, multiline: true, italic: row.isOpeningBalance }); x += A_CONTR;
-      tx(doc, debitStr,               x, y + 1, A_DEBIT, { size: 7.5, multiline: true, align: 'right' }); x += A_DEBIT;
-      tx(doc, creditStr,              x, y + 1, A_CRED,  { size: 7.5, multiline: true, align: 'right' });
+      tx(doc, debitStr,  x, y + 1, A_DEBIT, { mono: true, size: 7.5, multiline: true, align: 'right' }); x += A_DEBIT;
+      tx(doc, creditStr, x, y + 1, A_CRED,  { mono: true, size: 7.5, multiline: true, align: 'right' });
 
       if (row.debit  !== null) totalDebit  += row.debit;
       if (row.credit !== null) totalCredit += row.credit;
@@ -490,8 +500,8 @@ function addAccountsSection(
     hLine(doc, y, '#888888');
     fillRect(doc, ML, y, PW, ROW_H, '#E8EFF6');
     let x = ML + A_DATE + A_LABEL + A_CONTR;
-    tx(doc, fmtChf(totalDebit),  x, y + 1, A_DEBIT, { bold: true, size: 7.5, align: 'right' }); x += A_DEBIT;
-    tx(doc, fmtChf(totalCredit), x, y + 1, A_CRED,  { bold: true, size: 7.5, align: 'right' });
+    tx(doc, fmtChf(totalDebit),  x, y + 1, A_DEBIT, { mono: true, bold: true, size: 7.5, align: 'right' }); x += A_DEBIT;
+    tx(doc, fmtChf(totalCredit), x, y + 1, A_CRED,  { mono: true, bold: true, size: 7.5, align: 'right' });
     y += ROW_H + 6;  // espace entre comptes
 
     doc.y = y;
