@@ -29,9 +29,16 @@ import {
   getDashboardData,
   getTwintSummary,
   getAccountLedger,
+  getCashCounts,
+  getCashCountById,
+  createCashCount,
+  deleteCashCount,
+  getCashSessions,
+  createCashSession,
+  deleteCashSession,
 } from './db';
 import { listBackups, formatBackupFilename, performBackup } from './backup';
-import type { CreateJournalEntryPayload, UpdateJournalEntryPayload, OpeningBalanceLine, UpdateAccountPayload, CreateAccountPayload, DashboardCardConfig } from './types';
+import type { CreateJournalEntryPayload, UpdateJournalEntryPayload, OpeningBalanceLine, UpdateAccountPayload, CreateAccountPayload, DashboardCardConfig, CashCountPayload, CashSessionPayload } from './types';
 import { readSettings, writeSettings } from './settings';
 import { migrateDataDir } from './migrate';
 
@@ -235,4 +242,13 @@ export function registerIpcHandlers(): void {
       return { error: (e as Error).message };
     }
   });
+
+  // ── Caisse ────────────────────────────────────────────────────────────────
+  ipcMain.handle('cash:getAll',        (_e, fiscalYearId: number)        => getCashCounts(fiscalYearId));
+  ipcMain.handle('cash:getById',       (_e, id: number)                  => getCashCountById(id));
+  ipcMain.handle('cash:create',        (_e, payload: CashCountPayload)   => createCashCount(payload));
+  ipcMain.handle('cash:delete',        (_e, id: number)                  => deleteCashCount(id));
+  ipcMain.handle('cash:getSessions',   (_e, fiscalYearId: number)        => getCashSessions(fiscalYearId));
+  ipcMain.handle('cash:createSession', (_e, payload: CashSessionPayload) => createCashSession(payload));
+  ipcMain.handle('cash:deleteSession', (_e, id: number)                  => deleteCashSession(id));
 }
