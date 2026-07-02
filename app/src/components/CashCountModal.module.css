@@ -32,7 +32,8 @@
 
 /* ── Grille des coupures ──────────────────────────────────────────────── */
 .grid       { overflow-x: auto; margin-bottom: 0.75rem; }
-.denomTable { width: 100%; border-collapse: collapse; font-size: var(--font-size-sm); }
+.gridLayout { display: flex; gap: 1.5rem; align-items: flex-start; }
+.denomTable { flex: 1; border-collapse: collapse; font-size: var(--font-size-sm); }
 .denomTable td { padding: 0.2rem 0.5rem; text-align: right; }
 
 /* En-têtes de section (rangée 1) */
@@ -59,8 +60,6 @@
 }
 
 .denomLabel { text-align: left !important; white-space: nowrap; color: var(--text); font-weight: 500; }
-
-.sep { width: 1.5rem; }
 
 /* Inputs de quantité et total */
 .numInput {

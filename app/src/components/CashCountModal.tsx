@@ -83,8 +83,6 @@ export default function CashCountModal({ fiscalYearId, onClose, onSaved }: Props
     }
   };
 
-  const maxRows = Math.max(PIECES.length, BILLETS.length);
-
   return (
     <Modal onClose={onClose} className={styles.modal}>
       <h2 className={styles.title}>Nouveau comptage de caisse</h2>
@@ -134,94 +132,100 @@ export default function CashCountModal({ fiscalYearId, onClose, onSaved }: Props
         </label>
       </div>
 
+      {/* Deux tables indépendantes côte à côte — le Tab parcourt d'abord
+          toutes les pièces, puis tous les billets, dans l'ordre du DOM. */}
       <div className={styles.grid}>
-        <table className={styles.denomTable}>
-          <thead>
-            <tr>
-              <th colSpan={3} className={styles.sectionPieces}>Pièces</th>
-              <th className={styles.sep} />
-              <th colSpan={3} className={styles.sectionBillets}>Billets</th>
-            </tr>
-            <tr>
-              <th className={`${styles.denomLabel} ${styles.colHeader}`}>Coupure</th>
-              <th className={styles.colHeader}>Qté</th>
-              <th className={styles.colHeader}>Total</th>
-              <th className={styles.sep} />
-              <th className={`${styles.denomLabel} ${styles.colHeader}`}>Coupure</th>
-              <th className={styles.colHeader}>Qté</th>
-              <th className={styles.colHeader}>Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Array.from({ length: maxRows }).map((_, i) => {
-              const p  = PIECES[i];
-              const b  = BILLETS[i];
-              const pQ = p !== undefined ? qtys[p] : 0;
-              const bQ = b !== undefined ? qtys[b] : 0;
-              return (
-                <tr key={i}>
-                  {p !== undefined ? (
-                    <>
-                      <td className={styles.denomLabel}>{formatDenom(p)}</td>
-                      <td>
-                        <input
-                          type="number"
-                          min="0"
-                          step="1"
-                          value={pQ === 0 ? '' : pQ}
-                          onChange={e => setQty(p, e.target.value)}
-                          className={styles.numInput}
-                          data-filled={pQ > 0 || undefined}
-                          data-testid={`qty-${p}`}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          value={totalDisplays[p]}
-                          onChange={e => setTotal(p, e.target.value)}
-                          className={styles.numInput}
-                          data-filled={pQ > 0 || undefined}
-                          data-testid={`total-${p}`}
-                        />
-                      </td>
-                    </>
-                  ) : <><td /><td /><td /></>}
-                  <td className={styles.sep} />
-                  {b !== undefined ? (
-                    <>
-                      <td className={styles.denomLabel}>{formatDenom(b)}</td>
-                      <td>
-                        <input
-                          type="number"
-                          min="0"
-                          step="1"
-                          value={bQ === 0 ? '' : bQ}
-                          onChange={e => setQty(b, e.target.value)}
-                          className={styles.numInput}
-                          data-filled={bQ > 0 || undefined}
-                          data-testid={`qty-${b}`}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          value={totalDisplays[b]}
-                          onChange={e => setTotal(b, e.target.value)}
-                          className={styles.numInput}
-                          data-filled={bQ > 0 || undefined}
-                          data-testid={`total-${b}`}
-                        />
-                      </td>
-                    </>
-                  ) : <><td /><td /><td /></>}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <div className={styles.gridLayout}>
+
+          <table className={styles.denomTable}>
+            <thead>
+              <tr><th colSpan={3} className={styles.sectionPieces}>Pièces</th></tr>
+              <tr>
+                <th className={`${styles.denomLabel} ${styles.colHeader}`}>Coupure</th>
+                <th className={styles.colHeader}>Qté</th>
+                <th className={styles.colHeader}>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {PIECES.map(p => {
+                const pQ = qtys[p];
+                return (
+                  <tr key={p}>
+                    <td className={styles.denomLabel}>{formatDenom(p)}</td>
+                    <td>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={pQ === 0 ? '' : pQ}
+                        onChange={e => setQty(p, e.target.value)}
+                        className={styles.numInput}
+                        data-filled={pQ > 0 || undefined}
+                        data-testid={`qty-${p}`}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={totalDisplays[p]}
+                        onChange={e => setTotal(p, e.target.value)}
+                        className={styles.numInput}
+                        data-filled={pQ > 0 || undefined}
+                        data-testid={`total-${p}`}
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          <table className={styles.denomTable}>
+            <thead>
+              <tr><th colSpan={3} className={styles.sectionBillets}>Billets</th></tr>
+              <tr>
+                <th className={`${styles.denomLabel} ${styles.colHeader}`}>Coupure</th>
+                <th className={styles.colHeader}>Qté</th>
+                <th className={styles.colHeader}>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {BILLETS.map(b => {
+                const bQ = qtys[b];
+                return (
+                  <tr key={b}>
+                    <td className={styles.denomLabel}>{formatDenom(b)}</td>
+                    <td>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={bQ === 0 ? '' : bQ}
+                        onChange={e => setQty(b, e.target.value)}
+                        className={styles.numInput}
+                        data-filled={bQ > 0 || undefined}
+                        data-testid={`qty-${b}`}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={totalDisplays[b]}
+                        onChange={e => setTotal(b, e.target.value)}
+                        className={styles.numInput}
+                        data-filled={bQ > 0 || undefined}
+                        data-testid={`total-${b}`}
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+        </div>
       </div>
 
       <div className={styles.totals}>
