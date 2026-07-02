@@ -11,7 +11,7 @@
 /* Le panneau interne ne définit intentionnellement pas de taille :
    chaque modale fournit sa propre classe via la prop `className`. */
 .panel {
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  background: var(--bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
 }

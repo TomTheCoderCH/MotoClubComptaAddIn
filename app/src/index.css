@@ -1,3 +1,71 @@
+:root {
+  /* === Accent === */
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --accent-dark: #1d4ed8;
+
+  /* === Texte === */
+  --text: #334155;           /* texte courant (td, paragraphes) */
+  --text-heading: #0f172a;   /* titres h1/h2 */
+  --text-subtle: #475569;    /* sous-titres, th, labels */
+  --text-muted: #64748b;     /* secondaire, badges, placeholders */
+  --text-faint: #94a3b8;     /* très discret, hints, disabled */
+  --text-on-accent: #ffffff; /* texte sur fond coloré */
+
+  /* === Bordures === */
+  --border: #e2e8f0;         /* bordures standards */
+  --border-input: #cbd5e1;   /* bordures des inputs */
+  --border-light: #f1f5f9;   /* séparateurs légers */
+
+  /* === Fonds === */
+  --bg: #ffffff;
+  --bg-secondary: #f8fafc;   /* fond principal de page, alternance */
+  --bg-muted: #e2e8f0;       /* lignes de total, fonds atténués */
+  --hover: #f1f5f9;          /* fond au survol, thead */
+
+  /* === États === */
+  --error: #dc2626;
+  --error-bg: #fee2e2;
+  --error-border: #fca5a5;
+  --danger: #ef4444;          /* boutons destructifs (état initial) */
+  --success: #16a34a;
+  --success-dark: #15803d;
+  --success-bg: #dcfce7;
+  --warning: #d97706;
+  --warning-text: #92400e;    /* texte sur fond warning */
+  --warning-bg: #fffbeb;
+  --warning-border: #fde68a;
+
+  /* === En-têtes de tableaux sombres === */
+  --table-header-dark: #1e3a5f;
+
+  /* === Sidebar (thème sombre) === */
+  --sidebar-bg: #1e293b;
+  --sidebar-hover: #253347;
+  --sidebar-active: #334155;
+  --sidebar-text: #94a3b8;
+  --sidebar-text-hover: #cbd5e1;
+  --sidebar-text-active: #93c5fd;
+  --sidebar-text-brand: #f1f5f9;
+  --sidebar-text-body: #e2e8f0;
+
+  /* === Typographie === */
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+
+  /* === Formes === */
+  --radius-sm: 4px;
+  --radius: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+
+  /* === Ombres === */
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.18);
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
 }
@@ -6,8 +74,8 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   margin: 0;
   padding: 0;
-  background: #fafafa;
-  color: #111;
+  background: var(--bg-secondary);
+  color: var(--text);
 }
 
 #root {

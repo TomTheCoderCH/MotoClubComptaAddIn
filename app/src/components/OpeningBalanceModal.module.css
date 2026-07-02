@@ -7,30 +7,30 @@
 .h2 {
   margin: 0 0 1.25rem;
   font-size: 1.1rem;
-  color: #0f172a;
+  color: var(--text-heading);
 }
 
 .alert {
-  background: #fee2e2;
-  border: 1px solid #fca5a5;
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
   padding: 0.6rem 0.75rem;
-  border-radius: 6px;
+  border-radius: var(--radius);
   margin-bottom: 1rem;
-  color: #dc2626;
-  font-size: 0.875rem;
+  color: var(--error);
+  font-size: var(--font-size-sm);
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 1.5rem;
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
 }
 
 .sectionHeader {
   padding: 0.5rem 0 0.25rem;
   font-weight: 600;
-  color: #475569;
+  color: var(--text-subtle);
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -38,7 +38,7 @@
 
 .accountCell {
   padding: 0.3rem 0;
-  color: #334155;
+  color: var(--text);
   width: 60%;
 }
 
@@ -50,17 +50,17 @@
 .input {
   width: 120px;
   padding: 0.3rem 0.5rem;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-input);
   border-radius: 5px;
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
   text-align: right;
   font-family: monospace;
 }
 
 .inputReadOnly {
-  background: #f1f5f9;
-  color: #64748b;
-  border: 1px solid #e2e8f0;
+  background: var(--hover);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
 }
 
 .actions {
@@ -71,36 +71,36 @@
 
 .btn {
   padding: 0.5rem 1rem;
-  background: #3b82f6;
-  color: #fff;
+  background: var(--accent);
+  color: var(--text-on-accent);
   border: none;
-  border-radius: 6px;
-  font-size: 0.875rem;
+  border-radius: var(--radius);
+  font-size: var(--font-size-sm);
   cursor: pointer;
   font-weight: 500;
 }
 
 .btn:hover {
-  background: #2563eb;
+  background: var(--accent-hover);
 }
 
 .btn:disabled {
-  background: #94a3b8;
+  background: var(--text-faint);
   cursor: not-allowed;
 }
 
 .btnSecondary {
   padding: 0.5rem 1rem;
-  background: #f1f5f9;
-  color: #334155;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  font-size: 0.875rem;
+  background: var(--hover);
+  color: var(--text);
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius);
+  font-size: var(--font-size-sm);
   cursor: pointer;
 }
 
 .btnSecondary:hover {
-  background: #e2e8f0;
+  background: var(--bg-muted);
 }
 
 .btnSecondary:disabled {

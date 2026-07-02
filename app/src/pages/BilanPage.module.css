@@ -9,7 +9,7 @@
 .h1 {
   margin: 0;
   font-size: 1.5rem;
-  color: #0f172a;
+  color: var(--text-heading);
 }
 
 .yearSelector {
@@ -20,32 +20,32 @@
 
 .label {
   font-weight: 500;
-  font-size: 0.875rem;
-  color: #475569;
+  font-size: var(--font-size-sm);
+  color: var(--text-subtle);
 }
 
 .select {
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius);
   padding: 0.35rem 0.6rem;
-  font-size: 0.875rem;
-  color: #0f172a;
-  background: #fff;
+  font-size: var(--font-size-sm);
+  color: var(--text-heading);
+  background: var(--bg);
 }
 
 .error {
-  background: #fee2e2;
-  border: 1px solid #fca5a5;
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
   padding: 0.75rem;
-  border-radius: 6px;
+  border-radius: var(--radius);
   margin-bottom: 1.25rem;
-  color: #dc2626;
-  font-size: 0.875rem;
+  color: var(--error);
+  font-size: var(--font-size-sm);
 }
 
 .empty {
-  color: #64748b;
-  font-size: 0.875rem;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
 }
 
 .section {
@@ -54,9 +54,9 @@
 
 .sectionTitle {
   margin: 0 0 0.75rem;
-  font-size: 1rem;
+  font-size: var(--font-size-base);
   font-weight: 600;
-  color: #334155;
+  color: var(--text);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -75,15 +75,15 @@
 .table {
   border-collapse: collapse;
   width: 100%;
-  font-size: 0.875rem;
-  background: #fff;
-  border-radius: 8px;
+  font-size: var(--font-size-sm);
+  background: var(--bg);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow);
 }
 
 .theadRow {
-  background: #1e3a5f;
+  background: var(--table-header-dark);
 }
 
 .thSide {
@@ -91,17 +91,17 @@
   font-weight: 600;
   font-size: 0.78rem;
   letter-spacing: 0.06em;
-  color: #fff;
+  color: var(--text-on-accent);
   text-align: left;
 }
 
 .dataRow {
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .td {
   padding: 0.4rem 1rem;
-  color: #334155;
+  color: var(--text);
 }
 
 .tdRight {
@@ -112,29 +112,29 @@
 
 .tdEmpty {
   padding: 0.4rem 1rem;
-  color: #94a3b8;
+  color: var(--text-faint);
   font-style: italic;
 }
 
 /* Ligne résultat provisoire dans le passif */
 .resultRow {
-  border-bottom: 1px solid #f1f5f9;
-  background: #f8fafc;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-secondary);
   font-style: italic;
 }
 
 .totalCell {
   padding: 0.5rem 1rem;
   font-weight: 600;
-  color: #0f172a;
-  background: #e2e8f0;
-  border-top: 2px solid #94a3b8;
+  color: var(--text-heading);
+  background: var(--bg-muted);
+  border-top: 2px solid var(--text-faint);
 }
 
 /* Couleurs négatives */
 .tdRight[data-negative],
 .totalCell[data-negative] {
-  color: #dc2626;
+  color: var(--error);
 }
 
 /* Ligne d'équilibre du bilan */
@@ -142,17 +142,17 @@
   margin-top: 0.6rem;
   font-size: 0.8rem;
   font-weight: 500;
-  color: #dc2626;
+  color: var(--error);
 }
 
 .balanceCheck[data-ok] {
-  color: #16a34a;
+  color: var(--success);
 }
 
 .note {
   margin: 0.4rem 0 0;
   font-size: 0.78rem;
-  color: #94a3b8;
+  color: var(--text-faint);
 }
 
 /* Bandeau résultat net */
@@ -162,16 +162,16 @@
   align-items: center;
   margin-top: 0.75rem;
   padding: 0.75rem 1.25rem;
-  background: #dcfce7;
+  background: var(--success-bg);
   border: 1px solid #86efac;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   font-weight: 700;
-  font-size: 1rem;
-  color: #15803d;
+  font-size: var(--font-size-base);
+  color: var(--success-dark);
 }
 
 .netResult[data-negative] {
-  background: #fee2e2;
-  border-color: #fca5a5;
-  color: #dc2626;
+  background: var(--error-bg);
+  border-color: var(--error-border);
+  color: var(--error);
 }

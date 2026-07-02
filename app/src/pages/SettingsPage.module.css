@@ -1,21 +1,21 @@
 .h1 {
   margin: 0 0 1.5rem;
   font-size: 1.5rem;
-  color: #0f172a;
+  color: var(--text-heading);
 }
 
 .h2 {
   margin: 0 0 0.75rem;
-  font-size: 1rem;
+  font-size: var(--font-size-base);
   font-weight: 600;
-  color: #334155;
+  color: var(--text);
 }
 
 .h3 {
   margin: 1.25rem 0 0.5rem;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #475569;
+  color: var(--text-subtle);
 }
 
 .section {
@@ -24,23 +24,23 @@
 }
 
 .alertError {
-  background: #fee2e2;
-  border: 1px solid #fca5a5;
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
   padding: 0.75rem;
-  border-radius: 6px;
+  border-radius: var(--radius);
   margin-bottom: 1.25rem;
-  color: #dc2626;
-  font-size: 0.875rem;
+  color: var(--error);
+  font-size: var(--font-size-sm);
 }
 
 .dbPathInput {
   width: 100%;
   padding: 0.4rem 0.6rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  color: #475569;
-  background: #f8fafc;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius);
+  font-size: var(--font-size-sm);
+  color: var(--text-subtle);
+  background: var(--bg-secondary);
   box-sizing: border-box;
 }
 
@@ -49,21 +49,21 @@
   align-items: center;
   gap: 0.35rem;
   padding: 0.5rem 1rem;
-  background: #3b82f6;
-  color: #fff;
+  background: var(--accent);
+  color: var(--text-on-accent);
   border: none;
-  border-radius: 6px;
-  font-size: 0.875rem;
+  border-radius: var(--radius);
+  font-size: var(--font-size-sm);
   cursor: pointer;
   font-weight: 500;
 }
 
 .btn:hover {
-  background: #2563eb;
+  background: var(--accent-hover);
 }
 
 .btn:disabled {
-  background: #94a3b8;
+  background: var(--text-faint);
   cursor: not-allowed;
 }
 
@@ -73,16 +73,16 @@
   gap: 0.35rem;
   margin-top: 0.5rem;
   padding: 0.4rem 0.9rem;
-  background: #f1f5f9;
-  color: #334155;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  font-size: 0.875rem;
+  background: var(--hover);
+  color: var(--text);
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius);
+  font-size: var(--font-size-sm);
   cursor: pointer;
 }
 
 .btnSecondary:hover {
-  background: #e2e8f0;
+  background: var(--bg-muted);
 }
 
 .btnSecondary:disabled {
@@ -92,47 +92,47 @@
 
 .success {
   margin: 0.5rem 0 0;
-  font-size: 0.875rem;
-  color: #16a34a;
+  font-size: var(--font-size-sm);
+  color: var(--success);
 }
 
 .errorText {
   margin: 0.5rem 0 0;
-  font-size: 0.875rem;
-  color: #dc2626;
+  font-size: var(--font-size-sm);
+  color: var(--error);
 }
 
 .hint {
   margin: 0.4rem 0 0;
   font-size: 0.8rem;
-  color: #94a3b8;
+  color: var(--text-faint);
 }
 
 .empty {
-  color: #64748b;
-  font-size: 0.875rem;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
 }
 
 .table {
   border-collapse: collapse;
   width: 100%;
-  font-size: 0.875rem;
-  background: #fff;
-  border-radius: 8px;
+  font-size: var(--font-size-sm);
+  background: var(--bg);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow);
 }
 
 .theadRow {
-  background: #f1f5f9;
+  background: var(--hover);
 }
 
 .th {
   text-align: left;
   padding: 0.6rem 1rem;
   font-weight: 600;
-  color: #475569;
-  border-bottom: 1px solid #e2e8f0;
+  color: var(--text-subtle);
+  border-bottom: 1px solid var(--border);
 }
 
 .thRight {
@@ -140,12 +140,12 @@
 }
 
 .dataRow {
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .td {
   padding: 0.4rem 1rem;
-  color: #334155;
+  color: var(--text);
 }
 
 .tdRight {
@@ -158,16 +158,16 @@
   align-items: center;
   gap: 0.3rem;
   padding: 0.2rem 0.6rem;
-  background: #f1f5f9;
-  color: #334155;
-  border: 1px solid #cbd5e1;
-  border-radius: 4px;
+  background: var(--hover);
+  color: var(--text);
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-sm);
   font-size: 0.8rem;
   cursor: pointer;
 }
 
 .btnRestore:hover {
-  background: #e2e8f0;
+  background: var(--bg-muted);
 }
 
 .btnRestore:disabled {
@@ -184,13 +184,13 @@
 
 .excelLabel {
   font-weight: 500;
-  font-size: 0.875rem;
-  color: #475569;
+  font-size: var(--font-size-sm);
+  color: var(--text-subtle);
 }
 
 .excelSelect {
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius);
   padding: 0.35rem 0.6rem;
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
 }

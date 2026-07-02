@@ -7,7 +7,7 @@
 .message {
   margin: 0 0 1.25rem;
   font-size: 0.95rem;
-  color: #334155;
+  color: var(--text);
   line-height: 1.5;
 }
 
@@ -19,21 +19,21 @@
 
 .cancelBtn {
   padding: 0.45rem 1rem;
-  background: #fff;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius);
   cursor: pointer;
-  font-size: 0.875rem;
-  color: #475569;
+  font-size: var(--font-size-sm);
+  color: var(--text-subtle);
 }
 
 .confirmBtn {
   padding: 0.45rem 1rem;
-  background: #ef4444;
-  color: #fff;
+  background: var(--danger);
+  color: var(--text-on-accent);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius);
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
   font-weight: 500;
 }

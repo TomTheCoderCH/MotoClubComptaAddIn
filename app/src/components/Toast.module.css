@@ -2,19 +2,19 @@
   position: fixed;
   bottom: 1.5rem;
   right: 1.5rem;
-  color: #fff;
+  color: var(--text-on-accent);
   padding: 0.65rem 1.1rem;
-  border-radius: 8px;
-  font-size: 0.875rem;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-sm);
   font-weight: 500;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-md);
   z-index: 9999;
   animation: slideIn 0.2s ease;
-  background: #16a34a;
+  background: var(--success);
 }
 
 .toast[data-variant='error'] {
-  background: #dc2626;
+  background: var(--error);
 }
 
 @keyframes slideIn {
