@@ -6,6 +6,20 @@ Versioning selon [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.2.0] — en cours
+
+### Ajouté
+
+- **Gestion de la caisse** — nouvelle page "Caisse" (sidebar, entre Journal et Exercices)
+  - **Comptages de caisse physiques** : saisie des 12 coupures CHF (0.05 → 200.00) avec saisie bidirectionnelle quantité ↔ total ; écart automatique vs solde théorique du compte 100 ; contextes AVANT / FONDS / APRÈS / LIBRE
+  - **Modification** d'un comptage existant (bouton Modifier par ligne, pré-chargement des valeurs)
+  - **Sessions de manifestation** (onglet Manifestations) : regroupement de comptages AVANT/FONDS/APRÈS par événement (Marché, Broche, Souper…) ; CA caisse calculé = APRÈS − (AVANT + FONDS) ; expand/collapse du détail par session ; badges de contexte colorés
+  - Sélecteur de session optionnel lors de la création/modification d'un comptage
+  - Migration schéma SQLite v3 : tables `cash_counts`, `cash_count_lines`, `cash_sessions`
+  - 53 nouveaux tests Vitest (CRUD DB, handlers IPC cash, composants CaissePage / CashCountModal / CashSessionModal)
+
+---
+
 ## [1.1.2] — 2026-07-01
 
 ### Ajouté

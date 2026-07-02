@@ -158,6 +158,7 @@ On ne commite **jamais** directement sur `main`.
 | `v1.0.0` | `185854f` | 2026-07-01 | Première version stable — toutes les fonctionnalités principales livrées |
 | `v1.0.1` | `ae74971` | 2026-07-01 | Logo club sur la page de garde PDF, mise en page centrée |
 | `v1.1.2` | `cc38064` | 2026-07-01 | CI/CD GitHub Actions + mise à jour automatique Electron |
+| `v1.2.0` | *(à tagger)* | — | Gestion de la caisse (comptages + sessions de manifestation) + fonctionnalités à venir |
 
 ---
 
@@ -515,7 +516,7 @@ app/
 - [x] Système d'aide : Tooltip dynamique par ligne (EntryForm) + drawer latéral global (F1 / bouton sidebar) — 334 tests — spec : `docs/superpowers/specs/2026-06-24-help-system-design.md`
 - [x] Flèches ▲▼ colorées sur les inputs débit/crédit de l'EntryForm selon le type de compte — wrapper `.amountWrapper` avec `data-effect="increase|decrease"` + CSS `::after` (▲ vert / ▼ rouge) — 362 tests
 
-- [x] Migrations de schéma SQLite : `db/schema-migrations.ts` — `PRAGMA user_version` + tableau `MIGRATIONS[]`, appelé dans `openDatabase()` après `initSchema()`. Version actuelle : 2 (v1 schéma initial, v2 account_group). Pour ajouter une migration : ajouter `{ version: N, description: '...', sql: '...' }` au tableau — 339 tests
+- [x] Migrations de schéma SQLite : `db/schema-migrations.ts` — `PRAGMA user_version` + tableau `MIGRATIONS[]`, appelé dans `openDatabase()` après `initSchema()`. Version actuelle : 3 (v1 schéma initial, v2 account_group, v3 cash_counts/cash_count_lines/cash_sessions). Pour ajouter une migration : ajouter `{ version: N, description: '...', sql: '...' }` au tableau — 339 tests
 - [x] Restauration depuis une sauvegarde — bouton dialog libre + bouton par ligne de sauvegarde automatique dans SettingsPage ; handler `backup:restore(filename?)` (backup de sécurité, `close()` + `copyFileSync` + `openDatabase()` + `webContents.reload()`) — 360 tests
 - [x] Version du schéma SQLite — `schemaVersion` dans `BackupInfo` (lecture header SQLite offset 60, sans connexion DB), handler `db:getSchemaVersion`, colonne "Ver." dans la liste des sauvegardes, version DB courante dans la section Base de données — 360 tests
 - [x] Backup automatique conditionnel — `hasDbChanges()` via `total_changes()` SQLite (snapshot post-`openDatabase()`, comparé dans `before-quit`) ; aucun backup si session en lecture seule — 362 tests
@@ -611,6 +612,12 @@ app/
 - [x] **Synchronisation plan comptable seed ↔ DB** — noms simplifiés (suppression préfixe "Événement —"), groupes analytiques inclus dans le seed, `account_group` ajouté à l'INSERT — `app/src/db/seed.ts`.
 - [x] **Logo PDF** — logo du club (`app/resources/images/logo_twint.png`) centré sur la page de garde PDF (fit 260×163 pt, ratio préservé) ; `imagesDir()` cross-platform (dev/prod) ; `resources/images/` ajouté aux `extraResources` Electron Forge — v1.0.1.
 - [x] **CI/CD GitHub Actions + mise à jour automatique** — `.github/workflows/release.yml` déclenché sur tag `v*` : build Windows, publication GitHub Release avec release notes extraites du CHANGELOG, upload assets Squirrel. `@electron-forge/publisher-github` dans `forge.config.ts`. `update-electron-app` dans `main.ts` (packaged uniquement). Release notes injectées via `softprops/action-gh-release` avant l'upload des assets — v1.1.2.
+
+- [x] **Gestion de la caisse** — page Caisse (sidebar), migration schéma v3 (`cash_counts`, `cash_count_lines`, `cash_sessions`) — spec : `docs/superpowers/specs/2026-07-02-cash-management-design.md`
+  - **Comptages** : saisie/modification/suppression, 12 coupures CHF, saisie bidirectionnelle qté↔total, contextes AVANT/FONDS/APRÈS/LIBRE, écart vs solde théorique compte 100
+  - **Sessions de manifestation** : regroupement AVANT/FONDS/APRÈS, CA caisse calculé, expand/collapse, lien session optionnel à la création/modification d'un comptage
+  - 53 nouveaux tests Vitest — **612 tests au total**
+  - `feature/cash-management` mergée sur `main` (commit `78daaed`) — v1.2.0 non encore taguée
 
 > Note : les données 2025 ont été saisies manuellement dans la DB — la comptabilité réelle est déjà dans SQLite.
 
