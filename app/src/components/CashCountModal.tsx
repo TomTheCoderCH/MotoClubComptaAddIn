@@ -39,7 +39,6 @@ export default function CashCountModal({ fiscalYearId, onClose, onSaved }: Props
   const setQty = useCallback((denom: number, raw: string) => {
     const qty = Math.max(0, parseInt(raw) || 0);
     setQtys(prev => ({ ...prev, [denom]: qty }));
-    // Recompute total display from the new qty
     setTotalDisplays(prev => ({
       ...prev,
       [denom]: qty === 0 ? '' : (qty * denom / 100).toFixed(2),
@@ -58,8 +57,10 @@ export default function CashCountModal({ fiscalYearId, onClose, onSaved }: Props
     }));
   }, []);
 
-  const grandTotal = DENOMINATIONS.reduce((s, d) => s + d * qtys[d], 0);
-  const hasAny     = DENOMINATIONS.some(d => qtys[d] > 0);
+  const piecesTotal  = PIECES.reduce((s, d) => s + d * qtys[d], 0);
+  const billetsTotal = BILLETS.reduce((s, d) => s + d * qtys[d], 0);
+  const grandTotal   = piecesTotal + billetsTotal;
+  const hasAny       = DENOMINATIONS.some(d => qtys[d] > 0);
 
   const handleSave = async () => {
     if (!label.trim()) { setError('Le libellé est requis'); return; }
@@ -86,18 +87,33 @@ export default function CashCountModal({ fiscalYearId, onClose, onSaved }: Props
 
   return (
     <Modal onClose={onClose} className={styles.modal}>
-      <h2 className={styles.title}>Nouvel arrêté de caisse</h2>
+      <h2 className={styles.title}>Nouveau comptage de caisse</h2>
 
       <div className={styles.fields}>
-        <label className={styles.field}>
-          <span>Date</span>
-          <input
-            type="date"
-            value={date}
-            onChange={e => setDate(e.target.value)}
-            aria-label="Date"
-          />
-        </label>
+        <div className={styles.fieldRow}>
+          <label className={styles.field}>
+            <span>Date</span>
+            <input
+              type="date"
+              value={date}
+              onChange={e => setDate(e.target.value)}
+              aria-label="Date"
+            />
+          </label>
+          <label className={styles.field}>
+            <span>Contexte</span>
+            <select
+              value={context}
+              onChange={e => setContext(e.target.value as CashContext)}
+              aria-label="Contexte"
+            >
+              <option value="LIBRE">Libre</option>
+              <option value="AVANT">Avant manifestation</option>
+              <option value="FONDS">Fonds de caisse</option>
+              <option value="APRES">Après manifestation</option>
+            </select>
+          </label>
+        </div>
         <label className={styles.field}>
           <span>Libellé</span>
           <input
@@ -107,19 +123,6 @@ export default function CashCountModal({ fiscalYearId, onClose, onSaved }: Props
             placeholder="ex : Avant Marché 2026"
             aria-label="Libellé"
           />
-        </label>
-        <label className={styles.field}>
-          <span>Contexte</span>
-          <select
-            value={context}
-            onChange={e => setContext(e.target.value as CashContext)}
-            aria-label="Contexte"
-          >
-            <option value="LIBRE">Libre</option>
-            <option value="AVANT">Avant manifestation</option>
-            <option value="FONDS">Fonds de caisse</option>
-            <option value="APRES">Après manifestation</option>
-          </select>
         </label>
         <label className={styles.field}>
           <span>Notes</span>
@@ -135,9 +138,18 @@ export default function CashCountModal({ fiscalYearId, onClose, onSaved }: Props
         <table className={styles.denomTable}>
           <thead>
             <tr>
-              <th>Pièces</th><th>Qté</th><th>Total</th>
+              <th colSpan={3} className={styles.sectionPieces}>Pièces</th>
               <th className={styles.sep} />
-              <th>Billets</th><th>Qté</th><th>Total</th>
+              <th colSpan={3} className={styles.sectionBillets}>Billets</th>
+            </tr>
+            <tr>
+              <th className={`${styles.denomLabel} ${styles.colHeader}`}>Coupure</th>
+              <th className={styles.colHeader}>Qté</th>
+              <th className={styles.colHeader}>Total</th>
+              <th className={styles.sep} />
+              <th className={`${styles.denomLabel} ${styles.colHeader}`}>Coupure</th>
+              <th className={styles.colHeader}>Qté</th>
+              <th className={styles.colHeader}>Total</th>
             </tr>
           </thead>
           <tbody>
@@ -159,6 +171,7 @@ export default function CashCountModal({ fiscalYearId, onClose, onSaved }: Props
                           value={pQ === 0 ? '' : pQ}
                           onChange={e => setQty(p, e.target.value)}
                           className={styles.numInput}
+                          data-filled={pQ > 0 || undefined}
                           data-testid={`qty-${p}`}
                         />
                       </td>
@@ -169,6 +182,7 @@ export default function CashCountModal({ fiscalYearId, onClose, onSaved }: Props
                           value={totalDisplays[p]}
                           onChange={e => setTotal(p, e.target.value)}
                           className={styles.numInput}
+                          data-filled={pQ > 0 || undefined}
                           data-testid={`total-${p}`}
                         />
                       </td>
@@ -186,6 +200,7 @@ export default function CashCountModal({ fiscalYearId, onClose, onSaved }: Props
                           value={bQ === 0 ? '' : bQ}
                           onChange={e => setQty(b, e.target.value)}
                           className={styles.numInput}
+                          data-filled={bQ > 0 || undefined}
                           data-testid={`qty-${b}`}
                         />
                       </td>
@@ -196,6 +211,7 @@ export default function CashCountModal({ fiscalYearId, onClose, onSaved }: Props
                           value={totalDisplays[b]}
                           onChange={e => setTotal(b, e.target.value)}
                           className={styles.numInput}
+                          data-filled={bQ > 0 || undefined}
                           data-testid={`total-${b}`}
                         />
                       </td>
@@ -209,8 +225,20 @@ export default function CashCountModal({ fiscalYearId, onClose, onSaved }: Props
       </div>
 
       <div className={styles.totals}>
-        <span className={styles.totalLabel}>Total compté</span>
-        <span className={styles.totalValue}>{formatCHF(grandTotal)} CHF</span>
+        <div className={styles.totalPart}>
+          <span className={styles.totalPartLabel}>Pièces</span>
+          <span className={styles.totalPartValue}>{formatCHF(piecesTotal)}</span>
+        </div>
+        <span className={styles.totalOp}>+</span>
+        <div className={styles.totalPart}>
+          <span className={styles.totalPartLabel}>Billets</span>
+          <span className={styles.totalPartValue}>{formatCHF(billetsTotal)}</span>
+        </div>
+        <span className={styles.totalOp}>=</span>
+        <div className={styles.totalMain}>
+          <span className={styles.totalMainLabel}>Total compté</span>
+          <span className={styles.totalMainValue}>{formatCHF(grandTotal)} CHF</span>
+        </div>
       </div>
 
       {error && <p className={styles.error} role="alert">{error}</p>}

@@ -221,12 +221,12 @@ function AppTab() {
 
       <h3 className={styles.sectionTitle}>Caisse</h3>
       <p className={styles.para}>
-        La page <strong>Caisse</strong> permet d'enregistrer les arrêtés de caisse physiques
-        (comptage pièce par pièce). Pour chaque coupure, saisissez la quantité <em>ou</em> le
+        La page <strong>Caisse</strong> permet d'enregistrer des comptages de caisse physiques
+        (décompte pièce par pièce de toutes les coupures). Pour chaque coupure, saisissez la quantité <em>ou</em> le
         montant total — l'autre champ se calcule automatiquement.
       </p>
       <p className={styles.para}>
-        Chaque arrêté affiche l'écart entre le total compté et le solde théorique du compte
+        Chaque comptage affiche l'écart entre le total compté et le solde théorique du compte
         100 (Caisse) à la même date. Un écart nul est affiché avec <strong>✓</strong>,
         un écart non nul en rouge.
       </p>

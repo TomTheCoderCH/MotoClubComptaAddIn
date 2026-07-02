@@ -941,7 +941,7 @@ export function getCashCountById(id: number): CashCount {
   const row = getDb().prepare(`
     ${CASH_COUNT_SELECT} WHERE cc.id = ?
   `).get(id) as CashCount | undefined;
-  if (!row) throw new Error(`Arrêté de caisse ${id} introuvable`);
+  if (!row) throw new Error(`Comptage de caisse ${id} introuvable`);
   const lines = getDb().prepare(
     'SELECT denomination, quantity FROM cash_count_lines WHERE cash_count_id = ? ORDER BY denomination'
   ).all(id) as CashCountLine[];

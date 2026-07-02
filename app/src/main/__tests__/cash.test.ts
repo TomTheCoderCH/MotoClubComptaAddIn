@@ -73,9 +73,9 @@ describe('createCashCount', () => {
     lines[4].quantity = 38; // 100 centimes × 38 = 3 800 centimes
     const count = createCashCount({
       fiscal_year_id: fyId, date: '2025-03-08',
-      label: 'Test arrêté', context: 'LIBRE', lines,
+      label: 'Test comptage', context: 'LIBRE', lines,
     });
-    expect(count.label).toBe('Test arrêté');
+    expect(count.label).toBe('Test comptage');
     expect(count.context).toBe('LIBRE');
     expect(count.total).toBe(3800);
     expect(count.lines).toHaveLength(12);
@@ -107,7 +107,7 @@ describe('createCashCount', () => {
 describe('getCashCounts', () => {
   beforeEach(freshDb);
 
-  it('retourne les arrêtés triés par date décroissante', () => {
+  it('retourne les comptages triés par date décroissante', () => {
     const fyId = makeFiscalYear();
     createCashCount({ fiscal_year_id: fyId, date: '2025-01-01', label: 'A', context: 'LIBRE', lines: emptyLines() });
     createCashCount({ fiscal_year_id: fyId, date: '2025-03-08', label: 'B', context: 'AVANT', lines: emptyLines() });
@@ -117,7 +117,7 @@ describe('getCashCounts', () => {
     expect(counts[1].label).toBe('A');
   });
 
-  it('ne retourne pas les arrêtés des autres exercices', () => {
+  it('ne retourne pas les comptages des autres exercices', () => {
     const fy1 = makeFiscalYear();
     createFiscalYear(2026);
     const fy2 = getAllFiscalYears().find(f => f.year === 2026)!.id;

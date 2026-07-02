@@ -35,13 +35,13 @@ describe('CaissePage', () => {
     await screen.findByText(/aucun exercice/i);
   });
 
-  it('affiche les onglets Arrêtés et Manifestations', async () => {
+  it('affiche les onglets Comptages et Manifestations', async () => {
     render(<CaissePage />);
-    await screen.findByRole('tab', { name: /arrêtés/i });
+    await screen.findByRole('tab', { name: /comptages/i });
     expect(screen.getByRole('tab', { name: /manifestations/i })).toBeInTheDocument();
   });
 
-  it('affiche un arrêté dans la liste avec libellé et montants', async () => {
+  it('affiche un comptage dans la liste avec libellé et montants', async () => {
     render(<CaissePage />);
     await screen.findByText('Avant Marché');
     // total 137830 centimes = 1378.30 → formatCHF returns "1'378.30"
@@ -50,14 +50,14 @@ describe('CaissePage', () => {
     expect(cells.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('le bouton Nouvel arrêté ouvre la modale', async () => {
+  it('le bouton Nouveau comptage ouvre la modale', async () => {
     render(<CaissePage />);
-    await screen.findByRole('button', { name: /nouvel arrêté/i });
-    await userEvent.click(screen.getByRole('button', { name: /nouvel arrêté/i }));
-    expect(screen.getByText(/nouvel arrêté de caisse/i)).toBeInTheDocument();
+    await screen.findByRole('button', { name: /nouveau comptage/i });
+    await userEvent.click(screen.getByRole('button', { name: /nouveau comptage/i }));
+    expect(screen.getByText(/nouveau comptage de caisse/i)).toBeInTheDocument();
   });
 
-  it('supprimer un arrêté appelle deleteCashCount après confirmation', async () => {
+  it('supprimer un comptage appelle deleteCashCount après confirmation', async () => {
     render(<CaissePage />);
     await screen.findByText('Avant Marché');
     await userEvent.click(screen.getByRole('button', { name: /supprimer/i }));

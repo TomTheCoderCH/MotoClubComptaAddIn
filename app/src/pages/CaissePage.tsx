@@ -43,7 +43,7 @@ export default function CaissePage() {
 
   const handleSaved = () => {
     setShowModal(false);
-    setToast({ message: 'Arrêté enregistré', variant: 'success' });
+    setToast({ message: 'Comptage enregistré', variant: 'success' });
     loadCounts();
   };
 
@@ -51,7 +51,7 @@ export default function CaissePage() {
     if (deleteId === null) return;
     try {
       await window.api.deleteCashCount(deleteId);
-      setToast({ message: 'Arrêté supprimé', variant: 'success' });
+      setToast({ message: 'Comptage supprimé', variant: 'success' });
       loadCounts();
     } catch {
       setToast({ message: 'Erreur lors de la suppression', variant: 'error' });
@@ -89,7 +89,7 @@ export default function CaissePage() {
             onClick={() => setShowModal(true)}
             disabled={!selectedYear || !!selectedYear.is_closed}
           >
-            <Plus size={16} /> Nouvel arrêté
+            <Plus size={16} /> Nouveau comptage
           </button>
         )}
       </div>
@@ -101,7 +101,7 @@ export default function CaissePage() {
           className={activeTab === 'counts' ? styles.tabActive : styles.tab}
           onClick={() => setActiveTab('counts')}
         >
-          Arrêtés
+          Comptages
         </button>
         <button
           role="tab"
@@ -116,7 +116,7 @@ export default function CaissePage() {
       {activeTab === 'counts' && (
         loading ? <p className={styles.empty}>Chargement…</p> :
         counts.length === 0 ? (
-          <p className={styles.empty}>Aucun arrêté de caisse pour cet exercice.</p>
+          <p className={styles.empty}>Aucun comptage de caisse pour cet exercice.</p>
         ) : (
           <table className={styles.table}>
             <thead>
@@ -182,7 +182,7 @@ export default function CaissePage() {
 
       {deleteId !== null && (
         <ConfirmDialog
-          message="Supprimer cet arrêté de caisse ? Cette action est irréversible."
+          message="Supprimer ce comptage de caisse ? Cette action est irréversible."
           onConfirm={handleDelete}
           onCancel={() => setDeleteId(null)}
         />
