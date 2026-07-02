@@ -219,6 +219,22 @@ function AppTab() {
             sauvegardes automatiques, export Excel global.</dd>
       </dl>
 
+      <h3 className={styles.sectionTitle}>Caisse</h3>
+      <p className={styles.para}>
+        La page <strong>Caisse</strong> permet d'enregistrer les arrêtés de caisse physiques
+        (comptage pièce par pièce). Pour chaque coupure, saisissez la quantité <em>ou</em> le
+        montant total — l'autre champ se calcule automatiquement.
+      </p>
+      <p className={styles.para}>
+        Chaque arrêté affiche l'écart entre le total compté et le solde théorique du compte
+        100 (Caisse) à la même date. Un écart nul est affiché avec <strong>✓</strong>,
+        un écart non nul en rouge.
+      </p>
+      <p className={styles.para}>
+        Contextes disponibles : <strong>Libre</strong>, <strong>Avant manifestation</strong>,
+        <strong> Fonds de caisse</strong>, <strong>Après manifestation</strong>.
+      </p>
+
       <h3 className={styles.sectionTitle}>Raccourcis clavier</h3>
       <table className={styles.helpTable}>
         <tbody>
