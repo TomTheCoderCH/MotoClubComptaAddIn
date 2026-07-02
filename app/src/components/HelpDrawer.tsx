@@ -234,6 +234,13 @@ function AppTab() {
         Contextes disponibles : <strong>Libre</strong>, <strong>Avant manifestation</strong>,
         <strong> Fonds de caisse</strong>, <strong>Après manifestation</strong>.
       </p>
+      <p className={styles.para}>
+        L'onglet <strong>Manifestations</strong> regroupe les comptages par session
+        (Marché Villageois, Broche, Souper…). Créez une session, puis liez vos comptages
+        AVANT / FONDS / APRÈS à cette session lors de leur saisie. Le CA caisse de la
+        session est calculé automatiquement : <code>APRÈS − (AVANT + FONDS)</code>.
+        Cliquez sur une session pour voir le détail de ses comptages.
+      </p>
 
       <h3 className={styles.sectionTitle}>Raccourcis clavier</h3>
       <table className={styles.helpTable}>

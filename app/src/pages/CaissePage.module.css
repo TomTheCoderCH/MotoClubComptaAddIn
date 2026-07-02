@@ -33,7 +33,32 @@
 
 [data-negative] { color: var(--error); font-weight: 600; }
 
-.empty   { color: var(--text-muted); font-style: italic; padding: 2rem 0; }
+.empty        { color: var(--text-muted); font-style: italic; padding: 2rem 0; }
+.expandedEmpty { color: var(--text-muted); font-style: italic; padding: 0.5rem 2rem; background: var(--bg-secondary); }
+
+/* Sessions */
+.sessionRow { background: var(--bg); }
+.sessionRow:hover td { background: var(--hover); }
+.sessionLabel { font-weight: 500; }
+.chevron { width: 1.25rem; color: var(--text-muted); vertical-align: middle; }
+
+.linkedCountRow td { background: var(--bg-secondary); padding-top: 0.3rem; padding-bottom: 0.3rem; }
+.linkedLabel  { display: flex; align-items: center; gap: 0.5rem; padding-left: 1.5rem !important; }
+
+.contextBadge {
+  display: inline-block;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.contextBadge[data-context="AVANT"]  { background: #dbeafe; color: #1e40af; }
+.contextBadge[data-context="FONDS"]  { background: #fef3c7; color: #92400e; }
+.contextBadge[data-context="APRES"]  { background: #dcfce7; color: #166534; }
+.contextBadge[data-context="LIBRE"]  { background: var(--border-light); color: var(--text-muted); }
 
 .btnPrimary {
   display: inline-flex; align-items: center; gap: 0.375rem;

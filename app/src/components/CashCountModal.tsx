@@ -3,12 +3,13 @@ import { Save, X } from 'lucide-react';
 import Modal from './Modal';
 import { DENOMINATIONS, PIECES, BILLETS, formatDenom, emptyLines } from '../lib/cash';
 import { formatCHF } from '../lib/format';
-import type { CashContext, CashCountPayload } from '../types';
+import type { CashContext, CashCountPayload, CashSession } from '../types';
 import styles from './CashCountModal.module.css';
 
 interface Props {
   fiscalYearId: number;
-  editId?: number;   // si défini, pré-charge ce comptage en mode édition
+  editId?: number;         // si défini, pré-charge ce comptage en mode édition
+  sessions?: CashSession[]; // liste des sessions disponibles pour lier le comptage
   onClose: () => void;
   onSaved: () => void;
 }
@@ -17,11 +18,12 @@ function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export default function CashCountModal({ fiscalYearId, editId, onClose, onSaved }: Props) {
-  const [date,    setDate]    = useState(todayISO());
-  const [label,   setLabel]   = useState('');
-  const [context, setContext] = useState<CashContext>('LIBRE');
-  const [notes,   setNotes]   = useState('');
+export default function CashCountModal({ fiscalYearId, editId, sessions = [], onClose, onSaved }: Props) {
+  const [date,      setDate]      = useState(todayISO());
+  const [label,     setLabel]     = useState('');
+  const [context,   setContext]   = useState<CashContext>('LIBRE');
+  const [sessionId, setSessionId] = useState<number | ''>('');
+  const [notes,     setNotes]     = useState('');
   const [loadingEdit, setLoadingEdit] = useState(false);
 
   // Quantities keyed by denomination (centimes)
@@ -47,6 +49,7 @@ export default function CashCountModal({ fiscalYearId, editId, onClose, onSaved 
         setDate(count.date);
         setLabel(count.label);
         setContext(count.context);
+        setSessionId(count.session_id ?? '');
         setNotes(count.notes ?? '');
         if (count.lines) {
           setQtys(prev => {
@@ -107,6 +110,7 @@ export default function CashCountModal({ fiscalYearId, editId, onClose, onSaved 
     try {
       const payload: CashCountPayload = {
         fiscal_year_id: fiscalYearId,
+        session_id: sessionId !== '' ? sessionId : undefined,
         date,
         label: label.trim(),
         context,
@@ -167,6 +171,21 @@ export default function CashCountModal({ fiscalYearId, editId, onClose, onSaved 
             aria-label="Libellé"
           />
         </label>
+        {sessions.length > 0 && (
+          <label className={styles.field}>
+            <span>Session (optionnel)</span>
+            <select
+              value={sessionId}
+              onChange={e => setSessionId(e.target.value === '' ? '' : Number(e.target.value))}
+              aria-label="Session"
+            >
+              <option value="">— Aucune session —</option>
+              {sessions.map(s => (
+                <option key={s.id} value={s.id}>{s.label}</option>
+              ))}
+            </select>
+          </label>
+        )}
         <label className={styles.field}>
           <span>Notes</span>
           <textarea
