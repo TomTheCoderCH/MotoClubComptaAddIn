@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
 import CashCountModal from '../components/CashCountModal';
 import ConfirmDialog  from '../components/ConfirmDialog';
 import Toast          from '../components/Toast';
@@ -19,6 +19,7 @@ export default function CaissePage() {
   const [counts,         setCounts]         = useState<CashCount[]>([]);
   const [activeTab,      setActiveTab]      = useState<Tab>('counts');
   const [showModal,      setShowModal]      = useState(false);
+  const [editId,         setEditId]         = useState<number | null>(null);
   const [deleteId,       setDeleteId]       = useState<number | null>(null);
   const [toast,          setToast]          = useState<{ message: string; variant: 'success' | 'error' } | null>(null);
   const [loading,        setLoading]        = useState(false);
@@ -42,8 +43,10 @@ export default function CaissePage() {
   useEffect(() => { loadCounts(); }, [loadCounts]);
 
   const handleSaved = () => {
+    const wasEdit = editId !== null;
     setShowModal(false);
-    setToast({ message: 'Comptage enregistré', variant: 'success' });
+    setEditId(null);
+    setToast({ message: wasEdit ? 'Comptage modifié' : 'Comptage enregistré', variant: 'success' });
     loadCounts();
   };
 
@@ -86,7 +89,7 @@ export default function CaissePage() {
         {activeTab === 'counts' && (
           <button
             className={styles.btnPrimary}
-            onClick={() => setShowModal(true)}
+            onClick={() => { setEditId(null); setShowModal(true); }}
             disabled={!selectedYear || !!selectedYear.is_closed}
           >
             <Plus size={16} /> Nouveau comptage
@@ -149,10 +152,19 @@ export default function CaissePage() {
                       {formatCHF(Math.abs(ecart))}{ecart === 0 ? ' ✓' : ecart > 0 ? ' ▲' : ' ▼'}
                     </td>
                     <td className={styles.session}>{c.session_label ?? '—'}</td>
-                    <td>
+                    <td className={styles.actions}>
+                      <button
+                        className={styles.btnSecondary}
+                        onClick={() => { setEditId(c.id); setShowModal(true); }}
+                        disabled={!!selectedYear?.is_closed}
+                        aria-label="Modifier"
+                      >
+                        <Pencil size={14} /> Modifier
+                      </button>
                       <button
                         className={styles.btnDanger}
                         onClick={() => setDeleteId(c.id)}
+                        disabled={!!selectedYear?.is_closed}
                         aria-label="Supprimer"
                       >
                         <Trash2 size={14} /> Supprimer
@@ -175,7 +187,8 @@ export default function CaissePage() {
       {showModal && selectedYearId && (
         <CashCountModal
           fiscalYearId={selectedYearId}
-          onClose={() => setShowModal(false)}
+          editId={editId ?? undefined}
+          onClose={() => { setShowModal(false); setEditId(null); }}
           onSaved={handleSaved}
         />
       )}

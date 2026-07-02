@@ -969,6 +969,25 @@ export function createCashCount(payload: CashCountPayload): CashCount {
   })();
 }
 
+export function updateCashCount(id: number, payload: CashCountPayload): CashCount {
+  const { date, label, context, notes, lines } = payload;
+  return getDb().transaction((): CashCount => {
+    getDb().prepare(`
+      UPDATE cash_counts SET date = @date, label = @label, context = @context, notes = @notes
+      WHERE id = @id
+    `).run({ date, label, context, notes: notes ?? null, id });
+    getDb().prepare('DELETE FROM cash_count_lines WHERE cash_count_id = ?').run(id);
+    const stmt = getDb().prepare(`
+      INSERT INTO cash_count_lines (cash_count_id, denomination, quantity)
+      VALUES (@cash_count_id, @denomination, @quantity)
+    `);
+    for (const l of lines) {
+      stmt.run({ cash_count_id: id, denomination: l.denomination, quantity: l.quantity });
+    }
+    return getCashCountById(id);
+  })();
+}
+
 export function deleteCashCount(id: number): void {
   getDb().prepare('DELETE FROM cash_counts WHERE id = ?').run(id);
 }

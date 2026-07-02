@@ -18,6 +18,7 @@ vi.mock('../../db', () => ({
   getCashCounts:     vi.fn(),
   getCashCountById:  vi.fn(),
   createCashCount:   vi.fn(),
+  updateCashCount:   vi.fn(),
   deleteCashCount:   vi.fn(),
   getCashSessions:   vi.fn(),
   createCashSession: vi.fn(),
@@ -61,7 +62,7 @@ vi.mock('../../settings', () => ({
 }));
 
 import {
-  getCashCounts, getCashCountById, createCashCount, deleteCashCount,
+  getCashCounts, getCashCountById, createCashCount, updateCashCount, deleteCashCount,
   getCashSessions, createCashSession, deleteCashSession,
 } from '../../db';
 import { registerIpcHandlers } from '../../ipc-handlers';
@@ -100,6 +101,15 @@ describe('cash:create', () => {
     (createCashCount as ReturnType<typeof vi.fn>).mockReturnValue({ id: 1, ...payload });
     call('cash:create', payload);
     expect(createCashCount).toHaveBeenCalledWith(payload);
+  });
+});
+
+describe('cash:update', () => {
+  it('délègue à updateCashCount avec id et payload', () => {
+    const payload = { fiscal_year_id: 1, date: '2025-01-01', label: 'Test', context: 'LIBRE', lines: [] };
+    (updateCashCount as ReturnType<typeof vi.fn>).mockReturnValue({ id: 5, ...payload });
+    call('cash:update', 5, payload);
+    expect(updateCashCount).toHaveBeenCalledWith(5, payload);
   });
 });
 

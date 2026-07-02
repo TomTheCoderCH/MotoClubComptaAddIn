@@ -19,9 +19,11 @@ const mockCount: CashCount = {
 
 beforeEach(() => {
   vi.stubGlobal('api', {
-    getFiscalYears:  vi.fn().mockResolvedValue([mockYear]),
-    getCashCounts:   vi.fn().mockResolvedValue([mockCount]),
-    deleteCashCount: vi.fn().mockResolvedValue(undefined),
+    getFiscalYears:   vi.fn().mockResolvedValue([mockYear]),
+    getCashCounts:    vi.fn().mockResolvedValue([mockCount]),
+    deleteCashCount:  vi.fn().mockResolvedValue(undefined),
+    getCashCountById: vi.fn().mockResolvedValue({ ...mockCount, lines: [] }),
+    updateCashCount:  vi.fn().mockResolvedValue(mockCount),
   });
 });
 
@@ -66,6 +68,16 @@ describe('CaissePage', () => {
     const confirmBtn = dialog.querySelector('button:last-child') as HTMLElement;
     if (confirmBtn) await userEvent.click(confirmBtn);
     await waitFor(() => expect(window.api.deleteCashCount).toHaveBeenCalledWith(1));
+  });
+
+  it('le bouton Modifier ouvre la modale en mode édition', async () => {
+    render(<CaissePage />);
+    await screen.findByText('Avant Marché');
+    await userEvent.click(screen.getByRole('button', { name: /modifier/i }));
+    // La modale s'ouvre et charge le comptage via getCashCountById
+    await waitFor(() => expect(window.api.getCashCountById).toHaveBeenCalledWith(1));
+    // Le titre de la modale indique le mode édition
+    await screen.findByText(/modifier le comptage/i);
   });
 
   it("l'écart est marqué data-negative si non nul", async () => {

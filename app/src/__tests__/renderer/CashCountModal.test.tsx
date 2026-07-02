@@ -12,9 +12,19 @@ const mockCount: CashCount = {
   created_at: '2025-03-08T10:00:00',
 };
 
+const mockCountWithLines: CashCount = {
+  ...mockCount,
+  lines: [
+    { denomination: 100, quantity: 38 },  // 38 × 1.00 CHF = 38.00
+    { denomination: 500, quantity: 0 },
+  ],
+};
+
 beforeEach(() => {
   vi.stubGlobal('api', {
-    createCashCount: vi.fn().mockResolvedValue(mockCount),
+    createCashCount:  vi.fn().mockResolvedValue(mockCount),
+    updateCashCount:  vi.fn().mockResolvedValue(mockCount),
+    getCashCountById: vi.fn().mockResolvedValue(mockCountWithLines),
   });
 });
 
@@ -107,5 +117,39 @@ describe('CashCountModal', () => {
     render(<CashCountModal {...defaultProps} onClose={onClose} />);
     await userEvent.click(screen.getByRole('button', { name: /annuler/i }));
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('en mode édition, le titre est "Modifier le comptage"', async () => {
+    render(<CashCountModal {...defaultProps} editId={1} />);
+    await screen.findByText(/modifier le comptage/i);
+  });
+
+  it('en mode édition, pré-charge les données du comptage existant', async () => {
+    render(<CashCountModal {...defaultProps} editId={1} />);
+    await waitFor(() => {
+      expect(window.api.getCashCountById).toHaveBeenCalledWith(1);
+    });
+    // Le libellé doit être pré-rempli
+    await waitFor(() => {
+      expect((screen.getByLabelText(/libellé/i) as HTMLInputElement).value).toBe('Test');
+    });
+    // La quantité pré-chargée pour 1.00 CHF (denom 100) doit être 38
+    expect((screen.getByTestId('qty-100') as HTMLInputElement).value).toBe('38');
+    expect((screen.getByTestId('total-100') as HTMLInputElement).value).toBe('38.00');
+  });
+
+  it('en mode édition, le bouton de sauvegarde appelle updateCashCount', async () => {
+    render(<CashCountModal {...defaultProps} editId={1} />);
+    // Attendre le pré-chargement
+    await waitFor(() =>
+      expect((screen.getByLabelText(/libellé/i) as HTMLInputElement).value).toBe('Test')
+    );
+    await userEvent.click(screen.getByRole('button', { name: /modifier/i }));
+    await waitFor(() => {
+      expect(window.api.updateCashCount).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ label: 'Test', context: 'LIBRE' })
+      );
+    });
   });
 });

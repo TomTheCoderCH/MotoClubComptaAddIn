@@ -85,6 +85,7 @@ contextBridge.exposeInMainWorld('api', {
   getCashCounts:     (fiscalYearId: number): Promise<CashCount[]>        => ipcRenderer.invoke('cash:getAll', fiscalYearId),
   getCashCountById:  (id: number): Promise<CashCount>                    => ipcRenderer.invoke('cash:getById', id),
   createCashCount:   (payload: CashCountPayload): Promise<CashCount>     => ipcRenderer.invoke('cash:create', payload),
+  updateCashCount:   (id: number, payload: CashCountPayload): Promise<CashCount> => ipcRenderer.invoke('cash:update', id, payload),
   deleteCashCount:   (id: number): Promise<void>                         => ipcRenderer.invoke('cash:delete', id),
   getCashSessions:   (fiscalYearId: number): Promise<CashSession[]>      => ipcRenderer.invoke('cash:getSessions', fiscalYearId),
   createCashSession: (payload: CashSessionPayload): Promise<CashSession> => ipcRenderer.invoke('cash:createSession', payload),
@@ -129,6 +130,7 @@ export type ElectronAPI = {
   getCashCounts:     (fiscalYearId: number) => Promise<CashCount[]>;
   getCashCountById:  (id: number) => Promise<CashCount>;
   createCashCount:   (payload: CashCountPayload) => Promise<CashCount>;
+  updateCashCount:   (id: number, payload: CashCountPayload) => Promise<CashCount>;
   deleteCashCount:   (id: number) => Promise<void>;
   getCashSessions:   (fiscalYearId: number) => Promise<CashSession[]>;
   createCashSession: (payload: CashSessionPayload) => Promise<CashSession>;

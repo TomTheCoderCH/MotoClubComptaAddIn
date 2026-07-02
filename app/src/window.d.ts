@@ -63,6 +63,7 @@ declare global {
       getCashCounts:     (fiscalYearId: number) => Promise<CashCount[]>;
       getCashCountById:  (id: number) => Promise<CashCount>;
       createCashCount:   (payload: CashCountPayload) => Promise<CashCount>;
+      updateCashCount:   (id: number, payload: CashCountPayload) => Promise<CashCount>;
       deleteCashCount:   (id: number) => Promise<void>;
       getCashSessions:   (fiscalYearId: number) => Promise<CashSession[]>;
       createCashSession: (payload: CashSessionPayload) => Promise<CashSession>;

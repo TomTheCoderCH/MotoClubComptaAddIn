@@ -32,6 +32,7 @@ import {
   getCashCounts,
   getCashCountById,
   createCashCount,
+  updateCashCount,
   deleteCashCount,
   getCashSessions,
   createCashSession,
@@ -247,6 +248,7 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('cash:getAll',        (_e, fiscalYearId: number)        => getCashCounts(fiscalYearId));
   ipcMain.handle('cash:getById',       (_e, id: number)                  => getCashCountById(id));
   ipcMain.handle('cash:create',        (_e, payload: CashCountPayload)   => createCashCount(payload));
+  ipcMain.handle('cash:update',        (_e, id: number, payload: CashCountPayload) => updateCashCount(id, payload));
   ipcMain.handle('cash:delete',        (_e, id: number)                  => deleteCashCount(id));
   ipcMain.handle('cash:getSessions',   (_e, fiscalYearId: number)        => getCashSessions(fiscalYearId));
   ipcMain.handle('cash:createSession', (_e, payload: CashSessionPayload) => createCashSession(payload));

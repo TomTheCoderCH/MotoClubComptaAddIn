@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Save, X } from 'lucide-react';
 import Modal from './Modal';
 import { DENOMINATIONS, PIECES, BILLETS, formatDenom, emptyLines } from '../lib/cash';
@@ -8,6 +8,7 @@ import styles from './CashCountModal.module.css';
 
 interface Props {
   fiscalYearId: number;
+  editId?: number;   // si défini, pré-charge ce comptage en mode édition
   onClose: () => void;
   onSaved: () => void;
 }
@@ -16,11 +17,12 @@ function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export default function CashCountModal({ fiscalYearId, onClose, onSaved }: Props) {
+export default function CashCountModal({ fiscalYearId, editId, onClose, onSaved }: Props) {
   const [date,    setDate]    = useState(todayISO());
   const [label,   setLabel]   = useState('');
   const [context, setContext] = useState<CashContext>('LIBRE');
   const [notes,   setNotes]   = useState('');
+  const [loadingEdit, setLoadingEdit] = useState(false);
 
   // Quantities keyed by denomination (centimes)
   const [qtys, setQtys] = useState<Record<number, number>>(
@@ -35,6 +37,36 @@ export default function CashCountModal({ fiscalYearId, onClose, onSaved }: Props
 
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState<string | null>(null);
+
+  // Pré-chargement des données existantes en mode édition
+  useEffect(() => {
+    if (!editId) return;
+    setLoadingEdit(true);
+    window.api.getCashCountById(editId)
+      .then(count => {
+        setDate(count.date);
+        setLabel(count.label);
+        setContext(count.context);
+        setNotes(count.notes ?? '');
+        if (count.lines) {
+          setQtys(prev => {
+            const next = { ...prev };
+            for (const l of count.lines!) next[l.denomination] = l.quantity;
+            return next;
+          });
+          setTotalDisplays(prev => {
+            const next = { ...prev };
+            for (const l of count.lines!) {
+              next[l.denomination] = l.quantity > 0
+                ? (l.quantity * l.denomination / 100).toFixed(2)
+                : '';
+            }
+            return next;
+          });
+        }
+      })
+      .finally(() => setLoadingEdit(false));
+  }, [editId]);
 
   const setQty = useCallback((denom: number, raw: string) => {
     const qty = Math.max(0, parseInt(raw) || 0);
@@ -81,7 +113,11 @@ export default function CashCountModal({ fiscalYearId, onClose, onSaved }: Props
         notes: notes.trim() || undefined,
         lines: emptyLines().map(l => ({ ...l, quantity: qtys[l.denomination] })),
       };
-      await window.api.createCashCount(payload);
+      if (editId) {
+        await window.api.updateCashCount(editId, payload);
+      } else {
+        await window.api.createCashCount(payload);
+      }
       onSaved();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Erreur lors de la sauvegarde');
@@ -91,7 +127,10 @@ export default function CashCountModal({ fiscalYearId, onClose, onSaved }: Props
 
   return (
     <Modal onClose={onClose} className={styles.modal}>
-      <h2 className={styles.title}>Nouveau comptage de caisse</h2>
+      <h2 className={styles.title}>
+        {editId ? 'Modifier le comptage' : 'Nouveau comptage de caisse'}
+      </h2>
+      {loadingEdit && <p className={styles.loadingEdit}>Chargement…</p>}
 
       <div className={styles.fields}>
         <div className={styles.fieldRow}>
@@ -262,10 +301,10 @@ export default function CashCountModal({ fiscalYearId, onClose, onSaved }: Props
         <button
           type="button"
           onClick={handleSave}
-          disabled={!hasAny || saving}
+          disabled={!hasAny || saving || loadingEdit}
           className={styles.btnPrimary}
         >
-          <Save size={16} /> {saving ? 'Enregistrement…' : 'Enregistrer'}
+          <Save size={16} /> {saving ? 'Enregistrement…' : (editId ? 'Modifier' : 'Enregistrer')}
         </button>
       </div>
     </Modal>
