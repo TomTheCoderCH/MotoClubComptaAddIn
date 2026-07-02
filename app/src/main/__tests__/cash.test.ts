@@ -6,6 +6,7 @@ vi.mock('electron', () => ({
 
 import {
   openDatabase,
+  getDb,
   getAllAccounts,
   createFiscalYear,
   createJournalEntry,
@@ -152,7 +153,7 @@ describe('deleteCashCount', () => {
     const c = createCashCount({ fiscal_year_id: fyId, date: '2025-01-01', label: 'X', context: 'LIBRE', lines: emptyLines() });
     deleteCashCount(c.id);
     expect(getCashCounts(fyId)).toHaveLength(0);
-    const db = openDatabase(':memory:');
+    const db = getDb();
     const lines = db.prepare('SELECT * FROM cash_count_lines WHERE cash_count_id = ?').all(c.id);
     expect(lines).toHaveLength(0);
   });
