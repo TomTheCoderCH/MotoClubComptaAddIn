@@ -16,6 +16,7 @@ import type {
   DashboardCashBalance, DashboardData, DashboardCardConfig, DashboardCustomCard,
   LedgerLine, AccountLedgerData,
   TwintSummary,
+  CashCount, CashCountLine, CashSession, CashCountPayload, CashSessionPayload,
 } from '../types';
 
 let db: Database.Database;
@@ -898,4 +899,98 @@ export function reopenFiscalYear(fiscalYearId: number): void {
       .prepare('UPDATE fiscal_years SET is_closed = 0 WHERE id = ?')
       .run(fiscalYearId);
   })();
+}
+
+// ─── Caisse ────────────────────────────────────────────────────────────────
+
+const CASH_COUNT_SELECT = `
+  SELECT
+    cc.id,
+    cc.fiscal_year_id,
+    cc.session_id,
+    cs.label      AS session_label,
+    cc.date,
+    cc.label,
+    cc.context,
+    cc.notes,
+    cc.created_at,
+    COALESCE((SELECT SUM(denomination * quantity)
+              FROM cash_count_lines WHERE cash_count_id = cc.id), 0) AS total,
+    COALESCE((
+      SELECT SUM(COALESCE(jel.debit,0)) - SUM(COALESCE(jel.credit,0))
+      FROM journal_entry_lines jel
+      JOIN journal_entries je ON je.id = jel.journal_entry_id
+      JOIN accounts a         ON a.id  = jel.account_id
+      WHERE a.number = '100'
+        AND je.fiscal_year_id = cc.fiscal_year_id
+        AND je.date <= cc.date
+    ), 0) AS theoretical_balance
+  FROM cash_counts cc
+  LEFT JOIN cash_sessions cs ON cs.id = cc.session_id
+`;
+
+export function getCashCounts(fiscalYearId: number): CashCount[] {
+  return getDb().prepare(`
+    ${CASH_COUNT_SELECT}
+    WHERE cc.fiscal_year_id = ?
+    ORDER BY cc.date DESC, cc.created_at DESC
+  `).all(fiscalYearId) as CashCount[];
+}
+
+export function getCashCountById(id: number): CashCount {
+  const row = getDb().prepare(`
+    ${CASH_COUNT_SELECT} WHERE cc.id = ?
+  `).get(id) as CashCount | undefined;
+  if (!row) throw new Error(`Arrêté de caisse ${id} introuvable`);
+  const lines = getDb().prepare(
+    'SELECT denomination, quantity FROM cash_count_lines WHERE cash_count_id = ? ORDER BY denomination'
+  ).all(id) as CashCountLine[];
+  return { ...row, lines };
+}
+
+export function createCashCount(payload: CashCountPayload): CashCount {
+  const { fiscal_year_id, session_id, date, label, context, notes, lines } = payload;
+  return getDb().transaction((): CashCount => {
+    const r = getDb().prepare(`
+      INSERT INTO cash_counts (fiscal_year_id, session_id, date, label, context, notes)
+      VALUES (@fiscal_year_id, @session_id, @date, @label, @context, @notes)
+    `).run({
+      fiscal_year_id, session_id: session_id ?? null,
+      date, label, context, notes: notes ?? null,
+    });
+    const stmt = getDb().prepare(`
+      INSERT INTO cash_count_lines (cash_count_id, denomination, quantity)
+      VALUES (@cash_count_id, @denomination, @quantity)
+    `);
+    for (const l of lines) {
+      stmt.run({ cash_count_id: r.lastInsertRowid, denomination: l.denomination, quantity: l.quantity });
+    }
+    return getCashCountById(Number(r.lastInsertRowid));
+  })();
+}
+
+export function deleteCashCount(id: number): void {
+  getDb().prepare('DELETE FROM cash_counts WHERE id = ?').run(id);
+}
+
+export function getCashSessions(fiscalYearId: number): CashSession[] {
+  return getDb().prepare(`
+    SELECT id, fiscal_year_id, label, account_group, notes, created_at
+    FROM cash_sessions WHERE fiscal_year_id = ? ORDER BY created_at DESC
+  `).all(fiscalYearId) as CashSession[];
+}
+
+export function createCashSession(payload: CashSessionPayload): CashSession {
+  const { fiscal_year_id, label, account_group, notes } = payload;
+  const r = getDb().prepare(`
+    INSERT INTO cash_sessions (fiscal_year_id, label, account_group, notes)
+    VALUES (@fiscal_year_id, @label, @account_group, @notes)
+  `).run({ fiscal_year_id, label, account_group: account_group ?? null, notes: notes ?? null });
+  return getDb().prepare(
+    'SELECT id, fiscal_year_id, label, account_group, notes, created_at FROM cash_sessions WHERE id = ?'
+  ).get(r.lastInsertRowid) as CashSession;
+}
+
+export function deleteCashSession(id: number): void {
+  getDb().prepare('DELETE FROM cash_sessions WHERE id = ?').run(id);
 }
