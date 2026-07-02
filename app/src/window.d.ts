@@ -16,6 +16,11 @@ import type {
   DashboardData,
   DashboardCardConfig,
   AccountLedgerData,
+  TwintSummary,
+  CashCount,
+  CashSession,
+  CashCountPayload,
+  CashSessionPayload,
 } from './types';
 
 declare global {
@@ -52,6 +57,17 @@ declare global {
       saveDashboardCards:  (cards: DashboardCardConfig[]) => Promise<void>;
       getAnalytics:        (fiscalYearId: number) => Promise<AnalyticsData>;
       getAccountLedger:    (fiscalYearId: number, accountId: number) => Promise<AccountLedgerData>;
+      getTwintSummary:     (fiscalYearId: number) => Promise<TwintSummary>;
+      exportPdf:           (fiscalYearId: number) => Promise<{ path: string } | { error: string } | null>;
+      // Caisse
+      getCashCounts:     (fiscalYearId: number) => Promise<CashCount[]>;
+      getCashCountById:  (id: number) => Promise<CashCount>;
+      createCashCount:   (payload: CashCountPayload) => Promise<CashCount>;
+      updateCashCount:   (id: number, payload: CashCountPayload) => Promise<CashCount>;
+      deleteCashCount:   (id: number) => Promise<void>;
+      getCashSessions:   (fiscalYearId: number) => Promise<CashSession[]>;
+      createCashSession: (payload: CashSessionPayload) => Promise<CashSession>;
+      deleteCashSession: (id: number) => Promise<void>;
     };
   }
 }

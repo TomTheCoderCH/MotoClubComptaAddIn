@@ -10,7 +10,7 @@
   margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-heading);
 }
 
 .radios {
@@ -29,10 +29,10 @@
 .select {
   width: 100%;
   padding: 6px 10px;
-  border: 1px solid #cbd5e1;
-  border-radius: 4px;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-sm);
   font-size: 0.9rem;
-  background: #fff;
+  background: var(--bg);
 }
 
 .actions {
@@ -44,25 +44,25 @@
 
 .cancelBtn {
   padding: 6px 14px;
-  border: 1px solid #cbd5e1;
-  border-radius: 4px;
-  background: #fff;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
   cursor: pointer;
   font-size: 0.9rem;
 }
 
-.cancelBtn:hover { background: #f1f5f9; }
+.cancelBtn:hover { background: var(--hover); }
 
 .addBtn {
   padding: 6px 14px;
   border: none;
-  border-radius: 4px;
-  background: #2563eb;
-  color: #fff;
+  border-radius: var(--radius-sm);
+  background: var(--accent-hover);
+  color: var(--text-on-accent);
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 500;
 }
 
-.addBtn:hover:not(:disabled) { background: #1d4ed8; }
+.addBtn:hover:not(:disabled) { background: var(--accent-dark); }
 .addBtn:disabled { opacity: 0.45; cursor: not-allowed; }

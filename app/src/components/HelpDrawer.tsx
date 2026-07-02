@@ -219,6 +219,29 @@ function AppTab() {
             sauvegardes automatiques, export Excel global.</dd>
       </dl>
 
+      <h3 className={styles.sectionTitle}>Caisse</h3>
+      <p className={styles.para}>
+        La page <strong>Caisse</strong> permet d'enregistrer des comptages de caisse physiques
+        (décompte pièce par pièce de toutes les coupures). Pour chaque coupure, saisissez la quantité <em>ou</em> le
+        montant total — l'autre champ se calcule automatiquement.
+      </p>
+      <p className={styles.para}>
+        Chaque comptage affiche l'écart entre le total compté et le solde théorique du compte
+        100 (Caisse) à la même date. Un écart nul est affiché avec <strong>✓</strong>,
+        un écart non nul en rouge.
+      </p>
+      <p className={styles.para}>
+        Contextes disponibles : <strong>Libre</strong>, <strong>Avant manifestation</strong>,
+        <strong> Fonds de caisse</strong>, <strong>Après manifestation</strong>.
+      </p>
+      <p className={styles.para}>
+        L'onglet <strong>Manifestations</strong> regroupe les comptages par session
+        (Marché Villageois, Broche, Souper…). Créez une session, puis liez vos comptages
+        AVANT / FONDS / APRÈS à cette session lors de leur saisie. Le CA caisse de la
+        session est calculé automatiquement : <code>APRÈS − (AVANT + FONDS)</code>.
+        Cliquez sur une session pour voir le détail de ses comptages.
+      </p>
+
       <h3 className={styles.sectionTitle}>Raccourcis clavier</h3>
       <table className={styles.helpTable}>
         <tbody>

@@ -1,8 +1,8 @@
 .nav {
   width: 210px;
   flex-shrink: 0;
-  background: #1e293b;
-  color: #e2e8f0;
+  background: var(--sidebar-bg);
+  color: var(--sidebar-text-body);
   display: flex;
   flex-direction: column;
   padding: 0;
@@ -13,8 +13,8 @@
   font-weight: 700;
   font-size: 1rem;
   letter-spacing: 0.02em;
-  border-bottom: 1px solid #334155;
-  color: #f1f5f9;
+  border-bottom: 1px solid var(--sidebar-active);
+  color: var(--sidebar-text-brand);
 }
 
 .list {
@@ -29,28 +29,28 @@
   text-align: left;
   padding: 0.65rem 1rem;
   background: transparent;
-  color: #94a3b8;
+  color: var(--sidebar-text);
   border: none;
   border-left: 3px solid transparent;
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
 }
 
 .btn:hover {
-  background: #253347;
-  color: #cbd5e1;
+  background: var(--sidebar-hover);
+  color: var(--sidebar-text-hover);
 }
 
 .btn[aria-current="page"] {
-  background: #334155;
-  color: #93c5fd;
-  border-left-color: #3b82f6;
+  background: var(--sidebar-active);
+  color: var(--sidebar-text-active);
+  border-left-color: var(--accent);
 }
 
 .helpSection {
   margin-top: auto;
   padding: 0.5rem 0;
-  border-top: 1px solid #334155;
+  border-top: 1px solid var(--sidebar-active);
 }
 
 .helpBtn {
@@ -59,17 +59,17 @@
   text-align: left;
   padding: 0.65rem 1rem;
   background: transparent;
-  color: #64748b;
+  color: var(--text-muted);
   border: none;
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
 }
 
 .helpBtn:hover {
-  background: #253347;
-  color: #94a3b8;
+  background: var(--sidebar-hover);
+  color: var(--sidebar-text);
 }
 
 .helpBtn[aria-expanded="true"] {
-  color: #93c5fd;
+  color: var(--sidebar-text-active);
 }

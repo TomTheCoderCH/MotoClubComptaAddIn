@@ -10,19 +10,19 @@ function freshDb(): Database.Database {
 }
 
 describe('runSchemaMigrations', () => {
-  it('une base fraîche passe de user_version=0 à 2 (version courante)', () => {
+  it('une base fraîche passe de user_version=0 à 3 (version courante)', () => {
     const db = freshDb();
     expect(getSchemaVersion(db)).toBe(0);
     runSchemaMigrations(db);
-    expect(getSchemaVersion(db)).toBe(2);
+    expect(getSchemaVersion(db)).toBe(3);
   });
 
-  it('une base déjà à jour (v2) n\'est pas modifiée', () => {
+  it('une base déjà à jour (v3) n\'est pas modifiée', () => {
     const db = freshDb();
     runSchemaMigrations(db);
     // deuxième appel — idempotent
     runSchemaMigrations(db);
-    expect(getSchemaVersion(db)).toBe(2);
+    expect(getSchemaVersion(db)).toBe(3);
   });
 
   it('les tables sont intactes après migration', () => {

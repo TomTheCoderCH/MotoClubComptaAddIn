@@ -1,7 +1,7 @@
 .card {
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
   padding: 1.5rem;
   margin-bottom: 1.5rem;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
@@ -9,9 +9,9 @@
 
 .h2 {
   margin: 0 0 1.25rem;
-  font-size: 1rem;
+  font-size: var(--font-size-base);
   font-weight: 600;
-  color: #334155;
+  color: var(--text);
 }
 
 .row {
@@ -36,16 +36,16 @@
 .label {
   font-size: 0.8rem;
   font-weight: 500;
-  color: #475569;
+  color: var(--text-subtle);
 }
 
 .input {
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius);
   padding: 0.4rem 0.6rem;
-  font-size: 0.875rem;
-  color: #0f172a;
-  background: #fff;
+  font-size: var(--font-size-sm);
+  color: var(--text-heading);
+  background: var(--bg);
 }
 
 .linesContainer {
@@ -58,7 +58,7 @@
   padding: 0 0 0.25rem;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #64748b;
+  color: var(--text-muted);
 }
 
 .lineRow {
@@ -96,7 +96,7 @@
   right: 0.35rem;
   top: 50%;
   transform: translateY(-50%);
-  color: #16a34a;
+  color: var(--success);
   font-size: 0.6rem;
   pointer-events: none;
   line-height: 1;
@@ -108,7 +108,7 @@
   right: 0.35rem;
   top: 50%;
   transform: translateY(-50%);
-  color: #dc2626;
+  color: var(--error);
   font-size: 0.6rem;
   pointer-events: none;
   line-height: 1;
@@ -126,12 +126,12 @@
 .removeBtn {
   width: 32px;
   height: 32px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  background: #f8fafc;
-  color: #94a3b8;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-secondary);
+  color: var(--text-faint);
   cursor: pointer;
-  font-size: 1rem;
+  font-size: var(--font-size-base);
   padding: 0;
 }
 
@@ -143,52 +143,52 @@
 .addLineBtn {
   margin-top: 0.25rem;
   background: none;
-  border: 1px dashed #94a3b8;
-  border-radius: 6px;
+  border: 1px dashed var(--text-faint);
+  border-radius: var(--radius);
   padding: 0.35rem 0.75rem;
-  color: #64748b;
+  color: var(--text-muted);
   cursor: pointer;
   font-size: 0.8rem;
 }
 
 .addLineBtn:hover {
-  border-color: #64748b;
-  color: #475569;
+  border-color: var(--text-muted);
+  color: var(--text-subtle);
 }
 
 .balance {
   display: flex;
   gap: 1.5rem;
   padding: 0.6rem 0.75rem;
-  border-radius: 6px;
+  border-radius: var(--radius);
   font-size: 0.8rem;
   margin-bottom: 0.75rem;
 }
 
 .balanceOk {
-  background: #dcfce7;
-  color: #15803d;
+  background: var(--success-bg);
+  color: var(--success-dark);
 }
 
 .balanceKo {
   background: #fef9c3;
-  color: #92400e;
+  color: var(--warning-text);
 }
 
 .fieldError {
   font-size: 0.75rem;
-  color: #dc2626;
+  color: var(--error);
   margin-top: 0.15rem;
 }
 
 .error {
-  background: #fee2e2;
-  border: 1px solid #fca5a5;
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
   padding: 0.65rem 0.75rem;
-  border-radius: 6px;
+  border-radius: var(--radius);
   margin-bottom: 0.75rem;
-  color: #dc2626;
-  font-size: 0.875rem;
+  color: var(--error);
+  font-size: var(--font-size-sm);
 }
 
 .actions {
@@ -199,34 +199,34 @@
 
 .cancelBtn {
   padding: 0.45rem 1rem;
-  background: #fff;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius);
   cursor: pointer;
-  font-size: 0.875rem;
-  color: #475569;
+  font-size: var(--font-size-sm);
+  color: var(--text-subtle);
 }
 
 .cancelBtn:hover {
-  background: #f1f5f9;
+  background: var(--hover);
 }
 
 .submitBtn {
   padding: 0.45rem 1rem;
-  background: #3b82f6;
-  color: #fff;
+  background: var(--accent);
+  color: var(--text-on-accent);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius);
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
   font-weight: 500;
 }
 
 .submitBtn:hover {
-  background: #2563eb;
+  background: var(--accent-hover);
 }
 
 .submitBtn:disabled {
-  background: #94a3b8;
+  background: var(--text-faint);
   cursor: not-allowed;
 }

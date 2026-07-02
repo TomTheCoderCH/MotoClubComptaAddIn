@@ -9,7 +9,7 @@
 .h1 {
   margin: 0;
   font-size: 1.5rem;
-  color: #0f172a;
+  color: var(--text-heading);
 }
 
 .yearSelector {
@@ -20,54 +20,54 @@
 
 .label {
   font-weight: 500;
-  font-size: 0.875rem;
-  color: #475569;
+  font-size: var(--font-size-sm);
+  color: var(--text-subtle);
 }
 
 .select {
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius);
   padding: 0.35rem 0.6rem;
-  font-size: 0.875rem;
-  color: #0f172a;
-  background: #fff;
+  font-size: var(--font-size-sm);
+  color: var(--text-heading);
+  background: var(--bg);
 }
 
 .error {
-  background: #fee2e2;
-  border: 1px solid #fca5a5;
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
   padding: 0.75rem;
-  border-radius: 6px;
+  border-radius: var(--radius);
   margin-bottom: 1.25rem;
-  color: #dc2626;
-  font-size: 0.875rem;
+  color: var(--error);
+  font-size: var(--font-size-sm);
 }
 
 .empty {
-  color: #64748b;
-  font-size: 0.875rem;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
 }
 
 .table {
   border-collapse: collapse;
   width: 100%;
-  font-size: 0.875rem;
-  background: #fff;
-  border-radius: 8px;
+  font-size: var(--font-size-sm);
+  background: var(--bg);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow);
 }
 
 .theadRow {
-  background: #f1f5f9;
+  background: var(--hover);
 }
 
 .th {
   text-align: left;
   padding: 0.6rem 1rem;
   font-weight: 600;
-  color: #475569;
-  border-bottom: 1px solid #e2e8f0;
+  color: var(--text-subtle);
+  border-bottom: 1px solid var(--border);
 }
 
 .thRight {
@@ -77,19 +77,19 @@
 .groupCell {
   padding: 0.5rem 1rem;
   font-weight: 600;
-  color: #334155;
-  background: #f1f5f9;
+  color: var(--text);
+  background: var(--hover);
   font-size: 0.8rem;
   letter-spacing: 0.02em;
 }
 
 .dataRow {
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .td {
   padding: 0.4rem 1rem;
-  color: #334155;
+  color: var(--text);
 }
 
 .tdMono {
@@ -103,9 +103,9 @@
 
 .subtotalCell {
   padding: 0.45rem 1rem;
-  color: #334155;
-  background: #e2e8f0;
-  border-top: 1px solid #cbd5e1;
+  color: var(--text);
+  background: var(--bg-muted);
+  border-top: 1px solid var(--border-input);
 }
 
 .subtotalCellRight {
@@ -120,7 +120,7 @@
 /* Couleur négative : présence de l'attribut = valeur < 0 */
 .tdRight[data-negative],
 .subtotalCellRight[data-negative] {
-  color: #dc2626;
+  color: var(--error);
 }
 
 .dataRowClickable {
@@ -141,15 +141,15 @@
 .searchInput {
   flex: 1;
   min-width: 180px;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius);
   padding: 0.35rem 0.6rem;
-  font-size: 0.875rem;
-  color: #0f172a;
-  background: #fff;
+  font-size: var(--font-size-sm);
+  color: var(--text-heading);
+  background: var(--bg);
 }
 
 .searchInput:focus {
-  outline: 2px solid #2563eb;
+  outline: 2px solid var(--accent-hover);
   outline-offset: 1px;
 }

@@ -17,7 +17,7 @@
   margin: 0;
   font-size: 1.05rem;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--text-heading);
 }
 
 .closeBtn {
@@ -25,7 +25,7 @@
   border: none;
   font-size: 1.2rem;
   cursor: pointer;
-  color: #64748b;
+  color: var(--text-muted);
   line-height: 1;
   padding: 0.25rem 0.5rem;
 }

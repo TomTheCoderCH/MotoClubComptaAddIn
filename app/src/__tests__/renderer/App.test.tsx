@@ -34,6 +34,7 @@ beforeEach(() => {
     getJournalEntries:  vi.fn().mockResolvedValue([]),
     createJournalEntry: vi.fn(),
     getAccountBalances: vi.fn().mockResolvedValue([]),
+    getCashCounts:      vi.fn().mockResolvedValue([]),
     listBackups:        vi.fn().mockResolvedValue([]),
     exportBackup:       vi.fn().mockResolvedValue(null),
     getDbPath:          vi.fn().mockResolvedValue(''),
@@ -48,14 +49,16 @@ describe('App — layout', () => {
     expect(await screen.findByText('MCY Compta')).toBeInTheDocument();
   });
 
-  it('affiche les 7 items de navigation', async () => {
+  it('affiche les 9 items de navigation', async () => {
     render(<App />);
     expect(await screen.findByRole('button', { name: 'Accueil' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Plan comptable' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Journal' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Caisse' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Exercices' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Soldes' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Analytique' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Bilan complet' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Paramètres' })).toBeInTheDocument();
   });
 
@@ -105,7 +108,7 @@ describe('App — AccountsPage', () => {
   it('affiche les comptes après navigation vers Plan comptable', async () => {
     render(<App />);
     await userEvent.click(await screen.findByRole('button', { name: 'Plan comptable' }));
-    expect(await screen.findByText('Caisse')).toBeInTheDocument();
+    expect(await screen.findByText('Caisse', { selector: 'td' })).toBeInTheDocument();
     expect(screen.getByText('Cotisations membres')).toBeInTheDocument();
   });
 

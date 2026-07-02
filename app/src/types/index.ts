@@ -231,3 +231,53 @@ export interface AnalyticsData {
   groups:    AnalyticsGroup[];
   ungrouped: AnalyticsAccountRow[];
 }
+
+// ─── Caisse ────────────────────────────────────────────────────────────────
+
+export type CashContext = 'AVANT' | 'FONDS' | 'APRES' | 'LIBRE';
+
+export interface CashCountLine {
+  denomination: number;
+  quantity: number;
+}
+
+export interface CashCount {
+  id: number;
+  fiscal_year_id: number;
+  session_id: number | null;
+  session_label: string | null;
+  date: string;
+  label: string;
+  context: CashContext;
+  notes: string | null;
+  total: number;
+  theoretical_balance: number;
+  created_at: string;
+  lines?: CashCountLine[];
+}
+
+export interface CashSession {
+  id: number;
+  fiscal_year_id: number;
+  label: string;
+  account_group: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface CashCountPayload {
+  fiscal_year_id: number;
+  session_id?: number;
+  date: string;
+  label: string;
+  context: CashContext;
+  notes?: string;
+  lines: CashCountLine[];
+}
+
+export interface CashSessionPayload {
+  fiscal_year_id: number;
+  label: string;
+  account_group?: string;
+  notes?: string;
+}

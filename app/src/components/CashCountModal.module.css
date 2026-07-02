@@ -1,0 +1,186 @@
+.modal { width: 720px; max-width: 95vw; padding: 1.5rem; }
+.title { margin: 0 0 1rem; font-size: 1.1rem; font-weight: 600; color: var(--text-heading); }
+
+.loadingEdit { font-size: var(--font-size-sm); color: var(--text-muted); margin: -0.25rem 0 0.5rem; }
+
+/* ── Champs de formulaire ─────────────────────────────────────────────── */
+.fields   { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+.fieldRow { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.field    { display: flex; flex-direction: column; gap: 0.25rem; }
+
+.field span {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-subtle);
+}
+.field input,
+.field select,
+.field textarea {
+  padding: 0.4rem 0.625rem;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  background: var(--bg);
+  color: var(--text);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+/* ── Grille des coupures ──────────────────────────────────────────────── */
+.grid       { overflow-x: auto; margin-bottom: 0.75rem; }
+.gridLayout { display: flex; gap: 1.5rem; align-items: flex-start; }
+.denomTable { flex: 1; border-collapse: collapse; font-size: var(--font-size-sm); }
+.denomTable td { padding: 0.2rem 0.5rem; text-align: right; }
+
+/* En-têtes de section (rangée 1) */
+.sectionPieces,
+.sectionBillets {
+  padding: 0.35rem 0.625rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+}
+.sectionPieces  { background: #fef3c7; color: #78350f; border-bottom: 2px solid #f59e0b; }
+.sectionBillets { background: #eff6ff; color: #1e3a8a; border-bottom: 2px solid #3b82f6; }
+
+/* En-têtes de colonnes (rangée 2) */
+.colHeader {
+  padding: 0.3rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+}
+
+.denomLabel { text-align: left !important; white-space: nowrap; color: var(--text); font-weight: 500; }
+
+/* Inputs de quantité et total */
+.numInput {
+  width: 90px;
+  text-align: right;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  background: var(--bg);
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+.numInput:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
+}
+.numInput[data-filled] {
+  border-color: var(--success);
+  background: var(--success-bg);
+}
+.numInput[data-filled]:focus {
+  border-color: var(--success-dark);
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.12);
+}
+
+/* ── Barre de totaux ──────────────────────────────────────────────────── */
+.totals {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 0.625rem 0.875rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 0.75rem;
+}
+.totalPart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+}
+.totalPartLabel {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+}
+.totalPartValue {
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.totalOp {
+  font-size: 1rem;
+  color: var(--text-faint);
+  font-weight: 300;
+}
+.totalMain {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.125rem;
+  padding-left: 1rem;
+  border-left: 2px solid var(--border);
+}
+.totalMainLabel {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+}
+.totalMainValue {
+  font-size: 1.3rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-heading);
+}
+
+/* ── État et actions ──────────────────────────────────────────────────── */
+.error { color: var(--error); font-size: var(--font-size-sm); margin-bottom: 0.5rem; }
+
+.actions { display: flex; justify-content: flex-end; gap: 0.5rem; }
+
+.btnPrimary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  background: var(--accent);
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  transition: background 0.15s;
+}
+.btnPrimary:hover:not(:disabled) { background: var(--accent-hover); }
+.btnPrimary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btnSecondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  color: var(--text);
+  transition: background 0.15s;
+}
+.btnSecondary:hover { background: var(--hover); }

@@ -23,6 +23,42 @@ const MIGRATIONS: Migration[] = [
     description: 'Ajout account_group sur accounts (groupes analytiques)',
     sql:         'ALTER TABLE accounts ADD COLUMN account_group TEXT',
   },
+  {
+    version: 3,
+    description: 'Tables gestion de la caisse (cash_sessions, cash_counts, cash_count_lines)',
+    sql: `
+CREATE TABLE cash_sessions (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  fiscal_year_id INTEGER NOT NULL REFERENCES fiscal_years(id),
+  label          TEXT    NOT NULL,
+  account_group  TEXT,
+  notes          TEXT,
+  created_at     TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE cash_counts (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  fiscal_year_id INTEGER NOT NULL REFERENCES fiscal_years(id),
+  session_id     INTEGER REFERENCES cash_sessions(id) ON DELETE SET NULL,
+  date           TEXT    NOT NULL,
+  label          TEXT    NOT NULL,
+  context        TEXT    NOT NULL DEFAULT 'LIBRE',
+  notes          TEXT,
+  created_at     TEXT    NOT NULL DEFAULT (datetime('now')),
+  CHECK (context IN ('AVANT','FONDS','APRES','LIBRE'))
+);
+CREATE TABLE cash_count_lines (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  cash_count_id INTEGER NOT NULL REFERENCES cash_counts(id) ON DELETE CASCADE,
+  denomination  INTEGER NOT NULL,
+  quantity      INTEGER NOT NULL DEFAULT 0,
+  CHECK (denomination > 0),
+  CHECK (quantity >= 0)
+);
+CREATE INDEX idx_cash_counts_fiscal_year ON cash_counts(fiscal_year_id);
+CREATE INDEX idx_cash_counts_session     ON cash_counts(session_id);
+CREATE INDEX idx_cash_count_lines_count  ON cash_count_lines(cash_count_id);
+    `.trim(),
+  },
 ];
 
 export function runSchemaMigrations(db: Database.Database): void {

@@ -3,11 +3,11 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: #f8fafc;
+  background: var(--bg-secondary);
 }
 
 .card {
-  background: #fff;
+  background: var(--bg);
   border-radius: 12px;
   padding: 2.5rem;
   max-width: 500px;
@@ -19,45 +19,45 @@
 .h1 {
   margin: 0 0 1rem;
   font-size: 1.5rem;
-  color: #0f172a;
+  color: var(--text-heading);
   font-weight: 700;
 }
 
 .desc {
   margin: 0 0 0.75rem;
   font-size: 0.95rem;
-  color: #334155;
+  color: var(--text);
 }
 
 .hint {
   margin: 0 0 1.5rem;
   font-size: 0.825rem;
-  color: #64748b;
+  color: var(--text-muted);
   font-style: italic;
 }
 
 .alert {
-  background: #fee2e2;
-  border: 1px solid #fca5a5;
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
   padding: 0.75rem;
-  border-radius: 6px;
+  border-radius: var(--radius);
   margin-bottom: 1rem;
-  color: #dc2626;
-  font-size: 0.875rem;
+  color: var(--error);
+  font-size: var(--font-size-sm);
 }
 
 .btn {
   padding: 0.6rem 1.5rem;
-  background: #3b82f6;
-  color: #fff;
+  background: var(--accent);
+  color: var(--text-on-accent);
   border: none;
-  border-radius: 8px;
-  font-size: 1rem;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-base);
   cursor: pointer;
   font-weight: 600;
 }
 
 .btn:disabled {
-  background: #94a3b8;
+  background: var(--text-faint);
   cursor: not-allowed;
 }

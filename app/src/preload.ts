@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { Account, FiscalYear, JournalEntry, JournalEntryLine, AccountBalance, CreateJournalEntryPayload, UpdateJournalEntryPayload, BackupInfo, OpeningBalanceSuggestion, OpeningBalanceLine, ClosingPreview, UpdateAccountPayload, CreateAccountPayload, AnalyticsData, DashboardData, DashboardCardConfig, AccountLedgerData, TwintSummary } from './types';
+import type { Account, FiscalYear, JournalEntry, JournalEntryLine, AccountBalance, CreateJournalEntryPayload, UpdateJournalEntryPayload, BackupInfo, OpeningBalanceSuggestion, OpeningBalanceLine, ClosingPreview, UpdateAccountPayload, CreateAccountPayload, AnalyticsData, DashboardData, DashboardCardConfig, AccountLedgerData, TwintSummary, CashCount, CashSession, CashCountPayload, CashSessionPayload } from './types';
 
 // API exposée au renderer via window.api
 contextBridge.exposeInMainWorld('api', {
@@ -80,6 +80,16 @@ contextBridge.exposeInMainWorld('api', {
   // Grand-livre
   getAccountLedger: (fiscalYearId: number, accountId: number): Promise<AccountLedgerData> =>
     ipcRenderer.invoke('account:getLedger', fiscalYearId, accountId),
+
+  // Caisse
+  getCashCounts:     (fiscalYearId: number): Promise<CashCount[]>        => ipcRenderer.invoke('cash:getAll', fiscalYearId),
+  getCashCountById:  (id: number): Promise<CashCount>                    => ipcRenderer.invoke('cash:getById', id),
+  createCashCount:   (payload: CashCountPayload): Promise<CashCount>     => ipcRenderer.invoke('cash:create', payload),
+  updateCashCount:   (id: number, payload: CashCountPayload): Promise<CashCount> => ipcRenderer.invoke('cash:update', id, payload),
+  deleteCashCount:   (id: number): Promise<void>                         => ipcRenderer.invoke('cash:delete', id),
+  getCashSessions:   (fiscalYearId: number): Promise<CashSession[]>      => ipcRenderer.invoke('cash:getSessions', fiscalYearId),
+  createCashSession: (payload: CashSessionPayload): Promise<CashSession> => ipcRenderer.invoke('cash:createSession', payload),
+  deleteCashSession: (id: number): Promise<void>                         => ipcRenderer.invoke('cash:deleteSession', id),
 });
 
 // Déclaration TypeScript pour window.api dans le renderer
@@ -117,4 +127,12 @@ export type ElectronAPI = {
   getTwintSummary:    (fiscalYearId: number) => Promise<TwintSummary>;
   getAnalytics:       (fiscalYearId: number) => Promise<AnalyticsData>;
   getAccountLedger:   (fiscalYearId: number, accountId: number) => Promise<AccountLedgerData>;
+  getCashCounts:     (fiscalYearId: number) => Promise<CashCount[]>;
+  getCashCountById:  (id: number) => Promise<CashCount>;
+  createCashCount:   (payload: CashCountPayload) => Promise<CashCount>;
+  updateCashCount:   (id: number, payload: CashCountPayload) => Promise<CashCount>;
+  deleteCashCount:   (id: number) => Promise<void>;
+  getCashSessions:   (fiscalYearId: number) => Promise<CashSession[]>;
+  createCashSession: (payload: CashSessionPayload) => Promise<CashSession>;
+  deleteCashSession: (id: number) => Promise<void>;
 };

@@ -1,14 +1,14 @@
 .h1 {
   margin: 0 0 1.5rem;
   font-size: 1.5rem;
-  color: #0f172a;
+  color: var(--text-heading);
 }
 
 .h2 {
   margin: 0 0 0.75rem;
-  font-size: 1rem;
+  font-size: var(--font-size-base);
   font-weight: 600;
-  color: #334155;
+  color: var(--text);
 }
 
 .section {
@@ -16,13 +16,13 @@
 }
 
 .error {
-  background: #fee2e2;
-  border: 1px solid #fca5a5;
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
   padding: 0.75rem;
-  border-radius: 6px;
+  border-radius: var(--radius);
   margin-bottom: 1.25rem;
-  color: #dc2626;
-  font-size: 0.875rem;
+  color: var(--error);
+  font-size: var(--font-size-sm);
 }
 
 .form {
@@ -34,22 +34,22 @@
 
 .label {
   font-weight: 500;
-  font-size: 0.875rem;
-  color: #475569;
+  font-size: var(--font-size-sm);
+  color: var(--text-subtle);
 }
 
 .input {
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius);
   padding: 0.4rem 0.6rem;
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
   width: 90px;
-  color: #0f172a;
+  color: var(--text-heading);
 }
 
 .warn {
   font-size: 0.8rem;
-  color: #d97706;
+  color: var(--warning);
 }
 
 .btn {
@@ -57,21 +57,21 @@
   align-items: center;
   gap: 0.35rem;
   padding: 0.45rem 1rem;
-  background: #3b82f6;
-  color: #fff;
+  background: var(--accent);
+  color: var(--text-on-accent);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius);
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
   font-weight: 500;
 }
 
 .btn:hover {
-  background: #2563eb;
+  background: var(--accent-hover);
 }
 
 .btn:disabled {
-  background: #94a3b8;
+  background: var(--text-faint);
   cursor: not-allowed;
 }
 
@@ -81,7 +81,7 @@
   gap: 0.3rem;
   padding: 0.25rem 0.6rem;
   background: #eff6ff;
-  color: #1d4ed8;
+  color: var(--accent-dark);
   border: 1px solid #bfdbfe;
   border-radius: 5px;
   font-size: 0.78rem;
@@ -115,7 +115,7 @@
   gap: 0.3rem;
   padding: 0.25rem 0.6rem;
   background: #f0fdf4;
-  color: #15803d;
+  color: var(--success-dark);
   border: 1px solid #bbf7d0;
   border-radius: 5px;
   font-size: 0.78rem;
@@ -123,50 +123,50 @@
 }
 
 .btnExport:hover {
-  background: #dcfce7;
+  background: var(--success-bg);
 }
 
 .exportSuccess {
   margin: 0.25rem 0 0;
   font-size: 0.75rem;
-  color: #15803d;
+  color: var(--success-dark);
 }
 
 .empty {
-  color: #64748b;
-  font-size: 0.875rem;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
 }
 
 .table {
   border-collapse: collapse;
   width: 100%;
   max-width: 760px;
-  font-size: 0.875rem;
-  background: #fff;
-  border-radius: 8px;
+  font-size: var(--font-size-sm);
+  background: var(--bg);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow);
 }
 
 .theadRow {
-  background: #f1f5f9;
+  background: var(--hover);
 }
 
 .th {
   text-align: left;
   padding: 0.6rem 1rem;
   font-weight: 600;
-  color: #475569;
-  border-bottom: 1px solid #e2e8f0;
+  color: var(--text-subtle);
+  border-bottom: 1px solid var(--border);
 }
 
 .row {
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .td {
   padding: 0.5rem 1rem;
-  color: #334155;
+  color: var(--text);
 }
 
 .tdBold {
@@ -176,9 +176,9 @@
 .badgeOpen {
   display: inline-block;
   padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-  background: #dcfce7;
-  color: #15803d;
+  border-radius: var(--radius-sm);
+  background: var(--success-bg);
+  color: var(--success-dark);
   font-size: 0.75rem;
   font-weight: 500;
 }
@@ -186,9 +186,9 @@
 .badgeClosed {
   display: inline-block;
   padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-  background: #f1f5f9;
-  color: #64748b;
+  border-radius: var(--radius-sm);
+  background: var(--hover);
+  color: var(--text-muted);
   font-size: 0.75rem;
   font-weight: 500;
 }
@@ -196,9 +196,9 @@
 .badgeOb {
   display: inline-block;
   padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-  background: #dcfce7;
-  color: #15803d;
+  border-radius: var(--radius-sm);
+  background: var(--success-bg);
+  color: var(--success-dark);
   font-size: 0.75rem;
   font-weight: 500;
 }
