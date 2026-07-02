@@ -45,15 +45,21 @@ export default function CashCountModal({ fiscalYearId, onClose, onSaved }: Props
     }));
   }, []);
 
+  // Pendant la frappe : on ne met à jour que l'affichage, pas la quantité.
+  // Cela évite que taper "37" dans un champ de 5 CHF snappe à "35.00" après
+  // le deuxième caractère (floor(3700/500) = 7 → snap immédiat).
   const setTotal = useCallback((denom: number, raw: string) => {
+    setTotalDisplays(prev => ({ ...prev, [denom]: raw }));
+  }, []);
+
+  // À la sortie du champ : on calcule la quantité et on snappe au multiple exact.
+  const commitTotal = useCallback((denom: number, raw: string) => {
     const cents = Math.round((parseFloat(raw) || 0) * 100);
     const qty   = Math.max(0, Math.floor(cents / denom));
     setQtys(prev => ({ ...prev, [denom]: qty }));
-    // When qty > 0 snap to the exact multiple; when qty = 0 keep the raw string
-    // so that intermediate characters (e.g. '1' while typing '15') don't blank the field.
     setTotalDisplays(prev => ({
       ...prev,
-      [denom]: qty > 0 ? (qty * denom / 100).toFixed(2) : raw,
+      [denom]: qty > 0 ? (qty * denom / 100).toFixed(2) : '',
     }));
   }, []);
 
@@ -170,6 +176,7 @@ export default function CashCountModal({ fiscalYearId, onClose, onSaved }: Props
                         inputMode="decimal"
                         value={totalDisplays[p]}
                         onChange={e => setTotal(p, e.target.value)}
+                        onBlur={e => commitTotal(p, e.target.value)}
                         className={styles.numInput}
                         data-filled={pQ > 0 || undefined}
                         data-testid={`total-${p}`}
@@ -214,6 +221,7 @@ export default function CashCountModal({ fiscalYearId, onClose, onSaved }: Props
                         inputMode="decimal"
                         value={totalDisplays[b]}
                         onChange={e => setTotal(b, e.target.value)}
+                        onBlur={e => commitTotal(b, e.target.value)}
                         className={styles.numInput}
                         data-filled={bQ > 0 || undefined}
                         data-testid={`total-${b}`}

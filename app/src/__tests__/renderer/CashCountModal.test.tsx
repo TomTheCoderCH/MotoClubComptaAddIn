@@ -48,11 +48,13 @@ describe('CashCountModal', () => {
     expect((screen.getByTestId('total-100') as HTMLInputElement).value).toBe('38.00');
   });
 
-  it('saisir un total met à jour la quantité (floor)', async () => {
+  it('saisir un total met à jour la quantité (floor) après blur', async () => {
     render(<CashCountModal {...defaultProps} />);
     const totalInput = screen.getByTestId('total-200'); // 2.00 CHF
     await userEvent.clear(totalInput);
     await userEvent.type(totalInput, '15');
+    // La quantité ne se calcule qu'à la sortie du champ (onBlur)
+    await userEvent.tab();
     // floor(1500 / 200) = 7, total recalé = 14.00
     expect((screen.getByTestId('qty-200') as HTMLInputElement).value).toBe('7');
     expect((screen.getByTestId('total-200') as HTMLInputElement).value).toBe('14.00');
