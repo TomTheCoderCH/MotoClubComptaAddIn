@@ -1,4 +1,4 @@
-.modal { width: 720px; max-width: 95vw; }
+.modal { width: 720px; max-width: 95vw; padding: 1.5rem; }
 .title { margin: 0 0 1rem; font-size: 1.1rem; font-weight: 600; color: var(--text-heading); }
 
 /* ── Champs de formulaire ─────────────────────────────────────────────── */
