@@ -38,7 +38,7 @@ describe('Migration v3 — tables cash', () => {
 });
 
 import {
-  createCashCount, getCashCounts, getCashCountById, deleteCashCount,
+  createCashCount, getCashCounts, getCashCountById, updateCashCount, deleteCashCount,
   createCashSession, getCashSessions, deleteCashSession,
 } from '../../db';
 import { emptyLines } from '../../lib/cash';
@@ -142,6 +142,39 @@ describe('getCashCountById', () => {
   it("lève une erreur si l'id est introuvable", () => {
     openDatabase(':memory:');
     expect(() => getCashCountById(999)).toThrow('introuvable');
+  });
+});
+
+describe('updateCashCount', () => {
+  beforeEach(freshDb);
+
+  it('met à jour le libellé et la date', () => {
+    const fyId = makeFiscalYear();
+    const c = createCashCount({ fiscal_year_id: fyId, date: '2025-01-01', label: 'Avant', context: 'LIBRE', lines: emptyLines() });
+    updateCashCount(c.id, { fiscal_year_id: fyId, date: '2025-02-01', label: 'Modifié', context: 'AVANT', lines: emptyLines() });
+    const updated = getCashCountById(c.id);
+    expect(updated.label).toBe('Modifié');
+    expect(updated.date).toBe('2025-02-01');
+    expect(updated.context).toBe('AVANT');
+  });
+
+  it('persiste le session_id lors de la mise à jour', () => {
+    const fyId = makeFiscalYear();
+    const s = createCashSession({ fiscal_year_id: fyId, label: 'Marché' });
+    const c = createCashCount({ fiscal_year_id: fyId, date: '2025-01-01', label: 'Avant', context: 'AVANT', lines: emptyLines() });
+    expect(getCashCountById(c.id).session_id).toBeNull();
+    updateCashCount(c.id, { fiscal_year_id: fyId, date: '2025-01-01', label: 'Avant', context: 'AVANT', session_id: s.id, lines: emptyLines() });
+    expect(getCashCountById(c.id).session_id).toBe(s.id);
+    expect(getCashCountById(c.id).session_label).toBe('Marché');
+  });
+
+  it('peut retirer le session_id (session_id = null)', () => {
+    const fyId = makeFiscalYear();
+    const s = createCashSession({ fiscal_year_id: fyId, label: 'Marché' });
+    const c = createCashCount({ fiscal_year_id: fyId, date: '2025-01-01', label: 'Avant', context: 'AVANT', session_id: s.id, lines: emptyLines() });
+    expect(getCashCountById(c.id).session_id).toBe(s.id);
+    updateCashCount(c.id, { fiscal_year_id: fyId, date: '2025-01-01', label: 'Avant', context: 'AVANT', lines: emptyLines() });
+    expect(getCashCountById(c.id).session_id).toBeNull();
   });
 });
 

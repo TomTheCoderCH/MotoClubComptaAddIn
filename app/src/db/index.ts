@@ -970,12 +970,13 @@ export function createCashCount(payload: CashCountPayload): CashCount {
 }
 
 export function updateCashCount(id: number, payload: CashCountPayload): CashCount {
-  const { date, label, context, notes, lines } = payload;
+  const { date, label, context, session_id, notes, lines } = payload;
   return getDb().transaction((): CashCount => {
     getDb().prepare(`
-      UPDATE cash_counts SET date = @date, label = @label, context = @context, notes = @notes
+      UPDATE cash_counts SET date = @date, label = @label, context = @context,
+        session_id = @session_id, notes = @notes
       WHERE id = @id
-    `).run({ date, label, context, notes: notes ?? null, id });
+    `).run({ date, label, context, session_id: session_id ?? null, notes: notes ?? null, id });
     getDb().prepare('DELETE FROM cash_count_lines WHERE cash_count_id = ?').run(id);
     const stmt = getDb().prepare(`
       INSERT INTO cash_count_lines (cash_count_id, denomination, quantity)
