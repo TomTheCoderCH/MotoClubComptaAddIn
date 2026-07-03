@@ -281,3 +281,47 @@ export interface CashSessionPayload {
   account_group?: string;
   notes?: string;
 }
+
+// ─── Membres ─────────────────────────────────────────────────────────────────
+
+export interface Member {
+  id: number;
+  last_name: string;
+  first_name: string;
+  entry_date: string | null;
+  is_active: number;         // 0 | 1
+  inactive_note: string | null;
+  created_at: string;
+}
+
+export interface MemberDues {
+  id: number;
+  member_id: number;
+  year: number;
+  paid: number;              // 0 | 1
+  payment_note: string | null;
+  payment_date: string | null;
+  amount_cents: number | null;
+  journal_entry_id: number | null;
+  created_at: string;
+}
+
+export interface MemberWithDues extends Member {
+  dues: MemberDues[];
+}
+
+export interface MemberPayload {
+  last_name: string;
+  first_name: string;
+  entry_date?: string | null;
+  is_active: number;
+  inactive_note?: string | null;
+}
+
+export interface MemberPaymentPayload {
+  member_id: number;
+  payment_date: string;           // ISO 8601 — détermine l'exercice comptable
+  total_amount_cents: number;
+  debit_account_id: number;       // 100 | 101 | 102 | 103
+  years: number[];                // ex. [2025, 2026]
+}

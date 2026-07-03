@@ -17,6 +17,7 @@ import type {
   LedgerLine, AccountLedgerData,
   TwintSummary,
   CashCount, CashCountLine, CashSession, CashCountPayload, CashSessionPayload,
+  Member, MemberDues, MemberWithDues, MemberPayload, MemberPaymentPayload,
 } from '../types';
 
 let db: Database.Database;
@@ -1013,4 +1014,137 @@ export function createCashSession(payload: CashSessionPayload): CashSession {
 
 export function deleteCashSession(id: number): void {
   getDb().prepare('DELETE FROM cash_sessions WHERE id = ?').run(id);
+}
+
+// ─── Membres ─────────────────────────────────────────────────────────────────
+
+export function getAllMembers(): MemberWithDues[] {
+  const members = getDb()
+    .prepare('SELECT * FROM members ORDER BY last_name, first_name')
+    .all() as Member[];
+  const getDues = getDb().prepare(
+    'SELECT * FROM member_dues WHERE member_id = ? ORDER BY year DESC'
+  );
+  return members.map(m => ({ ...m, dues: getDues.all(m.id) as MemberDues[] }));
+}
+
+export function createMember(payload: MemberPayload): Member {
+  const { last_name, first_name, entry_date, is_active, inactive_note } = payload;
+  const r = getDb().prepare(`
+    INSERT INTO members (last_name, first_name, entry_date, is_active, inactive_note)
+    VALUES (@last_name, @first_name, @entry_date, @is_active, @inactive_note)
+  `).run({
+    last_name, first_name,
+    entry_date: entry_date ?? null,
+    is_active,
+    inactive_note: inactive_note ?? null,
+  });
+  return getDb().prepare('SELECT * FROM members WHERE id = ?').get(r.lastInsertRowid) as Member;
+}
+
+export function updateMember(id: number, payload: MemberPayload): Member {
+  const { last_name, first_name, entry_date, is_active, inactive_note } = payload;
+  getDb().prepare(`
+    UPDATE members
+    SET last_name = @last_name, first_name = @first_name, entry_date = @entry_date,
+        is_active = @is_active, inactive_note = @inactive_note
+    WHERE id = @id
+  `).run({ last_name, first_name, entry_date: entry_date ?? null, is_active, inactive_note: inactive_note ?? null, id });
+  return getDb().prepare('SELECT * FROM members WHERE id = ?').get(id) as Member;
+}
+
+export function deleteMember(id: number): void {
+  const hasDues = (getDb()
+    .prepare('SELECT EXISTS(SELECT 1 FROM member_dues WHERE member_id = ?)')
+    .pluck().get(id) as number) === 1;
+  if (hasDues) throw new Error('Impossible de supprimer ce membre : des cotisations existent');
+  getDb().prepare('DELETE FROM members WHERE id = ?').run(id);
+}
+
+export function setHistoricalDues(
+  memberId: number, year: number, paid: boolean, note: string | null,
+): MemberDues {
+  getDb().prepare(`
+    INSERT INTO member_dues (member_id, year, paid, payment_note)
+    VALUES (@member_id, @year, @paid, @payment_note)
+    ON CONFLICT(member_id, year) DO UPDATE SET
+      paid = excluded.paid,
+      payment_note = excluded.payment_note
+  `).run({ member_id: memberId, year, paid: paid ? 1 : 0, payment_note: note ?? null });
+  return getDb().prepare(
+    'SELECT * FROM member_dues WHERE member_id = ? AND year = ?'
+  ).get(memberId, year) as MemberDues;
+}
+
+export function recordPayment(
+  payload: MemberPaymentPayload,
+): { dues: MemberDues[]; journalEntryId: number } {
+  const { member_id, payment_date, total_amount_cents, debit_account_id, years } = payload;
+
+  return getDb().transaction(() => {
+    const paymentYear = parseInt(payment_date.slice(0, 4), 10);
+    const fy = getDb()
+      .prepare('SELECT id, is_closed FROM fiscal_years WHERE year = ?')
+      .get(paymentYear) as { id: number; is_closed: number } | undefined;
+    if (!fy) throw new Error(`Aucun exercice trouvé pour l'année ${paymentYear}`);
+
+    const cotisationsCents = years.length * 3000;
+    const surplusCents = total_amount_cents - cotisationsCents;
+    if (surplusCents < 0) throw new Error('Montant insuffisant pour couvrir les années sélectionnées');
+
+    for (const year of years) {
+      const existing = getDb()
+        .prepare('SELECT paid FROM member_dues WHERE member_id = ? AND year = ?')
+        .get(member_id, year) as { paid: number } | undefined;
+      if (existing?.paid === 1) throw new Error(`L'année ${year} est déjà marquée comme payée`);
+    }
+
+    const member = getDb()
+      .prepare('SELECT first_name, last_name FROM members WHERE id = ?')
+      .get(member_id) as { first_name: string; last_name: string } | undefined;
+    if (!member) throw new Error('Membre introuvable');
+
+    const acc300 = getDb()
+      .prepare("SELECT id FROM accounts WHERE number = '300'")
+      .get() as { id: number } | undefined;
+    if (!acc300) throw new Error('Compte 300 introuvable');
+
+    const acc391 = getDb()
+      .prepare("SELECT id FROM accounts WHERE number = '391'")
+      .get() as { id: number } | undefined;
+
+    const description = `Cotisation ${member.first_name} ${member.last_name} — ${years.join('+')}`;
+    const lines: Array<{ account_id: number; debit?: number; credit?: number }> = [
+      { account_id: debit_account_id, debit: total_amount_cents },
+      { account_id: acc300.id, credit: cotisationsCents },
+    ];
+    if (surplusCents > 0) {
+      if (!acc391) throw new Error('Compte 391 introuvable');
+      lines.push({ account_id: acc391.id, credit: surplusCents });
+    }
+
+    const entry = createJournalEntry({
+      fiscal_year_id: fy.id, date: payment_date, description, lines,
+    });
+
+    const upsert = getDb().prepare(`
+      INSERT INTO member_dues (member_id, year, paid, payment_date, amount_cents, journal_entry_id)
+      VALUES (@member_id, @year, 1, @payment_date, 3000, @journal_entry_id)
+      ON CONFLICT(member_id, year) DO UPDATE SET
+        paid = 1, payment_date = excluded.payment_date,
+        amount_cents = excluded.amount_cents,
+        journal_entry_id = excluded.journal_entry_id
+    `);
+    for (const year of years) {
+      upsert.run({ member_id, year, payment_date, journal_entry_id: entry.id });
+    }
+
+    const dues = years.map(year =>
+      getDb()
+        .prepare('SELECT * FROM member_dues WHERE member_id = ? AND year = ?')
+        .get(member_id, year) as MemberDues
+    );
+
+    return { dues, journalEntryId: entry.id };
+  })();
 }
