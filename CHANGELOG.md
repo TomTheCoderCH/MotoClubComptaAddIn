@@ -18,6 +18,14 @@ Versioning selon [Semantic Versioning](https://semver.org/).
   - Migration schéma SQLite v3 : tables `cash_counts`, `cash_count_lines`, `cash_sessions`
   - 53 nouveaux tests Vitest (CRUD DB, handlers IPC cash, composants CaissePage / CashCountModal / CashSessionModal)
 
+- **Gestion des membres et cotisations** — nouvelle page "Membres" (sidebar, entre Caisse et Exercices)
+  - **Fiche membre** : nom, prénom, date d'entrée (optionnelle), statut actif/inactif avec note libre
+  - **Historique des cotisations** : années hors exercices comptables saisies librement (case à cocher + note de mode de paiement) ; années présentes en DB affichées en lecture seule (statut, date, montant)
+  - **Paiement de cotisation avec écriture comptable automatique** : sélection libre des années à couvrir (y compris paiement en avance sur une année future, même si des arriérés plus anciens restent impayés) ; répartition du montant en cotisation (CHF 30/an, compte 300) + surplus versé en don (compte 391 Dons) ; écriture générée dans l'exercice correspondant à la date de paiement, moyens de paiement 100/101/102/103
+  - **Import Excel** des noms/prénoms membres depuis le fichier historique de cotisations (`exceljs`), dédoublonnage par nom/prénom
+  - Migration schéma SQLite v4 : tables `members`, `member_dues` ; compte 391 "Dons" ajouté au plan comptable
+  - 49 nouveaux tests Vitest (CRUD DB, `recordPayment` transactionnel, handlers IPC, composants MembresPage / MembreFormModal / MembreDetailModal / MembrePaiementModal)
+
 ---
 
 ## [1.1.2] — 2026-07-01

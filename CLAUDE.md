@@ -158,7 +158,7 @@ On ne commite **jamais** directement sur `main`.
 | `v1.0.0` | `185854f` | 2026-07-01 | Première version stable — toutes les fonctionnalités principales livrées |
 | `v1.0.1` | `ae74971` | 2026-07-01 | Logo club sur la page de garde PDF, mise en page centrée |
 | `v1.1.2` | `cc38064` | 2026-07-01 | CI/CD GitHub Actions + mise à jour automatique Electron |
-| `v1.2.0` | *(à tagger)* | — | Gestion de la caisse (comptages + sessions de manifestation) + fonctionnalités à venir |
+| `v1.2.0` | *(à tagger)* | — | Gestion de la caisse (comptages + sessions de manifestation) + gestion des membres et cotisations |
 
 ---
 
@@ -214,6 +214,7 @@ Tous les montants en CHF.
 | 360 | Souper fin d'année | Recettes du souper | Souper |
 | 370 | Location matériel | Location tente et autre matériel | — |
 | 390 | Produits divers | Crédits, remboursements assureurs, etc. | — |
+| 391 | Dons | Surplus de cotisation versé en don, dons divers | — |
 
 ### Classe 4 — Charges (comptes de résultat)
 
@@ -516,7 +517,7 @@ app/
 - [x] Système d'aide : Tooltip dynamique par ligne (EntryForm) + drawer latéral global (F1 / bouton sidebar) — 334 tests — spec : `docs/superpowers/specs/2026-06-24-help-system-design.md`
 - [x] Flèches ▲▼ colorées sur les inputs débit/crédit de l'EntryForm selon le type de compte — wrapper `.amountWrapper` avec `data-effect="increase|decrease"` + CSS `::after` (▲ vert / ▼ rouge) — 362 tests
 
-- [x] Migrations de schéma SQLite : `db/schema-migrations.ts` — `PRAGMA user_version` + tableau `MIGRATIONS[]`, appelé dans `openDatabase()` après `initSchema()`. Version actuelle : 3 (v1 schéma initial, v2 account_group, v3 cash_counts/cash_count_lines/cash_sessions). Pour ajouter une migration : ajouter `{ version: N, description: '...', sql: '...' }` au tableau — 339 tests
+- [x] Migrations de schéma SQLite : `db/schema-migrations.ts` — `PRAGMA user_version` + tableau `MIGRATIONS[]`, appelé dans `openDatabase()` après `initSchema()`. Version actuelle : 4 (v1 schéma initial, v2 account_group, v3 cash_counts/cash_count_lines/cash_sessions, v4 members/member_dues + compte 391 Dons). Pour ajouter une migration : ajouter `{ version: N, description: '...', sql: '...' }` au tableau — 339 tests
 - [x] Restauration depuis une sauvegarde — bouton dialog libre + bouton par ligne de sauvegarde automatique dans SettingsPage ; handler `backup:restore(filename?)` (backup de sécurité, `close()` + `copyFileSync` + `openDatabase()` + `webContents.reload()`) — 360 tests
 - [x] Version du schéma SQLite — `schemaVersion` dans `BackupInfo` (lecture header SQLite offset 60, sans connexion DB), handler `db:getSchemaVersion`, colonne "Ver." dans la liste des sauvegardes, version DB courante dans la section Base de données — 360 tests
 - [x] Backup automatique conditionnel — `hasDbChanges()` via `total_changes()` SQLite (snapshot post-`openDatabase()`, comparé dans `before-quit`) ; aucun backup si session en lecture seule — 362 tests
@@ -616,8 +617,16 @@ app/
 - [x] **Gestion de la caisse** — page Caisse (sidebar), migration schéma v3 (`cash_counts`, `cash_count_lines`, `cash_sessions`) — spec : `docs/superpowers/specs/2026-07-02-cash-management-design.md`
   - **Comptages** : saisie/modification/suppression, 12 coupures CHF, saisie bidirectionnelle qté↔total, contextes AVANT/FONDS/APRÈS/LIBRE, écart vs solde théorique compte 100
   - **Sessions de manifestation** : regroupement AVANT/FONDS/APRÈS, CA caisse calculé, expand/collapse, lien session optionnel à la création/modification d'un comptage
-  - 53 nouveaux tests Vitest — **612 tests au total**
+  - 53 nouveaux tests Vitest — 612 tests
   - `feature/cash-management` mergée sur `main` (commit `78daaed`) — v1.2.0 non encore taguée
+
+- [x] **Gestion des membres et cotisations** — page Membres (sidebar, entre Caisse et Exercices), migration schéma v4 (`members`, `member_dues` + compte 391 Dons) — spec : `docs/superpowers/specs/2026-07-03-members-dues-design.md`, plan : `docs/superpowers/plans/2026-07-03-members-dues.md`
+  - **Fiche membre** : nom, prénom, date d'entrée optionnelle, statut actif/inactif + note libre ; création/édition (`MembreFormModal`), suppression bloquée si des cotisations existent
+  - **Historique de cotisations** (`MembreDetailModal`) : années hors exercices comptables saisies librement (checkbox + note de mode de paiement, `setHistoricalDues` en upsert) ; années présentes en DB affichées en lecture seule (statut, date, montant)
+  - **Paiement avec écriture comptable automatique** (`MembrePaiementModal` + `recordPayment` transactionnel) : sélection libre des années à couvrir parmi toutes les années impayées (y compris une année future en avance, même si des arriérés plus anciens restent impayés) ; répartition centimes-exactes du montant en cotisation (`COTISATION_CENTS` = 3000/an, compte 300) + surplus versé en don (compte 391) ; écriture imputée à l'exercice de la date de paiement (doit exister en DB) ; moyens de paiement 100/101/102/103 ; double-paiement d'une même année bloqué
+  - **Import Excel** des noms/prénoms (`members:importFromExcel`, `exceljs`) depuis le fichier historique de cotisations, dédoublonnage par nom/prénom insensible à la casse
+  - Implémenté en Subagent-Driven Development (7 tâches + revue finale), 49 nouveaux tests Vitest — **662 tests au total**
+  - `feature/members-dues` non encore mergée — v1.2.0 non encore taguée
 
 > Note : les données 2025 ont été saisies manuellement dans la DB — la comptabilité réelle est déjà dans SQLite.
 
