@@ -61,7 +61,7 @@ CREATE INDEX idx_cash_count_lines_count  ON cash_count_lines(cash_count_id);
   },
   {
     version: 4,
-    description: 'Tables membres et cotisations',
+    description: 'Tables membres et cotisations + compte 391',
     sql: `
 CREATE TABLE members (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -86,6 +86,8 @@ CREATE TABLE member_dues (
 );
 CREATE INDEX idx_member_dues_member ON member_dues(member_id);
 CREATE INDEX idx_member_dues_year   ON member_dues(year);
+INSERT OR IGNORE INTO accounts (number, name, class, type, normal_balance, description, account_group, must_be_zero_at_closing, is_closing_account)
+VALUES ('391', 'Dons', 3, 'PRODUIT', 'CREDIT', 'Dons divers', NULL, 0, 0);
     `.trim(),
   },
 ];

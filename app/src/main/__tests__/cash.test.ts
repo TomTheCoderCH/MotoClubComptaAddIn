@@ -18,7 +18,7 @@ function freshDb() { openDatabase(':memory:'); }
 
 // ── Migration ────────────────────────────────────────────────────────────────
 
-describe('Migration v4 — tables members/member_dues', () => {
+describe('Migration — schéma courant (v4)', () => {
   beforeEach(freshDb);
 
   it('crée les tables cash_sessions, cash_counts, cash_count_lines', () => {

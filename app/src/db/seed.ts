@@ -1,12 +1,12 @@
 import type Database from 'better-sqlite3';
 
-// Plan comptable MCY — inséré uniquement si la table est vide
+// Plan comptable MCY — inséré uniquement si la table n'a pas les 30 comptes
 export function seedAccountsIfEmpty(db: Database.Database): void {
   const count = (db.prepare('SELECT COUNT(*) as n FROM accounts').get() as { n: number }).n;
-  if (count > 0) return;
+  if (count >= 30) return;  // Skip if we already have all 30 accounts
 
   const insert = db.prepare(`
-    INSERT INTO accounts (number, name, class, type, normal_balance, description, account_group, must_be_zero_at_closing, is_closing_account)
+    INSERT OR IGNORE INTO accounts (number, name, class, type, normal_balance, description, account_group, must_be_zero_at_closing, is_closing_account)
     VALUES (@number, @name, @class, @type, @normal_balance, @description, @account_group, @must_be_zero_at_closing, @is_closing_account)
   `);
 
