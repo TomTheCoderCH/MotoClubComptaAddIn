@@ -6,6 +6,7 @@ import { initSchema } from './schema';
 import { runSchemaMigrations } from './schema-migrations';
 import { seedAccountsIfEmpty } from './seed';
 import { validateEntryBalance } from '../lib/accounting';
+import { COTISATION_CENTS } from '../lib/format';
 import type {
   Account, AccountType, FiscalYear, JournalEntry, JournalEntryLine, AccountBalance,
   CreateJournalEntryPayload, UpdateJournalEntryPayload,
@@ -1084,11 +1085,11 @@ export function recordPayment(
   return getDb().transaction(() => {
     const paymentYear = parseInt(payment_date.slice(0, 4), 10);
     const fy = getDb()
-      .prepare('SELECT id, is_closed FROM fiscal_years WHERE year = ?')
-      .get(paymentYear) as { id: number; is_closed: number } | undefined;
+      .prepare('SELECT id FROM fiscal_years WHERE year = ?')
+      .get(paymentYear) as { id: number } | undefined;
     if (!fy) throw new Error(`Aucun exercice trouvé pour l'année ${paymentYear}`);
 
-    const cotisationsCents = years.length * 3000;
+    const cotisationsCents = years.length * COTISATION_CENTS;
     const surplusCents = total_amount_cents - cotisationsCents;
     if (surplusCents < 0) throw new Error('Montant insuffisant pour couvrir les années sélectionnées');
 
@@ -1129,14 +1130,14 @@ export function recordPayment(
 
     const upsert = getDb().prepare(`
       INSERT INTO member_dues (member_id, year, paid, payment_date, amount_cents, journal_entry_id)
-      VALUES (@member_id, @year, 1, @payment_date, 3000, @journal_entry_id)
+      VALUES (@member_id, @year, 1, @payment_date, @amount_cents, @journal_entry_id)
       ON CONFLICT(member_id, year) DO UPDATE SET
         paid = 1, payment_date = excluded.payment_date,
         amount_cents = excluded.amount_cents,
         journal_entry_id = excluded.journal_entry_id
     `);
     for (const year of years) {
-      upsert.run({ member_id, year, payment_date, journal_entry_id: entry.id });
+      upsert.run({ member_id, year, payment_date, amount_cents: COTISATION_CENTS, journal_entry_id: entry.id });
     }
 
     const dues = years.map(year =>

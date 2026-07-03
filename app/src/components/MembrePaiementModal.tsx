@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import Modal from './Modal';
-import { formatCHF } from '../lib/format';
+import { formatCHF, COTISATION_CENTS } from '../lib/format';
 import type { FiscalYear, MemberWithDues, Account, MemberPaymentPayload } from '../types';
 import styles from './MembrePaiementModal.module.css';
 
@@ -22,28 +22,28 @@ export default function MembrePaiementModal({ member, fiscalYears, accounts, onC
   const [error,       setError]         = useState<string | null>(null);
 
   const amountCents = Math.round(parseFloat(amountStr || '0') * 100);
-  const quota       = Math.floor(amountCents / 3000);
-  const surplusCents = amountCents - quota * 3000;
+  const quota       = Math.floor(amountCents / COTISATION_CENTS);
+  const surplusCents = amountCents - quota * COTISATION_CENTS;
 
-  // Années proposées : les `quota` premières années non encore payées, à partir
-  // de la plus ancienne connue (exercice le plus ancien ou année courante).
-  // On règle en priorité les dettes les plus anciennes avant les avances.
+  // Années proposées : toutes les années non encore payées — exercices connus
+  // en DB, année courante et année courante + 1 (la seule "avance" autorisée).
+  // L'utilisateur coche librement, jusqu'à `quota` cases simultanément.
   const paidYears = new Set(member.dues.filter(d => d.paid === 1).map(d => d.year));
   const fyYears   = fiscalYears.map(y => y.year);
   const currentYear = new Date().getFullYear();
 
   const candidateYears = useMemo(() => {
-    if (quota === 0) return [];
-    const minKnownYear = Math.min(currentYear, ...(fyYears.length ? fyYears : [currentYear]));
-    const years: number[] = [];
-    let y = minKnownYear;
-    const safetyLimit = minKnownYear + 50;
-    while (years.length < quota && y <= safetyLimit) {
-      if (!paidYears.has(y)) years.push(y);
-      y += 1;
-    }
-    return years;
-  }, [fyYears, paidYears, currentYear, quota]);
+    const allYears = new Set<number>([...fyYears, currentYear, currentYear + 1]);
+    const rank = (y: number) => (y === currentYear ? 0 : y > currentYear ? 1 : 2);
+    return [...allYears]
+      .filter(y => !paidYears.has(y))
+      .sort((a, b) => {
+        const ra = rank(a);
+        const rb = rank(b);
+        if (ra !== rb) return ra - rb;
+        return ra === 1 ? a - b : b - a; // futures croissantes, passées décroissantes
+      });
+  }, [fyYears, paidYears, currentYear]);
 
   const toggleYear = (year: number) => {
     setCheckedYears(prev => {
@@ -125,17 +125,21 @@ export default function MembrePaiementModal({ member, fiscalYears, accounts, onC
             <p className={styles.hint}>Entrez un montant d&apos;au moins CHF 30.00</p>
           ) : (
             <div className={styles.yearsList}>
-              {candidateYears.map(year => (
-                <label key={year} className={styles.yearLabel}>
-                  <input
-                    type="checkbox"
-                    checked={checkedYears.has(year)}
-                    onChange={() => toggleYear(year)}
-                  />
-                  {year}
-                  {year > currentYear && <span className={styles.advance}> (avance)</span>}
-                </label>
-              ))}
+              {candidateYears.map(year => {
+                const disabled = !checkedYears.has(year) && checkedYears.size >= quota;
+                return (
+                  <label key={year} className={styles.yearLabel}>
+                    <input
+                      type="checkbox"
+                      checked={checkedYears.has(year)}
+                      disabled={disabled}
+                      onChange={() => toggleYear(year)}
+                    />
+                    {year}
+                    {year > currentYear && <span className={styles.advance}> (avance)</span>}
+                  </label>
+                );
+              })}
             </div>
           )}
         </div>
@@ -155,7 +159,7 @@ export default function MembrePaiementModal({ member, fiscalYears, accounts, onC
             </div>
             <div className={styles.previewLine}>
               <span>Crédit 300 Cotisations membres</span>
-              <span>{formatCHF(quota * 3000)}</span>
+              <span>{formatCHF(quota * COTISATION_CENTS)}</span>
             </div>
             {surplusCents > 0 && (
               <div className={styles.previewLine}>

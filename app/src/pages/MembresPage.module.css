@@ -8,6 +8,7 @@
 .table    { width: 100%; border-collapse: collapse; font-size: var(--font-size-sm); }
 .table th { text-align: left; padding: 0.5rem 0.75rem; font-weight: 600; border-bottom: 2px solid var(--border); white-space: nowrap; }
 .table td { padding: 0.45rem 0.75rem; border-bottom: 1px solid var(--border-light); }
+.row      { cursor: pointer; }
 .row:hover td { background: var(--hover); }
 .inactive td  { opacity: 0.55; }
 .num      { text-align: center; }

@@ -17,12 +17,14 @@ export default function MembreFormModal({ member, onClose, onSaved }: Props) {
   const [isActive,     setIsActive]     = useState(member ? member.is_active === 1 : true);
   const [inactiveNote, setInactiveNote] = useState(member?.inactive_note ?? '');
   const [saving,       setSaving]       = useState(false);
+  const [error,        setError]        = useState<string | null>(null);
 
   const isValid = lastName.trim().length > 0 && firstName.trim().length > 0;
 
   const handleSubmit = async () => {
     if (!isValid) return;
     setSaving(true);
+    setError(null);
     try {
       const payload: MemberPayload = {
         last_name:     lastName.trim(),
@@ -37,6 +39,8 @@ export default function MembreFormModal({ member, onClose, onSaved }: Props) {
         await window.api.createMember(payload);
       }
       onSaved();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erreur lors de l\'enregistrement');
     } finally {
       setSaving(false);
     }
@@ -93,6 +97,7 @@ export default function MembreFormModal({ member, onClose, onSaved }: Props) {
             />
           </label>
         )}
+        {error && <p className={styles.error}>{error}</p>}
       </div>
       <div className={styles.footer}>
         <button className={styles.btnCancel} onClick={onClose}>Annuler</button>

@@ -1,3 +1,6 @@
+/** Montant d'une cotisation annuelle membre, en centimes (CHF 30.00) */
+export const COTISATION_CENTS = 3000;
+
 /** Centimes → "X'XXX.XX" (séparateur de milliers apostrophe suisse, sans préfixe ni signe) */
 export function formatCHF(centimes: number): string {
   const [int, dec] = (Math.abs(centimes) / 100).toFixed(2).split('.');

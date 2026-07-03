@@ -74,7 +74,7 @@ describe('MembresPage', () => {
     await screen.findByText(/aucun membre/i);
   });
 
-  it('confirme avant import et affiche le résultat', async () => {
+  it('importe depuis Excel et affiche le résultat', async () => {
     render(<MembresPage />);
     await screen.findByRole('button', { name: /importer/i });
     await userEvent.click(screen.getByRole('button', { name: /importer/i }));

@@ -52,12 +52,16 @@ export default function MembresPage() {
   };
 
   const handleToggleActive = async (m: MemberWithDues) => {
-    await window.api.updateMember(m.id, {
-      last_name: m.last_name, first_name: m.first_name,
-      entry_date: m.entry_date, is_active: m.is_active === 1 ? 0 : 1,
-      inactive_note: m.inactive_note,
-    });
-    load();
+    try {
+      await window.api.updateMember(m.id, {
+        last_name: m.last_name, first_name: m.first_name,
+        entry_date: m.entry_date, is_active: m.is_active === 1 ? 0 : 1,
+        inactive_note: m.inactive_note,
+      });
+      load();
+    } catch {
+      setToast({ message: 'Impossible de modifier le statut du membre', variant: 'error' });
+    }
   };
 
   const handleImport = async () => {
@@ -127,7 +131,6 @@ export default function MembresPage() {
                 key={m.id}
                 className={`${styles.row} ${m.is_active === 0 ? styles.inactive : ''}`}
                 onClick={() => setDetailMember(m)}
-                style={{ cursor: 'pointer' }}
               >
                 <td>{m.last_name}</td>
                 <td>{m.first_name}</td>
