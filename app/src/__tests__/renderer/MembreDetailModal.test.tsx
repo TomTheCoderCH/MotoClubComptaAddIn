@@ -56,10 +56,24 @@ describe('MembreDetailModal', () => {
     expect(screen.getByRole('button', { name: /enregistrer un paiement/i })).toBeInTheDocument();
   });
 
-  it('cocher une case historique appelle setHistoricalDues', async () => {
-    render(<MembreDetailModal member={mockMember} fiscalYears={[mockYear]} onClose={vi.fn()} onUpdated={vi.fn()} />);
+  it('cocher une case historique appelle setHistoricalDues sans fermer la modale', async () => {
+    const onUpdated = vi.fn();
+    const onClose = vi.fn();
+    render(<MembreDetailModal member={mockMember} fiscalYears={[mockYear]} onClose={onClose} onUpdated={onUpdated} />);
     const checkbox = screen.getAllByRole('checkbox')[0];
     await userEvent.click(checkbox);
     expect(window.api.setHistoricalDues).toHaveBeenCalled();
+    // La modale ne doit pas se fermer ni notifier le parent au simple cochage
+    expect(onUpdated).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('le bouton Fermer notifie le parent puis ferme la modale', async () => {
+    const onUpdated = vi.fn();
+    const onClose = vi.fn();
+    render(<MembreDetailModal member={mockMember} fiscalYears={[mockYear]} onClose={onClose} onUpdated={onUpdated} />);
+    await userEvent.click(screen.getByRole('button', { name: /fermer/i }));
+    expect(onUpdated).toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
   });
 });
