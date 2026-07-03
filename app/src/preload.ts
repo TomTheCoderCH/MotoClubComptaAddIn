@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { Account, FiscalYear, JournalEntry, JournalEntryLine, AccountBalance, CreateJournalEntryPayload, UpdateJournalEntryPayload, BackupInfo, OpeningBalanceSuggestion, OpeningBalanceLine, ClosingPreview, UpdateAccountPayload, CreateAccountPayload, AnalyticsData, DashboardData, DashboardCardConfig, AccountLedgerData, TwintSummary, CashCount, CashSession, CashCountPayload, CashSessionPayload } from './types';
+import type { Account, FiscalYear, JournalEntry, JournalEntryLine, AccountBalance, CreateJournalEntryPayload, UpdateJournalEntryPayload, BackupInfo, OpeningBalanceSuggestion, OpeningBalanceLine, ClosingPreview, UpdateAccountPayload, CreateAccountPayload, AnalyticsData, DashboardData, DashboardCardConfig, AccountLedgerData, TwintSummary, CashCount, CashSession, CashCountPayload, CashSessionPayload, Member, MemberDues, MemberWithDues, MemberPayload, MemberPaymentPayload } from './types';
 
 // API exposée au renderer via window.api
 contextBridge.exposeInMainWorld('api', {
@@ -90,6 +90,18 @@ contextBridge.exposeInMainWorld('api', {
   getCashSessions:   (fiscalYearId: number): Promise<CashSession[]>      => ipcRenderer.invoke('cash:getSessions', fiscalYearId),
   createCashSession: (payload: CashSessionPayload): Promise<CashSession> => ipcRenderer.invoke('cash:createSession', payload),
   deleteCashSession: (id: number): Promise<void>                         => ipcRenderer.invoke('cash:deleteSession', id),
+
+  // Membres
+  getMembers:             (): Promise<MemberWithDues[]>    => ipcRenderer.invoke('members:getAll'),
+  createMember:           (payload: MemberPayload): Promise<Member> => ipcRenderer.invoke('members:create', payload),
+  updateMember:           (id: number, payload: MemberPayload): Promise<Member> => ipcRenderer.invoke('members:update', id, payload),
+  deleteMember:           (id: number): Promise<void>      => ipcRenderer.invoke('members:delete', id),
+  setHistoricalDues:      (memberId: number, year: number, paid: boolean, note: string | null): Promise<MemberDues> =>
+    ipcRenderer.invoke('members:setHistoricalDues', memberId, year, paid, note),
+  recordPayment:          (payload: MemberPaymentPayload): Promise<{ dues: MemberDues[]; journalEntryId: number }> =>
+    ipcRenderer.invoke('members:recordPayment', payload),
+  importMembersFromExcel: (): Promise<{ imported: number; skipped: number }> =>
+    ipcRenderer.invoke('members:importFromExcel'),
 });
 
 // Déclaration TypeScript pour window.api dans le renderer
@@ -135,4 +147,11 @@ export type ElectronAPI = {
   getCashSessions:   (fiscalYearId: number) => Promise<CashSession[]>;
   createCashSession: (payload: CashSessionPayload) => Promise<CashSession>;
   deleteCashSession: (id: number) => Promise<void>;
+  getMembers:             () => Promise<MemberWithDues[]>;
+  createMember:           (payload: MemberPayload) => Promise<Member>;
+  updateMember:           (id: number, payload: MemberPayload) => Promise<Member>;
+  deleteMember:           (id: number) => Promise<void>;
+  setHistoricalDues:      (memberId: number, year: number, paid: boolean, note: string | null) => Promise<MemberDues>;
+  recordPayment:          (payload: MemberPaymentPayload) => Promise<{ dues: MemberDues[]; journalEntryId: number }>;
+  importMembersFromExcel: () => Promise<{ imported: number; skipped: number }>;
 };

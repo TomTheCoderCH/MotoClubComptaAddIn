@@ -21,6 +21,11 @@ import type {
   CashSession,
   CashCountPayload,
   CashSessionPayload,
+  Member,
+  MemberDues,
+  MemberWithDues,
+  MemberPayload,
+  MemberPaymentPayload,
 } from './types';
 
 declare global {
@@ -68,6 +73,14 @@ declare global {
       getCashSessions:   (fiscalYearId: number) => Promise<CashSession[]>;
       createCashSession: (payload: CashSessionPayload) => Promise<CashSession>;
       deleteCashSession: (id: number) => Promise<void>;
+      // Membres
+      getMembers:             () => Promise<MemberWithDues[]>;
+      createMember:           (payload: MemberPayload) => Promise<Member>;
+      updateMember:           (id: number, payload: MemberPayload) => Promise<Member>;
+      deleteMember:           (id: number) => Promise<void>;
+      setHistoricalDues:      (memberId: number, year: number, paid: boolean, note: string | null) => Promise<MemberDues>;
+      recordPayment:          (payload: MemberPaymentPayload) => Promise<{ dues: MemberDues[]; journalEntryId: number }>;
+      importMembersFromExcel: () => Promise<{ imported: number; skipped: number }>;
     };
   }
 }

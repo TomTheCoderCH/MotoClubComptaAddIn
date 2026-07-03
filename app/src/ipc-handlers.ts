@@ -1,4 +1,4 @@
-import { ipcMain, dialog, BrowserWindow } from 'electron';
+import { ipcMain, app, dialog, BrowserWindow } from 'electron';
 import { copyFileSync } from 'node:fs';
 import path from 'node:path';
 import { exportFiscalYearToExcel } from './excel/export';
@@ -37,9 +37,15 @@ import {
   getCashSessions,
   createCashSession,
   deleteCashSession,
+  getAllMembers,
+  createMember,
+  updateMember,
+  deleteMember,
+  setHistoricalDues,
+  recordPayment,
 } from './db';
 import { listBackups, formatBackupFilename, performBackup } from './backup';
-import type { CreateJournalEntryPayload, UpdateJournalEntryPayload, OpeningBalanceLine, UpdateAccountPayload, CreateAccountPayload, DashboardCardConfig, CashCountPayload, CashSessionPayload } from './types';
+import type { CreateJournalEntryPayload, UpdateJournalEntryPayload, OpeningBalanceLine, UpdateAccountPayload, CreateAccountPayload, DashboardCardConfig, CashCountPayload, CashSessionPayload, MemberPayload, MemberPaymentPayload } from './types';
 import { readSettings, writeSettings } from './settings';
 import { migrateDataDir } from './migrate';
 
@@ -253,4 +259,41 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('cash:getSessions',   (_e, fiscalYearId: number)        => getCashSessions(fiscalYearId));
   ipcMain.handle('cash:createSession', (_e, payload: CashSessionPayload) => createCashSession(payload));
   ipcMain.handle('cash:deleteSession', (_e, id: number)                  => deleteCashSession(id));
+
+  // ─── Membres ────────────────────────────────────────────────────────────────
+  ipcMain.handle('members:getAll', () => getAllMembers());
+  ipcMain.handle('members:create', (_e, payload: MemberPayload) => createMember(payload));
+  ipcMain.handle('members:update', (_e, id: number, payload: MemberPayload) => updateMember(id, payload));
+  ipcMain.handle('members:delete', (_e, id: number) => deleteMember(id));
+  ipcMain.handle('members:setHistoricalDues',
+    (_e, memberId: number, year: number, paid: boolean, note: string | null) =>
+      setHistoricalDues(memberId, year, paid, note)
+  );
+  ipcMain.handle('members:recordPayment', (_e, payload: MemberPaymentPayload) =>
+    recordPayment(payload)
+  );
+  ipcMain.handle('members:importFromExcel', async () => {
+    const excelPath = path.join(app.getAppPath(), '..', 'Documents', 'Cotisations - 2020-2026.xlsx');
+    const ExcelJS = (await import('exceljs')).default;
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.readFile(excelPath);
+    const sheet = workbook.worksheets[0];
+    let imported = 0;
+    let skipped = 0;
+    sheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) return;
+      const lastName  = String(row.getCell(1).value ?? '').trim();
+      const firstName = String(row.getCell(2).value ?? '').trim();
+      if (!lastName || !firstName) return;
+      const existing = getDb()
+        .prepare('SELECT id FROM members WHERE LOWER(last_name) = LOWER(?) AND LOWER(first_name) = LOWER(?)')
+        .get(lastName, firstName);
+      if (existing) { skipped++; } else {
+        getDb().prepare('INSERT INTO members (last_name, first_name, is_active) VALUES (?, ?, 1)')
+          .run(lastName, firstName);
+        imported++;
+      }
+    });
+    return { imported, skipped };
+  });
 }
