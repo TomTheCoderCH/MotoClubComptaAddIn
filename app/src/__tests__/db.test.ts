@@ -39,12 +39,12 @@ function freshDb() {
 describe('Plan comptable — seed initial', () => {
   beforeEach(freshDb);
 
-  it('contient exactement 29 comptes', () => {
-    expect(getAllAccounts()).toHaveLength(29);
+  it('contient exactement 30 comptes', () => {
+    expect(getAllAccounts()).toHaveLength(30);
   });
 
   it('tous les comptes sont actifs par défaut', () => {
-    expect(getActiveAccounts()).toHaveLength(29);
+    expect(getActiveAccounts()).toHaveLength(30);
   });
 
   it('le compte 100 est la Caisse (ACTIF, DEBIT)', () => {

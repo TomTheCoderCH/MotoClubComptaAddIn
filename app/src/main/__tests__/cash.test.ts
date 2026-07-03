@@ -18,7 +18,7 @@ function freshDb() { openDatabase(':memory:'); }
 
 // ── Migration ────────────────────────────────────────────────────────────────
 
-describe('Migration v3 — tables cash', () => {
+describe('Migration v4 — tables members/member_dues', () => {
   beforeEach(freshDb);
 
   it('crée les tables cash_sessions, cash_counts, cash_count_lines', () => {
@@ -31,9 +31,9 @@ describe('Migration v3 — tables cash', () => {
     ]);
   });
 
-  it('schema version est 3', () => {
+  it('schema version est 4', () => {
     const db = openDatabase(':memory:');
-    expect(db.pragma('user_version', { simple: true })).toBe(3);
+    expect(db.pragma('user_version', { simple: true })).toBe(4);
   });
 });
 

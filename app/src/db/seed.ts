@@ -35,6 +35,7 @@ export function seedAccountsIfEmpty(db: Database.Database): void {
     { number: '360', name: 'Souper fin d\'année',       class: 3, type: 'PRODUIT', normal_balance: 'CREDIT', description: 'Recettes du souper',                          account_group: 'Souper',           must_be_zero_at_closing: 0, is_closing_account: 0 },
     { number: '370', name: 'Location matériel',         class: 3, type: 'PRODUIT', normal_balance: 'CREDIT', description: 'Location tente et autre matériel',             account_group: null,               must_be_zero_at_closing: 0, is_closing_account: 0 },
     { number: '390', name: 'Produits divers',           class: 3, type: 'PRODUIT', normal_balance: 'CREDIT', description: 'Crédits, remboursements assureurs, etc.',     account_group: null,               must_be_zero_at_closing: 0, is_closing_account: 0 },
+    { number: '391', name: 'Dons',                      class: 3, type: 'PRODUIT', normal_balance: 'CREDIT', description: 'Dons divers',                                   account_group: null,               must_be_zero_at_closing: 0, is_closing_account: 0 },
 
     // Classe 4 — Charges
     { number: '400', name: 'Assurances',                class: 4, type: 'CHARGE', normal_balance: 'DEBIT', description: 'RC AXA et autres',                              account_group: null,               must_be_zero_at_closing: 0, is_closing_account: 0 },

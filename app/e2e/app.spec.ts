@@ -19,10 +19,10 @@ test('la sidebar affiche les 9 entrées de navigation', async ({ window }) => {
   }
 });
 
-test('navigue vers le Plan comptable avec 29 comptes', async ({ window }) => {
+test('navigue vers le Plan comptable avec 30 comptes', async ({ window }) => {
   await window.getByRole('button', { name: 'Plan comptable' }).click();
   await expect(window.getByRole('heading', { level: 1, name: 'Plan comptable' })).toBeVisible();
-  await expect(window.locator('p:has-text("29 comptes")')).toBeVisible();
+  await expect(window.locator('p:has-text("30 comptes")')).toBeVisible();
 });
 
 test('affiche le compte Caisse (100) dans le plan comptable', async ({ window }) => {

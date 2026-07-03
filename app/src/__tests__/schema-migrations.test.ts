@@ -10,19 +10,19 @@ function freshDb(): Database.Database {
 }
 
 describe('runSchemaMigrations', () => {
-  it('une base fraîche passe de user_version=0 à 3 (version courante)', () => {
+  it('une base fraîche passe de user_version=0 à 4 (version courante)', () => {
     const db = freshDb();
     expect(getSchemaVersion(db)).toBe(0);
     runSchemaMigrations(db);
-    expect(getSchemaVersion(db)).toBe(3);
+    expect(getSchemaVersion(db)).toBe(4);
   });
 
-  it('une base déjà à jour (v3) n\'est pas modifiée', () => {
+  it('une base déjà à jour (v4) n\'est pas modifiée', () => {
     const db = freshDb();
     runSchemaMigrations(db);
     // deuxième appel — idempotent
     runSchemaMigrations(db);
-    expect(getSchemaVersion(db)).toBe(3);
+    expect(getSchemaVersion(db)).toBe(4);
   });
 
   it('les tables sont intactes après migration', () => {
@@ -36,6 +36,17 @@ describe('runSchemaMigrations', () => {
     expect(names).toContain('fiscal_years');
     expect(names).toContain('journal_entries');
     expect(names).toContain('journal_entry_lines');
+  });
+
+  it('les tables members et member_dues existent après migration', () => {
+    const db = freshDb();
+    runSchemaMigrations(db);
+    const tables = db
+      .prepare(`SELECT name FROM sqlite_master WHERE type='table' ORDER BY name`)
+      .all() as { name: string }[];
+    const names = tables.map(t => t.name);
+    expect(names).toContain('members');
+    expect(names).toContain('member_dues');
   });
 
   it('une migration SQL est appliquée et la version incrémentée', () => {

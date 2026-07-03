@@ -59,6 +59,35 @@ CREATE INDEX idx_cash_counts_session     ON cash_counts(session_id);
 CREATE INDEX idx_cash_count_lines_count  ON cash_count_lines(cash_count_id);
     `.trim(),
   },
+  {
+    version: 4,
+    description: 'Tables membres et cotisations',
+    sql: `
+CREATE TABLE members (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  last_name     TEXT    NOT NULL,
+  first_name    TEXT    NOT NULL,
+  entry_date    TEXT,
+  is_active     INTEGER NOT NULL DEFAULT 1,
+  inactive_note TEXT,
+  created_at    TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE member_dues (
+  id               INTEGER PRIMARY KEY AUTOINCREMENT,
+  member_id        INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+  year             INTEGER NOT NULL,
+  paid             INTEGER NOT NULL DEFAULT 0,
+  payment_note     TEXT,
+  payment_date     TEXT,
+  amount_cents     INTEGER,
+  journal_entry_id INTEGER REFERENCES journal_entries(id) ON DELETE SET NULL,
+  created_at       TEXT    NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (member_id, year)
+);
+CREATE INDEX idx_member_dues_member ON member_dues(member_id);
+CREATE INDEX idx_member_dues_year   ON member_dues(year);
+    `.trim(),
+  },
 ];
 
 export function runSchemaMigrations(db: Database.Database): void {
