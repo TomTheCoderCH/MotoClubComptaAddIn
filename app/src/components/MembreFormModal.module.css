@@ -1,0 +1,13 @@
+.modal    { width: 480px; padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; }
+.title    { margin: 0; font-size: 1.1rem; font-weight: 700; }
+.form     { display: flex; flex-direction: column; gap: 0.875rem; }
+.label    { display: flex; flex-direction: column; gap: 0.25rem; font-size: var(--font-size-sm); font-weight: 500; }
+.input    { padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: var(--font-size-sm); background: var(--bg); color: var(--text); }
+.textarea { padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: var(--font-size-sm); background: var(--bg); color: var(--text); resize: vertical; }
+.fieldset { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; margin: 0; }
+.legend   { font-size: var(--font-size-sm); font-weight: 500; padding: 0 0.25rem; }
+.radio    { display: flex; align-items: center; gap: 0.4rem; font-size: var(--font-size-sm); cursor: pointer; margin: 0.25rem 0; }
+.footer   { display: flex; justify-content: flex-end; gap: 0.5rem; }
+.btnCancel { padding: 0.4rem 0.875rem; background: none; border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; font-size: var(--font-size-sm); }
+.btnSave   { padding: 0.4rem 0.875rem; background: var(--accent); color: var(--text-on-accent); border: none; border-radius: var(--radius); cursor: pointer; font-size: var(--font-size-sm); }
+.btnSave:disabled { opacity: 0.5; cursor: not-allowed; }
