@@ -1,0 +1,26 @@
+.modal   { width: 520px; padding: 1.5rem; display: flex; flex-direction: column; gap: 1.125rem; }
+.title   { margin: 0; font-size: 1.1rem; font-weight: 700; }
+.member  { margin: 0; font-weight: 600; color: var(--accent); }
+.form    { display: flex; flex-direction: column; gap: 0.875rem; }
+.label   { display: flex; flex-direction: column; gap: 0.25rem; font-size: var(--font-size-sm); font-weight: 500; }
+.input   { padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: var(--font-size-sm); background: var(--bg); color: var(--text); }
+
+.yearsSection { display: flex; flex-direction: column; gap: 0.375rem; }
+.yearsLabel   { font-size: var(--font-size-sm); font-weight: 500; display: flex; align-items: center; gap: 0.5rem; }
+.quota        { font-weight: 400; color: var(--text-muted); font-size: 0.8rem; }
+.yearsList    { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.yearLabel    { display: flex; align-items: center; gap: 0.3rem; font-size: var(--font-size-sm); cursor: pointer; border: 1px solid var(--border); padding: 0.25rem 0.6rem; border-radius: var(--radius-sm); }
+.yearLabel:has(input:checked) { border-color: var(--accent); background: var(--accent-light, #eff6ff); }
+.advance      { color: var(--text-muted); font-size: 0.75rem; }
+.hint         { font-size: 0.8rem; color: var(--text-muted); font-style: italic; margin: 0; }
+
+.surplus  { background: #fef3c7; color: #92400e; padding: 0.4rem 0.75rem; border-radius: var(--radius-sm); font-size: var(--font-size-sm); }
+.preview  { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.75rem; background: var(--bg-secondary); font-size: var(--font-size-sm); display: flex; flex-direction: column; gap: 0.25rem; }
+.previewTitle { font-weight: 600; margin-bottom: 0.25rem; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.previewLine  { display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; }
+.error { color: var(--error); font-size: var(--font-size-sm); }
+
+.footer    { display: flex; justify-content: flex-end; gap: 0.5rem; }
+.btnCancel { padding: 0.4rem 0.875rem; background: none; border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; font-size: var(--font-size-sm); }
+.btnSave   { padding: 0.4rem 0.875rem; background: var(--accent); color: var(--text-on-accent); border: none; border-radius: var(--radius); cursor: pointer; font-size: var(--font-size-sm); }
+.btnSave:disabled { opacity: 0.5; cursor: not-allowed; }
