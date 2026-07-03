@@ -8,10 +8,10 @@ test('affiche message si aucun exercice sur le tableau de bord', async ({ window
   await expect(window.locator('text=Aucun exercice disponible')).toBeVisible();
 });
 
-test('la sidebar affiche les 9 entrées de navigation', async ({ window }) => {
+test('la sidebar affiche les 10 entrées de navigation', async ({ window }) => {
   const nav = window.getByRole('navigation', { name: 'Navigation principale' });
   const labels = [
-    'Accueil', 'Plan comptable', 'Journal', 'Caisse', 'Exercices',
+    'Accueil', 'Plan comptable', 'Journal', 'Caisse', 'Membres', 'Exercices',
     'Soldes', 'Analytique', 'Bilan complet', 'Paramètres',
   ];
   for (const label of labels) {

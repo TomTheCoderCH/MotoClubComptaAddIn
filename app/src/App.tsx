@@ -9,10 +9,11 @@ import AnalyticsPage   from './pages/AnalyticsPage';
 import BilanPage       from './pages/BilanPage';
 import AccountLedgerPage from './pages/AccountLedgerPage';
 import CaissePage      from './pages/CaissePage';
+import MembresPage     from './pages/MembresPage';
 import SettingsPage    from './pages/SettingsPage';
 import WelcomePage     from './pages/WelcomePage';
 
-export type Page = 'dashboard' | 'accounts' | 'journal' | 'cash' | 'fiscal-years' | 'balances' | 'analytics' | 'bilan' | 'ledger' | 'settings' | 'welcome';
+export type Page = 'dashboard' | 'accounts' | 'journal' | 'cash' | 'members' | 'fiscal-years' | 'balances' | 'analytics' | 'bilan' | 'ledger' | 'settings' | 'welcome';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page | null>(null);
@@ -38,6 +39,7 @@ export default function App() {
       case 'accounts':     return <AccountsPage />;
       case 'journal':      return <JournalPage />;
       case 'cash':         return <CaissePage />;
+      case 'members':      return <MembresPage />;
       case 'fiscal-years': return <FiscalYearsPage />;
       case 'balances':     return <BalancesPage onOpenLedger={openLedger} />;
       case 'analytics':    return <AnalyticsPage />;

@@ -7,6 +7,7 @@ const NAV_ITEMS: Array<{ id: Page; label: string }> = [
   { id: 'accounts',     label: 'Plan comptable' },
   { id: 'journal',      label: 'Journal'        },
   { id: 'cash',         label: 'Caisse'         },
+  { id: 'members',      label: 'Membres'        },
   { id: 'fiscal-years', label: 'Exercices'      },
   { id: 'balances',     label: 'Soldes'         },
   { id: 'analytics',    label: 'Analytique'     },

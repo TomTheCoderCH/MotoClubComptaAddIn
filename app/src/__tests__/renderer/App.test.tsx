@@ -35,6 +35,7 @@ beforeEach(() => {
     createJournalEntry: vi.fn(),
     getAccountBalances: vi.fn().mockResolvedValue([]),
     getCashCounts:      vi.fn().mockResolvedValue([]),
+    getMembers:         vi.fn().mockResolvedValue([]),
     listBackups:        vi.fn().mockResolvedValue([]),
     exportBackup:       vi.fn().mockResolvedValue(null),
     getDbPath:          vi.fn().mockResolvedValue(''),
@@ -49,12 +50,13 @@ describe('App — layout', () => {
     expect(await screen.findByText('MCY Compta')).toBeInTheDocument();
   });
 
-  it('affiche les 9 items de navigation', async () => {
+  it('affiche les 10 items de navigation', async () => {
     render(<App />);
     expect(await screen.findByRole('button', { name: 'Accueil' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Plan comptable' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Journal' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Caisse' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Membres' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Exercices' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Soldes' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Analytique' })).toBeInTheDocument();
