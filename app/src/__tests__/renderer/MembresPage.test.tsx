@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import MembresPage from '../../pages/MembresPage';
@@ -202,5 +202,122 @@ describe('Plage d\'années configurable', () => {
     const headers = screen.getAllByRole('columnheader').map(h => h.textContent);
     const yearHeaders = headers.filter(h => /^\d{4}$/.test(h ?? ''));
     expect(yearHeaders).toEqual(['2023', '2024', '2025']);
+  });
+});
+
+describe('Signalement des arriérés', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('signale une année non payée si entry_date est absente (année non future)', async () => {
+    vi.spyOn(Date.prototype, 'getFullYear').mockReturnValue(2026);
+    vi.stubGlobal('api', {
+      getFiscalYears:         vi.fn().mockResolvedValue([]),
+      getMembers:             vi.fn().mockResolvedValue([{
+        id: 10, last_name: 'Sans', first_name: 'Entree',
+        entry_date: null, is_active: 1, inactive_note: null, created_at: '',
+        dues: [],
+      }]),
+      getSettings:            vi.fn().mockResolvedValue({ dataDir: '/data', membersYearRange: { start: 2024, end: 2024 } }),
+      deleteMember:           vi.fn().mockResolvedValue(undefined),
+      importMembersFromExcel: vi.fn().mockResolvedValue({ imported: 0, skipped: 0 }),
+      saveMembersYearRange:   vi.fn().mockResolvedValue(undefined),
+    });
+    render(<MembresPage />);
+    const element = await screen.findByText('Sans');
+    const row = element.closest('tr')!;
+    const cells = Array.from(row.querySelectorAll('td'));
+    const yearCell = cells.slice(4, -1)[0]; // Skip first 4 columns and last (actions)
+    expect(yearCell).toHaveAttribute('data-arrears', 'true');
+  });
+
+  it('ne signale pas une année non payée antérieure à entry_date', async () => {
+    vi.spyOn(Date.prototype, 'getFullYear').mockReturnValue(2026);
+    vi.stubGlobal('api', {
+      getFiscalYears:         vi.fn().mockResolvedValue([]),
+      getMembers:             vi.fn().mockResolvedValue([{
+        id: 11, last_name: 'Entree', first_name: 'Tardive',
+        entry_date: '2022-06-01', is_active: 1, inactive_note: null, created_at: '',
+        dues: [],
+      }]),
+      getSettings:            vi.fn().mockResolvedValue({ dataDir: '/data', membersYearRange: { start: 2020, end: 2020 } }),
+      deleteMember:           vi.fn().mockResolvedValue(undefined),
+      importMembersFromExcel: vi.fn().mockResolvedValue({ imported: 0, skipped: 0 }),
+      saveMembersYearRange:   vi.fn().mockResolvedValue(undefined),
+    });
+    render(<MembresPage />);
+    const element = await screen.findByText('Tardive');
+    const row = element.closest('tr')!;
+    const cells = Array.from(row.querySelectorAll('td'));
+    const yearCell = cells.slice(4, -1)[0]; // Skip first 4 columns and last (actions)
+    expect(yearCell).not.toHaveAttribute('data-arrears');
+  });
+
+  it('signale une année non payée égale ou postérieure à entry_date', async () => {
+    vi.spyOn(Date.prototype, 'getFullYear').mockReturnValue(2026);
+    vi.stubGlobal('api', {
+      getFiscalYears:         vi.fn().mockResolvedValue([]),
+      getMembers:             vi.fn().mockResolvedValue([{
+        id: 12, last_name: 'Entree', first_name: 'Normale',
+        entry_date: '2022-06-01', is_active: 1, inactive_note: null, created_at: '',
+        dues: [],
+      }]),
+      getSettings:            vi.fn().mockResolvedValue({ dataDir: '/data', membersYearRange: { start: 2022, end: 2022 } }),
+      deleteMember:           vi.fn().mockResolvedValue(undefined),
+      importMembersFromExcel: vi.fn().mockResolvedValue({ imported: 0, skipped: 0 }),
+      saveMembersYearRange:   vi.fn().mockResolvedValue(undefined),
+    });
+    render(<MembresPage />);
+    const element = await screen.findByText('Normale');
+    const row = element.closest('tr')!;
+    const cells = Array.from(row.querySelectorAll('td'));
+    const yearCell = cells.slice(4, -1)[0]; // Skip first 4 columns and last (actions)
+    expect(yearCell).toHaveAttribute('data-arrears', 'true');
+  });
+
+  it('ne signale jamais une année future, même si entry_date est absente', async () => {
+    vi.spyOn(Date.prototype, 'getFullYear').mockReturnValue(2026);
+    vi.stubGlobal('api', {
+      getFiscalYears:         vi.fn().mockResolvedValue([]),
+      getMembers:             vi.fn().mockResolvedValue([{
+        id: 13, last_name: 'Sans', first_name: 'Futur',
+        entry_date: null, is_active: 1, inactive_note: null, created_at: '',
+        dues: [],
+      }]),
+      getSettings:            vi.fn().mockResolvedValue({ dataDir: '/data', membersYearRange: { start: 2027, end: 2027 } }),
+      deleteMember:           vi.fn().mockResolvedValue(undefined),
+      importMembersFromExcel: vi.fn().mockResolvedValue({ imported: 0, skipped: 0 }),
+      saveMembersYearRange:   vi.fn().mockResolvedValue(undefined),
+    });
+    render(<MembresPage />);
+    const element = await screen.findByText('Futur');
+    const row = element.closest('tr')!;
+    const cells = Array.from(row.querySelectorAll('td'));
+    const yearCell = cells.slice(4, -1)[0]; // Skip first 4 columns and last (actions)
+    expect(yearCell).not.toHaveAttribute('data-arrears');
+  });
+
+  it('ne signale jamais une cellule payée', async () => {
+    vi.spyOn(Date.prototype, 'getFullYear').mockReturnValue(2026);
+    vi.stubGlobal('api', {
+      getFiscalYears:         vi.fn().mockResolvedValue([]),
+      getMembers:             vi.fn().mockResolvedValue([{
+        id: 14, last_name: 'Paye', first_name: 'SansEntree',
+        entry_date: null, is_active: 1, inactive_note: null, created_at: '',
+        dues: [{ id: 99, member_id: 14, year: 2024, paid: 1, payment_note: null,
+                 payment_date: '2024-03-01', amount_cents: 3000, journal_entry_id: 20, created_at: '' }],
+      }]),
+      getSettings:            vi.fn().mockResolvedValue({ dataDir: '/data', membersYearRange: { start: 2024, end: 2024 } }),
+      deleteMember:           vi.fn().mockResolvedValue(undefined),
+      importMembersFromExcel: vi.fn().mockResolvedValue({ imported: 0, skipped: 0 }),
+      saveMembersYearRange:   vi.fn().mockResolvedValue(undefined),
+    });
+    render(<MembresPage />);
+    const element = await screen.findByText('SansEntree');
+    const row = element.closest('tr')!;
+    const cells = Array.from(row.querySelectorAll('td'));
+    const yearCell = cells.slice(4, -1)[0]; // Skip first 4 columns and last (actions)
+    expect(yearCell).not.toHaveAttribute('data-arrears');
   });
 });

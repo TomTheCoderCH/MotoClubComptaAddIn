@@ -15,6 +15,7 @@
 .row:hover td { background: var(--hover); }
 .inactive td  { opacity: 0.55; }
 .num      { text-align: center; }
+.num[data-arrears] { background: var(--error-bg); }
 
 .badgeActif   { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 3px; font-size: 0.75rem; font-weight: 600; background: #dcfce7; color: #166534; }
 .badgeInactif { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 3px; font-size: 0.75rem; font-weight: 600; background: var(--border-light); color: var(--text-muted); }

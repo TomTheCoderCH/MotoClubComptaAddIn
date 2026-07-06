@@ -21,6 +21,14 @@ function computeDefaultRange(years: FiscalYear[], members: MemberWithDues[]): { 
   return { start: Math.min(...recent), end: Math.max(...recent) };
 }
 
+function isArrears(member: MemberWithDues, year: number): boolean {
+  const currentYear = new Date().getFullYear();
+  if (year > currentYear) return false;
+  if (!member.entry_date) return true;
+  const entryYear = parseInt(member.entry_date.slice(0, 4), 10);
+  return year >= entryYear;
+}
+
 export default function MembresPage() {
   const [years,           setYears]           = useState<FiscalYear[]>([]);
   const [members,         setMembers]         = useState<MemberWithDues[]>([]);
@@ -223,7 +231,7 @@ export default function MembresPage() {
                   }
                 </td>
                 {displayedYears.map(y => (
-                  <td key={y} className={styles.num}>
+                  <td key={y} className={styles.num} data-arrears={!isPaid(m, y) && isArrears(m, y) || undefined}>
                     {isPaid(m, y)
                       ? <span className={styles.paid}>✓</span>
                       : <span className={styles.unpaid}>—</span>
