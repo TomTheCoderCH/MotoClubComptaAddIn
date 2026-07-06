@@ -154,6 +154,42 @@ describe('Plage d\'années configurable', () => {
     expect(screen.getByLabelText('Fin')).toHaveValue('2025'); // revient à la valeur précédente
   });
 
+  it('une année implausible (hors 1900-2200) au blur revient à la dernière valeur valide sans sauvegarder', async () => {
+    const saveMembersYearRange = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('api', {
+      getFiscalYears:       vi.fn().mockResolvedValue([mockYear]),
+      getMembers:           vi.fn().mockResolvedValue([mockMember, mockMemberUnpaid]),
+      getSettings:          vi.fn().mockResolvedValue({ dataDir: '/data', membersYearRange: { start: 2024, end: 2025 } }),
+      saveMembersYearRange,
+    });
+    render(<MembresPage />);
+    await screen.findByText('Merli');
+    const endInput = screen.getByLabelText('Fin');
+    await userEvent.clear(endInput);
+    await userEvent.type(endInput, '20260');
+    await userEvent.tab(); // blur avec une année implausible
+    expect(saveMembersYearRange).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Fin')).toHaveValue('2025'); // revient à la valeur précédente
+  });
+
+  it('une saisie avec suffixe non numérique au blur commit la valeur parsée et normalise le texte affiché', async () => {
+    const saveMembersYearRange = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('api', {
+      getFiscalYears:       vi.fn().mockResolvedValue([mockYear]),
+      getMembers:           vi.fn().mockResolvedValue([mockMember, mockMemberUnpaid]),
+      getSettings:          vi.fn().mockResolvedValue({ dataDir: '/data', membersYearRange: { start: 2024, end: 2025 } }),
+      saveMembersYearRange,
+    });
+    render(<MembresPage />);
+    await screen.findByText('Merli');
+    const endInput = screen.getByLabelText('Fin');
+    await userEvent.clear(endInput);
+    await userEvent.type(endInput, '2026abc');
+    await userEvent.tab(); // blur
+    expect(saveMembersYearRange).toHaveBeenCalledWith({ start: 2024, end: 2026 });
+    expect(screen.getByLabelText('Fin')).toHaveValue('2026'); // texte normalisé, pas "2026abc"
+  });
+
   it('une plage inversée (fin < début) affiche quand même les colonnes dans l\'ordre croissant', async () => {
     vi.stubGlobal('api', {
       getFiscalYears:       vi.fn().mockResolvedValue([mockYear]),

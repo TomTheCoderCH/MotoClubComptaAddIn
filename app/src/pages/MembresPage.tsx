@@ -71,21 +71,23 @@ export default function MembresPage() {
   const handleStartBlur = () => {
     if (!yearRange) return;
     const n = parseInt(startInputStr, 10);
-    if (!Number.isInteger(n)) {
+    if (!Number.isInteger(n) || n < 1900 || n > 2200) {
       setStartInputStr(String(yearRange.start));
       return;
     }
     commitRange({ start: n, end: yearRange.end });
+    setStartInputStr(String(n));
   };
 
   const handleEndBlur = () => {
     if (!yearRange) return;
     const n = parseInt(endInputStr, 10);
-    if (!Number.isInteger(n)) {
+    if (!Number.isInteger(n) || n < 1900 || n > 2200) {
       setEndInputStr(String(yearRange.end));
       return;
     }
     commitRange({ start: yearRange.start, end: n });
+    setEndInputStr(String(n));
   };
 
   const visible = members.filter(m => showInactive ? true : m.is_active === 1);
