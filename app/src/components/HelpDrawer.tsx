@@ -1,13 +1,14 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useHelp } from './HelpContext';
 import styles from './HelpDrawer.module.css';
 
-type Tab = 'quickstart' | 'accounting' | 'app';
+type Tab = 'quickstart' | 'accounting' | 'app' | 'about';
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'quickstart', label: 'Démarrage rapide' },
   { id: 'accounting', label: 'Comptabilité'     },
   { id: 'app',        label: 'Application'      },
+  { id: 'about',      label: 'À propos'         },
 ];
 
 const MIN_WIDTH = 260;
@@ -62,6 +63,7 @@ export default function HelpDrawer() {
           {tab === 'quickstart' && <QuickStartTab />}
           {tab === 'accounting' && <AccountingTab />}
           {tab === 'app'        && <AppTab />}
+          {tab === 'about'      && <AboutTab />}
         </div>
       </div>
     </>
@@ -92,6 +94,12 @@ function QuickStartTab() {
           <strong>Consulter les soldes</strong><br />
           Page <em>Soldes</em> — affichage en temps réel par classe de compte.
           Le <em>Tableau de bord</em> (page d'accueil) affiche les soldes clés et le résultat P&amp;L.
+        </li>
+        <li>
+          <strong>Suivre les cotisations</strong><br />
+          Page <em>Membres</em> → cocher les cotisations reçues au fil de l&apos;année, ou
+          utiliser &quot;Enregistrer un paiement&quot; pour générer automatiquement l&apos;écriture
+          comptable correspondante.
         </li>
         <li>
           <strong>Clôturer l'exercice</strong><br />
@@ -197,6 +205,16 @@ function AppTab() {
         <dd>Saisie et consultation des écritures comptables. Filtres par libellé, compte et
             période. Modification et suppression possibles tant que l'exercice est ouvert.
             Un message d'avertissement s'affiche si la date est hors de l'exercice.</dd>
+        <dt>Membres</dt>
+        <dd>Fiche membre (nom, prénom, date d&apos;entrée, statut actif/inactif). Historique de
+            cotisations avec case à cocher toujours éditable — y compris pour les années déjà
+            liées à une écriture comptable (cocher/décocher ne modifie jamais l&apos;écriture).
+            Possibilité d&apos;ajouter une année antérieure manquante. Le bouton
+            &quot;Enregistrer un paiement&quot; génère automatiquement l&apos;écriture comptable
+            correspondante (le surplus éventuel est versé en don). La plage d&apos;années
+            affichées dans le récapitulatif est configurable ; les cotisations en retard sont
+            signalées par un fond rouge clair. Export du récapitulatif en Excel ; import initial
+            des noms/prénoms depuis un fichier Excel.</dd>
         <dt>Analytique</dt>
         <dd>Vue P&amp;L regroupée par groupe analytique pour l'exercice sélectionné.
             Les comptes sans groupe apparaissent dans la section "Non groupés".
@@ -214,9 +232,15 @@ function AppTab() {
             une colonne <em>Solde courant</em> affiche le solde progressif après chaque ligne.
             Les contreparties affichées sont uniquement celles du côté opposé de l'écriture
             (débit ↔ crédit). Accessible via <em>Soldes</em> → clic sur un compte.</dd>
+        <dt>Bilan complet</dt>
+        <dd>Présentation en deux colonnes : Actif / Passif &amp; Fonds propres à gauche,
+            Résultat / Charges à droite. Un contrôle d&apos;équilibre automatique confirme
+            que le bilan est cohérent.</dd>
         <dt>Paramètres</dt>
         <dd>Chemin de la base de données, export de sauvegarde manuelle, historique des
-            sauvegardes automatiques, export Excel global.</dd>
+            sauvegardes automatiques, export Excel global. Restauration possible depuis
+            n&apos;importe quelle sauvegarde (automatique ou manuelle), avec confirmation
+            avant remplacement de la base actuelle.</dd>
       </dl>
 
       <h3 className={styles.sectionTitle}>Caisse</h3>
@@ -268,6 +292,47 @@ function AppTab() {
         (Journal, Bilan, Résultat, un onglet par compte). À utiliser après la clôture
         annuelle pour archivage ou transmission à un successeur non-informaticien.
       </p>
+    </div>
+  );
+}
+
+function AboutTab() {
+  const [version, setVersion] = useState<string | null>(null);
+
+  useEffect(() => {
+    window.api.getVersion().then(setVersion);
+  }, []);
+
+  return (
+    <div>
+      <h3 className={styles.sectionTitle}>Version</h3>
+      <p className={styles.para}>
+        {version ? `Version ${version}` : 'Chargement…'}
+      </p>
+
+      <h3 className={styles.sectionTitle}>Notes de version</h3>
+
+      <h4 className={styles.sectionTitle}>v1.2.0 (en cours)</h4>
+      <ul className={styles.steps}>
+        <li>Gestion de la caisse (comptages, sessions de manifestation)</li>
+        <li>Gestion des membres et cotisations (voir onglet Application)</li>
+      </ul>
+
+      <h4 className={styles.sectionTitle}>v1.1.2</h4>
+      <ul className={styles.steps}>
+        <li>Mise à jour automatique de l&apos;application au démarrage</li>
+      </ul>
+
+      <h4 className={styles.sectionTitle}>v1.0.1</h4>
+      <ul className={styles.steps}>
+        <li>Logo du club sur la page de garde du PDF exporté</li>
+      </ul>
+
+      <h4 className={styles.sectionTitle}>v1.0.0</h4>
+      <ul className={styles.steps}>
+        <li>Première version — saisie des écritures, exercices, plan comptable,
+            rapports, export Excel/PDF, sauvegarde automatique</li>
+      </ul>
     </div>
   );
 }
