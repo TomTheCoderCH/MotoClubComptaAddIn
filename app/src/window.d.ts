@@ -55,6 +55,7 @@ declare global {
       exportExcel:        (fiscalYearId: number) => Promise<{ path: string } | { error: string } | null>;
       restoreBackup:      (filename?: string) => Promise<null>;
       getSchemaVersion:   () => Promise<number>;
+      getVersion:         () => Promise<string>;
       updateAccount:      (payload: UpdateAccountPayload) => Promise<Account>;
       createAccount:      (payload: CreateAccountPayload) => Promise<Account>;
       deleteAccount:      (id: number) => Promise<void>;

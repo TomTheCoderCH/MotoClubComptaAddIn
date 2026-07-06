@@ -56,6 +56,8 @@ export function registerIpcHandlers(): void {
     getDb().pragma('user_version', { simple: true }) as number
   );
 
+  ipcMain.handle('app:getVersion', () => app.getVersion());
+
   // ─── Comptes ────────────────────────────────────────────────────────────────
   ipcMain.handle('db:getAccounts',        () => getAllAccounts());
   ipcMain.handle('db:getActiveAccounts',  () => getActiveAccounts());

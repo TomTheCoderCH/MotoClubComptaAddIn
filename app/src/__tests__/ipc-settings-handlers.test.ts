@@ -13,8 +13,9 @@ vi.mock('electron', () => ({
     showOpenDialog: vi.fn(),
   },
   app: {
-    relaunch: vi.fn(),
-    exit:     vi.fn(),
+    relaunch:   vi.fn(),
+    exit:       vi.fn(),
+    getVersion: vi.fn().mockReturnValue('1.1.2'),
   },
 }));
 
@@ -57,7 +58,7 @@ vi.mock('../migrate', () => ({
   migrateDataDir: vi.fn(),
 }));
 
-import { dialog } from 'electron';
+import { app, dialog } from 'electron';
 import { openDatabase, getDbDir } from '../db';
 import { readSettings, writeSettings } from '../settings';
 import { migrateDataDir } from '../migrate';
@@ -187,5 +188,17 @@ describe('settings:saveMembersYearRange', () => {
       dashboardCards: [{ type: 'group', groupName: 'Marché' }],
       membersYearRange: range,
     });
+  });
+});
+
+describe('app:getVersion', () => {
+  it('enregistre le canal app:getVersion', () => {
+    expect(handlers.has('app:getVersion')).toBe(true);
+  });
+
+  it('retourne app.getVersion()', async () => {
+    vi.mocked(app.getVersion).mockReturnValue('1.2.0');
+    const result = await call('app:getVersion');
+    expect(result).toBe('1.2.0');
   });
 });
