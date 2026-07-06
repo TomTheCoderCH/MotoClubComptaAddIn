@@ -33,6 +33,7 @@ beforeEach(() => {
     importMembersFromExcel: vi.fn().mockResolvedValue({ imported: 2, skipped: 0 }),
     getSettings:            vi.fn().mockResolvedValue({ dataDir: '/data' }),
     saveMembersYearRange:   vi.fn().mockResolvedValue(undefined),
+    exportMembers:          vi.fn().mockResolvedValue(null),
   });
 });
 
@@ -319,5 +320,59 @@ describe('Signalement des arriérés', () => {
     const cells = Array.from(row.querySelectorAll('td'));
     const yearCell = cells.slice(4, -1)[0]; // Skip first 4 columns and last (actions)
     expect(yearCell).not.toHaveAttribute('data-arrears');
+  });
+});
+
+describe('Export Excel', () => {
+  it('affiche le bouton Exporter Excel', async () => {
+    render(<MembresPage />);
+    await screen.findByRole('button', { name: /exporter excel/i });
+  });
+
+  it('appelle exportMembers avec la plage et le filtre courants, affiche un toast de succès', async () => {
+    const exportMembers = vi.fn().mockResolvedValue({ path: '/tmp/mcy-membres-2025-2025.xlsx' });
+    vi.stubGlobal('api', {
+      getFiscalYears:       vi.fn().mockResolvedValue([mockYear]),
+      getMembers:           vi.fn().mockResolvedValue([mockMember, mockMemberUnpaid]),
+      getSettings:          vi.fn().mockResolvedValue({ dataDir: '/data', membersYearRange: { start: 2025, end: 2025 } }),
+      saveMembersYearRange: vi.fn().mockResolvedValue(undefined),
+      exportMembers,
+    });
+    render(<MembresPage />);
+    await screen.findByText('Merli');
+    await userEvent.click(screen.getByRole('button', { name: /exporter excel/i }));
+    expect(exportMembers).toHaveBeenCalledWith({ start: 2025, end: 2025 }, false);
+    await screen.findByText(/fichier exporté/i);
+  });
+
+  it('affiche un toast d\'erreur si exportMembers retourne { error }', async () => {
+    const exportMembers = vi.fn().mockResolvedValue({ error: 'Disque plein' });
+    vi.stubGlobal('api', {
+      getFiscalYears:       vi.fn().mockResolvedValue([mockYear]),
+      getMembers:           vi.fn().mockResolvedValue([mockMember, mockMemberUnpaid]),
+      getSettings:          vi.fn().mockResolvedValue({ dataDir: '/data', membersYearRange: { start: 2025, end: 2025 } }),
+      saveMembersYearRange: vi.fn().mockResolvedValue(undefined),
+      exportMembers,
+    });
+    render(<MembresPage />);
+    await screen.findByText('Merli');
+    await userEvent.click(screen.getByRole('button', { name: /exporter excel/i }));
+    await screen.findByText('Disque plein');
+  });
+
+  it('n\'affiche aucun toast si l\'export est annulé (retour null)', async () => {
+    const exportMembers = vi.fn().mockResolvedValue(null);
+    vi.stubGlobal('api', {
+      getFiscalYears:       vi.fn().mockResolvedValue([mockYear]),
+      getMembers:           vi.fn().mockResolvedValue([mockMember, mockMemberUnpaid]),
+      getSettings:          vi.fn().mockResolvedValue({ dataDir: '/data', membersYearRange: { start: 2025, end: 2025 } }),
+      saveMembersYearRange: vi.fn().mockResolvedValue(undefined),
+      exportMembers,
+    });
+    render(<MembresPage />);
+    await screen.findByText('Merli');
+    await userEvent.click(screen.getByRole('button', { name: /exporter excel/i }));
+    await Promise.resolve(); // laisse le microtask du then() se résoudre
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });

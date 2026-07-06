@@ -2,6 +2,7 @@ import { ipcMain, app, dialog, BrowserWindow } from 'electron';
 import { copyFileSync } from 'node:fs';
 import path from 'node:path';
 import { exportFiscalYearToExcel } from './excel/export';
+import { exportMembersToExcel } from './excel/export-members';
 import { exportFiscalYearToPdf } from './pdf/export';
 import {
   getAllAccounts,
@@ -301,5 +302,22 @@ export function registerIpcHandlers(): void {
       }
     });
     return { imported, skipped };
+  });
+  ipcMain.handle('members:exportExcel', async (_e, range: { start: number; end: number }, showInactive: boolean) => {
+    const result = await dialog.showSaveDialog({
+      title: 'Exporter les membres en Excel',
+      defaultPath: `mcy-membres-${range.start}-${range.end}.xlsx`,
+      filters: [{ name: 'Classeur Excel', extensions: ['xlsx'] }],
+    });
+    if (result.canceled || !result.filePath) return null;
+
+    try {
+      const members = getAllMembers();
+      const fiscalYears = getAllFiscalYears();
+      await exportMembersToExcel(members, fiscalYears, range, showInactive, result.filePath);
+      return { path: result.filePath };
+    } catch (e) {
+      return { error: (e as Error).message };
+    }
   });
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Plus, Pencil, Trash2, Upload, UserX, UserCheck } from 'lucide-react';
+import { Plus, Pencil, Trash2, Upload, UserX, UserCheck, FileSpreadsheet } from 'lucide-react';
 import MembreFormModal    from '../components/MembreFormModal';
 import MembreDetailModal  from '../components/MembreDetailModal';
 import ConfirmDialog      from '../components/ConfirmDialog';
@@ -132,6 +132,22 @@ export default function MembresPage() {
     }
   };
 
+  const handleExportExcel = async () => {
+    if (!yearRange) return;
+    try {
+      const result = await window.api.exportMembers(yearRange, showInactive);
+      if (result === null) {
+        // annulé par l'utilisateur — pas de feedback
+      } else if ('error' in result) {
+        setToast({ message: result.error, variant: 'error' });
+      } else {
+        setToast({ message: `Fichier exporté : ${result.path}`, variant: 'success' });
+      }
+    } catch (e) {
+      setToast({ message: e instanceof Error ? e.message : 'Erreur lors de l\'export', variant: 'error' });
+    }
+  };
+
   return (
     <div className={styles.page}>
       <div className={styles.header}>
@@ -180,6 +196,12 @@ export default function MembresPage() {
             disabled={importing}
           >
             <Upload size={16} /> {importing ? 'Import…' : 'Importer depuis Excel'}
+          </button>
+          <button
+            className={styles.btnSecondary}
+            onClick={handleExportExcel}
+          >
+            <FileSpreadsheet size={16} /> Exporter Excel
           </button>
           <button
             className={styles.btnPrimary}

@@ -70,10 +70,16 @@ vi.mock('../../settings', () => ({
   writeSettings: vi.fn(),
 }));
 
+vi.mock('../../excel/export-members', () => ({
+  exportMembersToExcel: vi.fn(),
+}));
+
 import {
-  getAllMembers, createMember, updateMember, deleteMember,
+  getAllMembers, getAllFiscalYears, createMember, updateMember, deleteMember,
   setHistoricalDues, recordPayment,
 } from '../../db';
+import { dialog } from 'electron';
+import { exportMembersToExcel } from '../../excel/export-members';
 import { registerIpcHandlers } from '../../ipc-handlers';
 
 beforeEach(() => {
@@ -134,5 +140,37 @@ describe('members:recordPayment', () => {
     };
     call('members:recordPayment', payload);
     expect(recordPayment).toHaveBeenCalledWith(payload);
+  });
+});
+
+describe('members:exportExcel', () => {
+  it('enregistre le canal members:exportExcel', () => {
+    expect(handlers.has('members:exportExcel')).toBe(true);
+  });
+
+  it('retourne null si l\'utilisateur annule le dialogue', async () => {
+    vi.mocked(dialog.showSaveDialog).mockResolvedValue({ canceled: true, filePath: undefined });
+    const result = await call('members:exportExcel', { start: 2024, end: 2025 }, false);
+    expect(result).toBeNull();
+    expect(exportMembersToExcel).not.toHaveBeenCalled();
+  });
+
+  it('appelle exportMembersToExcel et retourne { path } en cas de succès', async () => {
+    vi.mocked(dialog.showSaveDialog).mockResolvedValue({ canceled: false, filePath: '/tmp/mcy-membres-2024-2025.xlsx' });
+    vi.mocked(getAllMembers).mockReturnValue([]);
+    vi.mocked(getAllFiscalYears).mockReturnValue([]);
+    vi.mocked(exportMembersToExcel).mockResolvedValue(undefined);
+    const result = await call('members:exportExcel', { start: 2024, end: 2025 }, true);
+    expect(exportMembersToExcel).toHaveBeenCalledWith([], [], { start: 2024, end: 2025 }, true, '/tmp/mcy-membres-2024-2025.xlsx');
+    expect(result).toEqual({ path: '/tmp/mcy-membres-2024-2025.xlsx' });
+  });
+
+  it('retourne { error } si exportMembersToExcel lève une exception', async () => {
+    vi.mocked(dialog.showSaveDialog).mockResolvedValue({ canceled: false, filePath: '/tmp/mcy-membres-2024-2025.xlsx' });
+    vi.mocked(getAllMembers).mockReturnValue([]);
+    vi.mocked(getAllFiscalYears).mockReturnValue([]);
+    vi.mocked(exportMembersToExcel).mockRejectedValue(new Error('Disque plein'));
+    const result = await call('members:exportExcel', { start: 2024, end: 2025 }, false);
+    expect(result).toEqual({ error: 'Disque plein' });
   });
 });

@@ -104,6 +104,8 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.invoke('members:recordPayment', payload),
   importMembersFromExcel: (): Promise<{ imported: number; skipped: number }> =>
     ipcRenderer.invoke('members:importFromExcel'),
+  exportMembers: (range: { start: number; end: number }, showInactive: boolean): Promise<{ path: string } | { error: string } | null> =>
+    ipcRenderer.invoke('members:exportExcel', range, showInactive),
 });
 
 // Déclaration TypeScript pour window.api dans le renderer
@@ -157,4 +159,5 @@ export type ElectronAPI = {
   setHistoricalDues:      (memberId: number, year: number, paid: boolean, note: string | null) => Promise<MemberDues>;
   recordPayment:          (payload: MemberPaymentPayload) => Promise<{ dues: MemberDues[]; journalEntryId: number }>;
   importMembersFromExcel: () => Promise<{ imported: number; skipped: number }>;
+  exportMembers: (range: { start: number; end: number }, showInactive: boolean) => Promise<{ path: string } | { error: string } | null>;
 };
