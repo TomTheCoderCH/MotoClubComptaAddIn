@@ -6,7 +6,7 @@ Versioning selon [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [1.2.0] — en cours
+## [1.2.0] — 2026-07-06
 
 ### Ajouté
 
@@ -23,8 +23,19 @@ Versioning selon [Semantic Versioning](https://semver.org/).
   - **Historique des cotisations** : case à cocher "payé" toujours éditable pour toute année, y compris celles liées à une écriture comptable existante (le suivi peut être corrigé sans jamais modifier l'écriture) ; note de mode de paiement éditable sauf pour les années liées à une écriture (date de paiement affichée à la place) ; ajout manuel d'une année antérieure absente du tableau
   - **Paiement de cotisation avec écriture comptable automatique** : sélection libre des années à couvrir (y compris paiement en avance sur une année future, même si des arriérés plus anciens restent impayés) ; répartition du montant en cotisation (CHF 30/an, compte 300) + surplus versé en don (compte 391 Dons) ; écriture générée dans l'exercice correspondant à la date de paiement, moyens de paiement 100/101/102/103
   - **Import Excel** des noms/prénoms membres depuis le fichier historique de cotisations (`exceljs`), dédoublonnage par nom/prénom
+  - **Plage d'années configurable** pour le récapitulatif (Début/Fin, sauvegardée dans les paramètres)
+  - **Signalement des arriérés** : fond rouge clair sur une cotisation non payée dès lors que le membre était déjà membre cette année-là (ou toujours si sa date d'entrée est inconnue)
+  - **Export Excel** du récapitulatif (reproduit exactement l'écran : plage d'années, filtre actifs/inactifs, couleur des arriérés)
   - Migration schéma SQLite v4 : tables `members`, `member_dues` ; compte 391 "Dons" ajouté au plan comptable
-  - 49 nouveaux tests Vitest (CRUD DB, `recordPayment` transactionnel, handlers IPC, composants MembresPage / MembreFormModal / MembreDetailModal / MembrePaiementModal)
+  - 95 nouveaux tests Vitest (CRUD DB, `recordPayment` transactionnel, handlers IPC, composants MembresPage / MembreFormModal / MembreDetailModal / MembrePaiementModal, export Excel)
+
+### Corrigé
+
+- Le bouton "Restaurer depuis une sauvegarde…" des Paramètres n'ouvrait plus le sélecteur de fichier (erreur "An object could not be cloned")
+
+### Amélioré
+
+- L'aide intégrée (F1) documente désormais la page Membres, la page Bilan complet et la restauration de sauvegarde ; nouvel onglet "À propos" affichant la version installée et les notes de version
 
 ---
 

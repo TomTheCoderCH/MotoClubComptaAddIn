@@ -618,7 +618,7 @@ app/
   - **Comptages** : saisie/modification/suppression, 12 coupures CHF, saisie bidirectionnelle qté↔total, contextes AVANT/FONDS/APRÈS/LIBRE, écart vs solde théorique compte 100
   - **Sessions de manifestation** : regroupement AVANT/FONDS/APRÈS, CA caisse calculé, expand/collapse, lien session optionnel à la création/modification d'un comptage
   - 53 nouveaux tests Vitest — 612 tests
-  - `feature/cash-management` mergée sur `main` (commit `78daaed`) — v1.2.0 non encore taguée
+  - `feature/cash-management` mergée sur `main` (commit `78daaed`) — v1.2.0
 
 - [x] **Gestion des membres et cotisations** — page Membres (sidebar, entre Caisse et Exercices), migration schéma v4 (`members`, `member_dues` + compte 391 Dons) — spec : `docs/superpowers/specs/2026-07-03-members-dues-design.md`, plan : `docs/superpowers/plans/2026-07-03-members-dues.md`
   - **Fiche membre** : nom, prénom, date d'entrée optionnelle, statut actif/inactif + note libre ; création/édition (`MembreFormModal`), suppression bloquée si des cotisations existent
@@ -626,8 +626,13 @@ app/
   - **Paiement avec écriture comptable automatique** (`MembrePaiementModal` + `recordPayment` transactionnel) : sélection libre des années à couvrir parmi toutes les années impayées (y compris une année future en avance, même si des arriérés plus anciens restent impayés) ; répartition centimes-exactes du montant en cotisation (`COTISATION_CENTS` = 3000/an, compte 300) + surplus versé en don (compte 391) ; écriture imputée à l'exercice de la date de paiement (doit exister en DB) ; moyens de paiement 100/101/102/103 ; double-paiement d'une même année bloqué
   - **Import Excel** des noms/prénoms (`members:importFromExcel`, `exceljs`) depuis le fichier historique de cotisations, dédoublonnage par nom/prénom insensible à la casse
   - Implémenté en Subagent-Driven Development (7 tâches + revue finale), 49 nouveaux tests Vitest — 662 tests
-  - Amélioration ultérieure (2026-07-06, 1 tâche SDD) : case à cocher libre pour toutes les années + ajout d'années antérieures — spec `docs/superpowers/specs/2026-07-06-members-dues-detail-modal-improvements-design.md`, plan `docs/superpowers/plans/2026-07-06-members-dues-detail-modal-improvements.md`, 6 nouveaux tests — **668 tests au total**
-  - `feature/members-dues` non encore mergée — v1.2.0 non encore taguée
+  - Amélioration (2026-07-06, 1 tâche SDD) : case à cocher libre pour toutes les années + ajout d'années antérieures — spec `docs/superpowers/specs/2026-07-06-members-dues-detail-modal-improvements-design.md`, plan `docs/superpowers/plans/2026-07-06-members-dues-detail-modal-improvements.md`, 6 nouveaux tests — 668 tests
+  - Amélioration (2026-07-06, 1 tâche SDD) : plage d'années configurable pour le récapitulatif (`membersYearRange` dans `settings.json`, garde-fou 1900–2200) — spec `docs/superpowers/specs/2026-07-06-members-year-range-design.md`, plan `docs/superpowers/plans/2026-07-06-members-year-range.md`, 11 nouveaux tests — 679 tests
+  - Amélioration (2026-07-06, 1 tâche SDD) : signalement visuel des arriérés (`isArrears`, fond `var(--error-bg)` si non payé et année ≥ entrée du membre, ou toujours si `entry_date` absente, jamais sur année future) — spec `docs/superpowers/specs/2026-07-06-members-arrears-highlight-design.md`, plan `docs/superpowers/plans/2026-07-06-members-arrears-highlight.md`, 5 nouveaux tests — 684 tests
+  - **Correctif** (2026-07-06, systematic-debugging) : bouton "Restaurer depuis une sauvegarde…" de `SettingsPage.tsx` corrigé (`onClick={handleRestore}` → `onClick={() => handleRestore()}`) — passait le SyntheticEvent React comme argument `filename`, qu'Electron IPC ne peut pas cloner ("An object could not be cloned"), empêchant le file picker de s'ouvrir
+  - Amélioration (2026-07-06, 3 tâches SDD) : export Excel du récapitulatif Membres (`excel/export-members.ts`, reproduit exactement l'écran : plage + filtre actifs/inactifs + couleur arriérés ; `isPaid`/`isArrears` extraites vers `lib/members.ts`, module partagé renderer + main) — spec `docs/superpowers/specs/2026-07-06-members-excel-export-design.md`, plan `docs/superpowers/plans/2026-07-06-members-excel-export.md`, 24 nouveaux tests — 708 tests
+  - Amélioration (2026-07-06, 2 tâches SDD) : mise à jour de l'aide intégrée (`HelpDrawer.tsx` — entrées Membres/Bilan complet, mention restauration, étape cotisations) + nouvel onglet "À propos" (version via `app.getVersion()`, notes de version statiques) — spec `docs/superpowers/specs/2026-07-06-help-drawer-update-design.md`, plan `docs/superpowers/plans/2026-07-06-help-drawer-update.md`, 8 nouveaux tests — **716 tests au total**
+  - `feature/members-dues` mergée sur `main` — v1.2.0
 
 > Note : les données 2025 ont été saisies manuellement dans la DB — la comptabilité réelle est déjà dans SQLite.
 
