@@ -31,6 +31,8 @@ beforeEach(() => {
     getMembers:             vi.fn().mockResolvedValue([mockMember, mockMemberUnpaid]),
     deleteMember:           vi.fn().mockResolvedValue(undefined),
     importMembersFromExcel: vi.fn().mockResolvedValue({ imported: 2, skipped: 0 }),
+    getSettings:            vi.fn().mockResolvedValue({ dataDir: '/data' }),
+    saveMembersYearRange:   vi.fn().mockResolvedValue(undefined),
   });
 });
 
@@ -69,6 +71,7 @@ describe('MembresPage', () => {
     vi.stubGlobal('api', {
       getFiscalYears: vi.fn().mockResolvedValue([]),
       getMembers:     vi.fn().mockResolvedValue([]),
+      getSettings:    vi.fn().mockResolvedValue({ dataDir: '/data' }),
     });
     render(<MembresPage />);
     await screen.findByText(/aucun membre/i);
@@ -79,5 +82,89 @@ describe('MembresPage', () => {
     await screen.findByRole('button', { name: /importer/i });
     await userEvent.click(screen.getByRole('button', { name: /importer/i }));
     await screen.findByText(/2 membre\(s\) importé\(s\)/i);
+  });
+});
+
+describe('Plage d\'années configurable', () => {
+  it('affiche les champs Début/Fin avec la plage sauvegardée', async () => {
+    vi.stubGlobal('api', {
+      getFiscalYears:       vi.fn().mockResolvedValue([mockYear]),
+      getMembers:           vi.fn().mockResolvedValue([mockMember, mockMemberUnpaid]),
+      getSettings:          vi.fn().mockResolvedValue({ dataDir: '/data', membersYearRange: { start: 2023, end: 2025 } }),
+      saveMembersYearRange: vi.fn().mockResolvedValue(undefined),
+    });
+    render(<MembresPage />);
+    await screen.findByText('Merli');
+    expect(screen.getByLabelText('Début')).toHaveValue('2023');
+    expect(screen.getByLabelText('Fin')).toHaveValue('2025');
+    // Colonnes 2023, 2024, 2025 générées
+    expect(screen.getByText('2023')).toBeInTheDocument();
+    expect(screen.getByText('2024')).toBeInTheDocument();
+    expect(screen.getByText('2025')).toBeInTheDocument();
+  });
+
+  it('calcule une plage par défaut si aucune plage n\'est enregistrée', async () => {
+    vi.stubGlobal('api', {
+      getFiscalYears: vi.fn().mockResolvedValue([mockYear]), // année 2025
+      getMembers:     vi.fn().mockResolvedValue([mockMember, mockMemberUnpaid]),
+      getSettings:    vi.fn().mockResolvedValue({ dataDir: '/data' }), // pas de membersYearRange
+    });
+    render(<MembresPage />);
+    await screen.findByText('Merli');
+    // Une seule année connue (2025, via l'exercice) → start = end = 2025
+    expect(screen.getByLabelText('Début')).toHaveValue('2025');
+    expect(screen.getByLabelText('Fin')).toHaveValue('2025');
+  });
+
+  it('modifier le champ Fin puis sortir du champ (blur) sauvegarde la nouvelle plage et met à jour les colonnes', async () => {
+    const saveMembersYearRange = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('api', {
+      getFiscalYears:       vi.fn().mockResolvedValue([mockYear]),
+      getMembers:           vi.fn().mockResolvedValue([mockMember, mockMemberUnpaid]),
+      getSettings:          vi.fn().mockResolvedValue({ dataDir: '/data', membersYearRange: { start: 2024, end: 2025 } }),
+      saveMembersYearRange,
+    });
+    render(<MembresPage />);
+    await screen.findByText('Merli');
+    const endInput = screen.getByLabelText('Fin');
+    await userEvent.clear(endInput);
+    await userEvent.type(endInput, '2026');
+    // Pas encore sauvegardé pendant la frappe (chaque touche ne doit pas déclencher un commit)
+    expect(saveMembersYearRange).not.toHaveBeenCalled();
+    await userEvent.tab(); // blur → commit
+    expect(saveMembersYearRange).toHaveBeenCalledTimes(1);
+    expect(saveMembersYearRange).toHaveBeenCalledWith({ start: 2024, end: 2026 });
+    expect(screen.getByText('2026')).toBeInTheDocument();
+  });
+
+  it('une saisie invalide au blur (champ vide) revient à la dernière valeur valide sans sauvegarder', async () => {
+    const saveMembersYearRange = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('api', {
+      getFiscalYears:       vi.fn().mockResolvedValue([mockYear]),
+      getMembers:           vi.fn().mockResolvedValue([mockMember, mockMemberUnpaid]),
+      getSettings:          vi.fn().mockResolvedValue({ dataDir: '/data', membersYearRange: { start: 2024, end: 2025 } }),
+      saveMembersYearRange,
+    });
+    render(<MembresPage />);
+    await screen.findByText('Merli');
+    const endInput = screen.getByLabelText('Fin');
+    await userEvent.clear(endInput);
+    await userEvent.tab(); // blur avec champ vide
+    expect(saveMembersYearRange).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Fin')).toHaveValue('2025'); // revient à la valeur précédente
+  });
+
+  it('une plage inversée (fin < début) affiche quand même les colonnes dans l\'ordre croissant', async () => {
+    vi.stubGlobal('api', {
+      getFiscalYears:       vi.fn().mockResolvedValue([mockYear]),
+      getMembers:           vi.fn().mockResolvedValue([mockMember, mockMemberUnpaid]),
+      getSettings:          vi.fn().mockResolvedValue({ dataDir: '/data', membersYearRange: { start: 2025, end: 2023 } }),
+      saveMembersYearRange: vi.fn().mockResolvedValue(undefined),
+    });
+    render(<MembresPage />);
+    await screen.findByText('Merli');
+    const headers = screen.getAllByRole('columnheader').map(h => h.textContent);
+    const yearHeaders = headers.filter(h => /^\d{4}$/.test(h ?? ''));
+    expect(yearHeaders).toEqual(['2023', '2024', '2025']);
   });
 });

@@ -159,3 +159,33 @@ describe('settings:saveDashboardCards', () => {
     expect(writeSettings).not.toHaveBeenCalled();
   });
 });
+
+describe('settings:saveMembersYearRange', () => {
+  it('enregistre le canal settings:saveMembersYearRange', () => {
+    expect(handlers.has('settings:saveMembersYearRange')).toBe(true);
+  });
+
+  it('appelle writeSettings avec la plage fusionnée aux settings existants', async () => {
+    vi.mocked(readSettings).mockReturnValue({ dataDir: '/data' });
+    const range = { start: 2023, end: 2025 };
+    await call('settings:saveMembersYearRange', range);
+    expect(writeSettings).toHaveBeenCalledWith({ dataDir: '/data', membersYearRange: range });
+  });
+
+  it('ne fait rien si readSettings() retourne null', async () => {
+    vi.mocked(readSettings).mockReturnValue(null);
+    await call('settings:saveMembersYearRange', { start: 2023, end: 2025 });
+    expect(writeSettings).not.toHaveBeenCalled();
+  });
+
+  it('préserve les autres champs existants (dashboardCards) lors de la fusion', async () => {
+    vi.mocked(readSettings).mockReturnValue({ dataDir: '/data', dashboardCards: [{ type: 'group', groupName: 'Marché' }] });
+    const range = { start: 2020, end: 2022 };
+    await call('settings:saveMembersYearRange', range);
+    expect(writeSettings).toHaveBeenCalledWith({
+      dataDir: '/data',
+      dashboardCards: [{ type: 'group', groupName: 'Marché' }],
+      membersYearRange: range,
+    });
+  });
+});

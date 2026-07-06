@@ -78,6 +78,12 @@ export function registerIpcHandlers(): void {
     writeSettings({ ...current, dashboardCards: cards });
   });
 
+  ipcMain.handle('settings:saveMembersYearRange', (_e, range: { start: number; end: number }) => {
+    const current = readSettings();
+    if (!current) return;
+    writeSettings({ ...current, membersYearRange: range });
+  });
+
   // ─── Analytique ──────────────────────────────────────────────────────────────
   ipcMain.handle('analytics:get', (_e, fiscalYearId: number) => getAnalyticsData(fiscalYearId));
 

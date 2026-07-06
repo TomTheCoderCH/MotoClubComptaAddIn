@@ -8,6 +8,19 @@ import { formatDate }     from '../lib/format';
 import type { FiscalYear, MemberWithDues } from '../types';
 import styles from './MembresPage.module.css';
 
+function computeDefaultRange(years: FiscalYear[], members: MemberWithDues[]): { start: number; end: number } {
+  const known = new Set<number>();
+  years.forEach(y => known.add(y.year));
+  members.forEach(m => m.dues.forEach(d => known.add(d.year)));
+  const sorted = [...known].sort((a, b) => b - a);
+  if (sorted.length === 0) {
+    const current = new Date().getFullYear();
+    return { start: current, end: current };
+  }
+  const recent = sorted.slice(0, 3);
+  return { start: Math.min(...recent), end: Math.max(...recent) };
+}
+
 export default function MembresPage() {
   const [years,           setYears]           = useState<FiscalYear[]>([]);
   const [members,         setMembers]         = useState<MemberWithDues[]>([]);
@@ -18,23 +31,62 @@ export default function MembresPage() {
   const [deleteId,        setDeleteId]        = useState<number | null>(null);
   const [toast,           setToast]           = useState<{ message: string; variant: 'success' | 'error' } | null>(null);
   const [importing,       setImporting]       = useState(false);
+  const [yearRange,       setYearRange]       = useState<{ start: number; end: number } | null>(null);
+  const [startInputStr,   setStartInputStr]   = useState('');
+  const [endInputStr,     setEndInputStr]     = useState('');
 
   const load = useCallback(() => {
     Promise.all([
       window.api.getFiscalYears(),
       window.api.getMembers(),
-    ]).then(([ys, ms]) => {
+      window.api.getSettings(),
+    ]).then(([ys, ms, settings]) => {
       setYears(ys);
       setMembers(ms);
+      const range = settings?.membersYearRange ?? computeDefaultRange(ys, ms);
+      setYearRange(range);
+      setStartInputStr(String(range.start));
+      setEndInputStr(String(range.end));
     });
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
-  const recentYears = years
-    .map(y => y.year)
-    .sort((a, b) => b - a)
-    .slice(0, 3);
+  const displayedYears = (() => {
+    if (!yearRange) return [];
+    const start = Math.min(yearRange.start, yearRange.end);
+    const end = Math.max(yearRange.start, yearRange.end);
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  })();
+
+  const commitRange = (next: { start: number; end: number }) => {
+    setYearRange(next);
+    window.api.saveMembersYearRange(next);
+  };
+
+  // Les champs conservent leur propre texte de saisie (startInputStr/endInputStr) pendant
+  // la frappe ; la plage n'est validée et sauvegardée qu'au blur, pour éviter d'écrire des
+  // valeurs intermédiaires invalides (ex. taper "2026" déclencherait sinon une sauvegarde
+  // après chaque chiffre : "2", "20", "202"…).
+  const handleStartBlur = () => {
+    if (!yearRange) return;
+    const n = parseInt(startInputStr, 10);
+    if (!Number.isInteger(n)) {
+      setStartInputStr(String(yearRange.start));
+      return;
+    }
+    commitRange({ start: n, end: yearRange.end });
+  };
+
+  const handleEndBlur = () => {
+    if (!yearRange) return;
+    const n = parseInt(endInputStr, 10);
+    if (!Number.isInteger(n)) {
+      setEndInputStr(String(yearRange.end));
+      return;
+    }
+    commitRange({ start: yearRange.start, end: n });
+  };
 
   const visible = members.filter(m => showInactive ? true : m.is_active === 1);
 
@@ -93,6 +145,33 @@ export default function MembresPage() {
             />
             Afficher les inactifs
           </label>
+          {yearRange && (
+            <div className={styles.rangeControl}>
+              <span>Années :</span>
+              <label className={styles.rangeLabel}>
+                Début
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  className={styles.rangeInput}
+                  value={startInputStr}
+                  onChange={e => setStartInputStr(e.target.value)}
+                  onBlur={handleStartBlur}
+                />
+              </label>
+              <label className={styles.rangeLabel}>
+                Fin
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  className={styles.rangeInput}
+                  value={endInputStr}
+                  onChange={e => setEndInputStr(e.target.value)}
+                  onBlur={handleEndBlur}
+                />
+              </label>
+            </div>
+          )}
         </div>
         <div className={styles.headerRight}>
           <button
@@ -121,7 +200,7 @@ export default function MembresPage() {
               <th>Prénom</th>
               <th>Entrée</th>
               <th>Statut</th>
-              {recentYears.map(y => <th key={y} className={styles.num}>{y}</th>)}
+              {displayedYears.map(y => <th key={y} className={styles.num}>{y}</th>)}
               <th />
             </tr>
           </thead>
@@ -141,7 +220,7 @@ export default function MembresPage() {
                     : <span className={styles.badgeActif}>Actif</span>
                   }
                 </td>
-                {recentYears.map(y => (
+                {displayedYears.map(y => (
                   <td key={y} className={styles.num}>
                     {isPaid(m, y)
                       ? <span className={styles.paid}>✓</span>

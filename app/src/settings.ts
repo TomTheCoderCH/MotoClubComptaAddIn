@@ -6,6 +6,7 @@ import type { DashboardCardConfig } from './types';
 export interface Settings {
   dataDir: string;
   dashboardCards?: DashboardCardConfig[];
+  membersYearRange?: { start: number; end: number };
 }
 
 export function getSettingsPath(): string {

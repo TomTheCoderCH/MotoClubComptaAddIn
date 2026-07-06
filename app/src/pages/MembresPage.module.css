@@ -4,6 +4,9 @@
 .headerRight{ display: flex; gap: 0.5rem; }
 .title      { margin: 0; font-size: 1.25rem; font-weight: 700; }
 .toggleLabel{ display: flex; align-items: center; gap: 0.4rem; font-size: var(--font-size-sm); color: var(--text-muted); cursor: pointer; }
+.rangeControl { display: flex; align-items: center; gap: 0.4rem; font-size: var(--font-size-sm); color: var(--text-muted); }
+.rangeLabel   { display: flex; align-items: center; gap: 0.3rem; }
+.rangeInput   { width: 4.5rem; padding: 0.2rem 0.4rem; border: 1px solid var(--border); border-radius: 3px; font-size: var(--font-size-sm); background: var(--bg); color: var(--text); }
 
 .table    { width: 100%; border-collapse: collapse; font-size: var(--font-size-sm); }
 .table th { text-align: left; padding: 0.5rem 0.75rem; font-weight: 600; border-bottom: 2px solid var(--border); white-space: nowrap; }

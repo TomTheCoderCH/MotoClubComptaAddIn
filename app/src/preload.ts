@@ -70,6 +70,8 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.invoke('dashboard:get', fiscalYearId, cards),
   saveDashboardCards: (cards: DashboardCardConfig[]): Promise<void> =>
     ipcRenderer.invoke('settings:saveDashboardCards', cards),
+  saveMembersYearRange: (range: { start: number; end: number }): Promise<void> =>
+    ipcRenderer.invoke('settings:saveMembersYearRange', range),
   getTwintSummary: (fiscalYearId: number): Promise<TwintSummary> =>
     ipcRenderer.invoke('dashboard:getTwintSummary', fiscalYearId),
 
@@ -124,7 +126,7 @@ export type ElectronAPI = {
   listBackups:   () => Promise<BackupInfo[]>;
   exportBackup:  () => Promise<{ path: string } | null>;
   getDbPath:     () => Promise<string>;
-  getSettings:    () => Promise<{ dataDir: string } | null>;
+  getSettings:    () => Promise<{ dataDir: string; dashboardCards?: DashboardCardConfig[]; membersYearRange?: { start: number; end: number } } | null>;
   chooseDataDir:  () => Promise<boolean | null>;
   changeDataDir:  () => Promise<boolean | null>;
   exportExcel: (fiscalYearId: number) => Promise<{ path: string } | { error: string } | null>;
@@ -136,6 +138,7 @@ export type ElectronAPI = {
   deleteAccount:     (id: number) => Promise<void>;
   getDashboardData:   (fiscalYearId: number, cards: DashboardCardConfig[]) => Promise<DashboardData>;
   saveDashboardCards: (cards: DashboardCardConfig[]) => Promise<void>;
+  saveMembersYearRange: (range: { start: number; end: number }) => Promise<void>;
   getTwintSummary:    (fiscalYearId: number) => Promise<TwintSummary>;
   getAnalytics:       (fiscalYearId: number) => Promise<AnalyticsData>;
   getAccountLedger:   (fiscalYearId: number, accountId: number) => Promise<AccountLedgerData>;
