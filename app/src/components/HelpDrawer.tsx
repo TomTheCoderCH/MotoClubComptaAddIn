@@ -97,9 +97,9 @@ function QuickStartTab() {
         </li>
         <li>
           <strong>Suivre les cotisations</strong><br />
-          Page <em>Membres</em> → cocher les cotisations reçues au fil de l&apos;année, ou
-          utiliser &quot;Enregistrer un paiement&quot; pour générer automatiquement l&apos;écriture
-          comptable correspondante.
+          Page <em>Membres</em> → ouvrir la fiche d&apos;un membre pour cocher les cotisations
+          reçues au fil de l&apos;année, ou utiliser &quot;Enregistrer un paiement&quot; pour
+          générer automatiquement l&apos;écriture comptable correspondante.
         </li>
         <li>
           <strong>Clôturer l'exercice</strong><br />
@@ -233,9 +233,9 @@ function AppTab() {
             Les contreparties affichées sont uniquement celles du côté opposé de l'écriture
             (débit ↔ crédit). Accessible via <em>Soldes</em> → clic sur un compte.</dd>
         <dt>Bilan complet</dt>
-        <dd>Présentation en deux colonnes : Actif / Passif &amp; Fonds propres à gauche,
-            Résultat / Charges à droite. Un contrôle d&apos;équilibre automatique confirme
-            que le bilan est cohérent.</dd>
+        <dd>Bilan (Actif à gauche, Passif &amp; Fonds propres à droite) et Compte de résultat
+            (Produits à gauche, Charges à droite), chacun présenté en deux colonnes. Un
+            contrôle d&apos;équilibre automatique confirme que le bilan est cohérent.</dd>
         <dt>Paramètres</dt>
         <dd>Chemin de la base de données, export de sauvegarde manuelle, historique des
             sauvegardes automatiques, export Excel global. Restauration possible depuis
@@ -300,7 +300,7 @@ function AboutTab() {
   const [version, setVersion] = useState<string | null>(null);
 
   useEffect(() => {
-    window.api.getVersion().then(setVersion);
+    window.api.getVersion().then(setVersion).catch(() => setVersion('?'));
   }, []);
 
   return (
