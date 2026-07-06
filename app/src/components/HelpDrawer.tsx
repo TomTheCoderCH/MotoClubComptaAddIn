@@ -312,7 +312,7 @@ function AboutTab() {
 
       <h3 className={styles.sectionTitle}>Notes de version</h3>
 
-      <h4 className={styles.sectionTitle}>v1.2.0 (en cours)</h4>
+      <h4 className={styles.sectionTitle}>v1.2.0</h4>
       <ul className={styles.steps}>
         <li>Gestion de la caisse (comptages, sessions de manifestation)</li>
         <li>Gestion des membres et cotisations (voir onglet Application)</li>
