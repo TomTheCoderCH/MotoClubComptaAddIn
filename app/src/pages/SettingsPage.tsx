@@ -149,7 +149,7 @@ export default function SettingsPage() {
         </button>
 
         <button
-          onClick={handleRestore}
+          onClick={() => handleRestore()}
           disabled={restoring}
           className={styles.btnSecondary}
         >

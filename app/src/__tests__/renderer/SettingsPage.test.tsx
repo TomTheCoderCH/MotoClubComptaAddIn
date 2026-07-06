@@ -170,13 +170,14 @@ describe('SettingsPage — restauration', () => {
     ).toBeInTheDocument();
   });
 
-  it('appelle window.api.restoreBackup() au clic', async () => {
+  it('appelle window.api.restoreBackup() sans argument au clic (pas l\'événement React)', async () => {
     mockApi({ restoreBackup: vi.fn().mockResolvedValue(null) });
     render(<SettingsPage />);
     await userEvent.click(
       await screen.findByRole('button', { name: /Restaurer depuis une sauvegarde/ })
     );
     expect(window.api.restoreBackup).toHaveBeenCalledOnce();
+    expect(window.api.restoreBackup).toHaveBeenCalledWith(undefined);
   });
 
   it("affiche un message d'erreur si restoreBackup() rejette", async () => {
