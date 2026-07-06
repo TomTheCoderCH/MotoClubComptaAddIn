@@ -50,8 +50,8 @@ Nouvelle règle CSS dans `MembresPage.module.css` :
 
 ## Composants modifiés
 
-- `app/src/pages/MembresPage.tsx` — ajout de `isArrears`, application conditionnelle de la classe sur les cellules concernées.
-- `app/src/pages/MembresPage.module.css` — nouvelle règle `.arrears`.
+- `app/src/pages/MembresPage.tsx` — ajout de `isArrears`, application conditionnelle de l'attribut `data-arrears` sur les cellules concernées.
+- `app/src/pages/MembresPage.module.css` — nouvelle règle `.num[data-arrears]`.
 - `app/src/__tests__/renderer/MembresPage.test.tsx` — tests étendus (voir Tests).
 
 Aucun changement de schéma, IPC, ou logique de paiement — purement un rendu visuel conditionnel côté renderer.
