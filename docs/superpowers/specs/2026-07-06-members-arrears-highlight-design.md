@@ -29,11 +29,11 @@ function isArrears(member: MemberWithDues, year: number): boolean {
 }
 ```
 
-Utilisée dans le rendu de chaque cellule année, en combinaison avec `isPaid` :
+Utilisée dans le rendu de chaque cellule année, en combinaison avec `isPaid`. Le projet a déjà une convention établie pour les styles conditionnels — attribut `data-*` + sélecteur CSS `[data-*]` (voir `data-negative` utilisé pour les soldes négatifs dans `BalancesPage.tsx`/`BilanPage.tsx`/etc.) — plutôt qu'une classe conditionnelle. On suit cette convention :
 
 ```typescript
 {displayedYears.map(y => (
-  <td key={y} className={`${styles.num} ${!isPaid(m, y) && isArrears(m, y) ? styles.arrears : ''}`}>
+  <td key={y} className={styles.num} data-arrears={!isPaid(m, y) && isArrears(m, y) || undefined}>
     {isPaid(m, y)
       ? <span className={styles.paid}>✓</span>
       : <span className={styles.unpaid}>—</span>
@@ -42,10 +42,10 @@ Utilisée dans le rendu de chaque cellule année, en combinaison avec `isPaid` :
 ))}
 ```
 
-Nouvelle classe CSS dans `MembresPage.module.css` :
+Nouvelle règle CSS dans `MembresPage.module.css` :
 
 ```css
-.arrears { background: var(--error-bg); }
+.num[data-arrears] { background: var(--error-bg); }
 ```
 
 ## Composants modifiés
