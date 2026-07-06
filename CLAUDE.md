@@ -158,7 +158,7 @@ On ne commite **jamais** directement sur `main`.
 | `v1.0.0` | `185854f` | 2026-07-01 | Première version stable — toutes les fonctionnalités principales livrées |
 | `v1.0.1` | `ae74971` | 2026-07-01 | Logo club sur la page de garde PDF, mise en page centrée |
 | `v1.1.2` | `cc38064` | 2026-07-01 | CI/CD GitHub Actions + mise à jour automatique Electron |
-| `v1.2.0` | *(à tagger)* | — | Gestion de la caisse (comptages + sessions de manifestation) + gestion des membres et cotisations |
+| `v1.2.0` | `fc9cc18` | 2026-07-06 | Gestion de la caisse (comptages + sessions de manifestation) + gestion des membres et cotisations |
 
 ---
 
