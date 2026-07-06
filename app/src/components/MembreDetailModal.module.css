@@ -19,6 +19,13 @@
 
 .noteInput { width: 100%; padding: 0.2rem 0.4rem; border: 1px solid var(--border); border-radius: 3px; font-size: 0.8rem; background: var(--bg); color: var(--text); }
 
+.addYear      { display: flex; align-items: flex-end; gap: 0.5rem; }
+.addYearLabel { display: flex; flex-direction: column; gap: 0.25rem; font-size: var(--font-size-sm); font-weight: 500; }
+.addYearInput { width: 6rem; padding: 0.3rem 0.5rem; border: 1px solid var(--border); border-radius: 3px; font-size: var(--font-size-sm); background: var(--bg); color: var(--text); }
+.btnAddYear   { padding: 0.35rem 0.75rem; background: none; border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; font-size: var(--font-size-sm); }
+.btnAddYear:disabled { opacity: 0.5; cursor: not-allowed; }
+.error        { color: var(--error); font-size: var(--font-size-sm); margin: 0; }
+
 .footer    { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem; }
 .btnCancel { padding: 0.4rem 0.875rem; background: none; border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; font-size: var(--font-size-sm); }
 .btnPrimary {

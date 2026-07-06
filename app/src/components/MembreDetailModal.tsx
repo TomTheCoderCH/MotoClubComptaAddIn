@@ -12,10 +12,14 @@ interface Props {
   onUpdated: () => void;
 }
 
+const MIN_YEAR = 1900;
+
 export default function MembreDetailModal({ member, fiscalYears, onClose, onUpdated }: Props) {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [localDues, setLocalDues] = useState<MemberDues[]>(member.dues);
+  const [newYearStr, setNewYearStr] = useState('');
+  const [addYearError, setAddYearError] = useState<string | null>(null);
 
   // Calcul des années à afficher : union dues + fiscalYears, triées décroissant
   const fyYears = new Set(fiscalYears.map(y => y.year));
@@ -25,7 +29,7 @@ export default function MembreDetailModal({ member, fiscalYears, onClose, onUpda
   const getDues = (year: number): MemberDues | undefined =>
     localDues.find(d => d.year === year);
 
-  const isHistorical = (year: number) => !fyYears.has(year);
+  const hasJournalEntry = (year: number) => getDues(year)?.journal_entry_id != null;
 
   const applyUpdatedDues = (updated: MemberDues) => {
     setLocalDues(prev => {
@@ -49,6 +53,33 @@ export default function MembreDetailModal({ member, fiscalYears, onClose, onUpda
     const paid = existing?.paid === 1;
     const updated = await window.api.setHistoricalDues(member.id, year, paid, note || null);
     applyUpdatedDues(updated);
+  };
+
+  const handleAddYear = async () => {
+    setAddYearError(null);
+    const year = parseInt(newYearStr, 10);
+    const currentYear = new Date().getFullYear();
+
+    if (!Number.isInteger(year) || newYearStr.trim().length !== 4) {
+      setAddYearError('Saisissez une année à 4 chiffres');
+      return;
+    }
+    if (year > currentYear) {
+      setAddYearError('Impossible d\'ajouter une année future ici — utilisez "Enregistrer un paiement" pour une avance');
+      return;
+    }
+    if (year < MIN_YEAR) {
+      setAddYearError(`L'année doit être ${MIN_YEAR} ou plus récente`);
+      return;
+    }
+    if (allYears.includes(year)) {
+      setAddYearError('Cette année est déjà présente dans le tableau');
+      return;
+    }
+
+    const updated = await window.api.setHistoricalDues(member.id, year, false, null);
+    applyUpdatedDues(updated);
+    setNewYearStr('');
   };
 
   const handleClose = () => {
@@ -77,6 +108,23 @@ export default function MembreDetailModal({ member, fiscalYears, onClose, onUpda
         </div>
       </div>
 
+      <div className={styles.addYear}>
+        <label className={styles.addYearLabel}>
+          Ajouter une année
+          <input
+            type="number"
+            className={styles.addYearInput}
+            value={newYearStr}
+            onChange={e => { setNewYearStr(e.target.value); setAddYearError(null); }}
+            placeholder="ex. 2020"
+          />
+        </label>
+        <button className={styles.btnAddYear} onClick={handleAddYear} disabled={!newYearStr}>
+          Ajouter
+        </button>
+      </div>
+      {addYearError && <p className={styles.error}>{addYearError}</p>}
+
       <table className={styles.table}>
         <thead>
           <tr>
@@ -89,48 +137,37 @@ export default function MembreDetailModal({ member, fiscalYears, onClose, onUpda
         <tbody>
           {allYears.map(year => {
             const dues = getDues(year);
-            const historical = isHistorical(year);
+            const linkedToEntry = hasJournalEntry(year);
             return (
               <tr key={year} className={styles.row}>
                 <td className={styles.yearCell}>{year}</td>
-                {historical ? (
-                  <>
-                    <td>
-                      <input
-                        type="checkbox"
-                        checked={dues?.paid === 1}
-                        onChange={e => handleCheckbox(year, e.target.checked)}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        className={styles.noteInput}
-                        defaultValue={dues?.payment_note ?? ''}
-                        onBlur={e => handleNoteBlur(year, e.target.value)}
-                        placeholder="Mode paiement…"
-                      />
-                    </td>
-                    <td className={styles.num}>—</td>
-                  </>
+                <td>
+                  <input
+                    type="checkbox"
+                    checked={dues?.paid === 1}
+                    onChange={e => handleCheckbox(year, e.target.checked)}
+                  />
+                </td>
+                {linkedToEntry ? (
+                  <td className={styles.muted}>
+                    {dues?.payment_date ?? '—'}
+                  </td>
                 ) : (
-                  <>
-                    <td>
-                      {dues?.paid === 1
-                        ? <span className={styles.paid}>✓ Payé</span>
-                        : <span className={styles.unpaid}>✗ Non payé</span>
-                      }
-                    </td>
-                    <td className={styles.muted}>
-                      {dues?.payment_date ?? '—'}
-                    </td>
-                    <td className={styles.num}>
-                      {dues?.amount_cents != null
-                        ? `CHF ${formatCHF(dues.amount_cents)}`
-                        : '—'
-                      }
-                    </td>
-                  </>
+                  <td>
+                    <input
+                      className={styles.noteInput}
+                      defaultValue={dues?.payment_note ?? ''}
+                      onBlur={e => handleNoteBlur(year, e.target.value)}
+                      placeholder="Mode paiement…"
+                    />
+                  </td>
                 )}
+                <td className={styles.num}>
+                  {dues?.amount_cents != null
+                    ? `CHF ${formatCHF(dues.amount_cents)}`
+                    : '—'
+                  }
+                </td>
               </tr>
             );
           })}
