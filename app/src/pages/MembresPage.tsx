@@ -5,6 +5,7 @@ import MembreDetailModal  from '../components/MembreDetailModal';
 import ConfirmDialog      from '../components/ConfirmDialog';
 import Toast              from '../components/Toast';
 import { formatDate }     from '../lib/format';
+import { isPaid, isArrears } from '../lib/members';
 import type { FiscalYear, MemberWithDues } from '../types';
 import styles from './MembresPage.module.css';
 
@@ -19,14 +20,6 @@ function computeDefaultRange(years: FiscalYear[], members: MemberWithDues[]): { 
   }
   const recent = sorted.slice(0, 3);
   return { start: Math.min(...recent), end: Math.max(...recent) };
-}
-
-function isArrears(member: MemberWithDues, year: number): boolean {
-  const currentYear = new Date().getFullYear();
-  if (year > currentYear) return false;
-  if (!member.entry_date) return true;
-  const entryYear = parseInt(member.entry_date.slice(0, 4), 10);
-  return year >= entryYear;
 }
 
 export default function MembresPage() {
@@ -138,9 +131,6 @@ export default function MembresPage() {
       setImporting(false);
     }
   };
-
-  const isPaid = (m: MemberWithDues, year: number) =>
-    m.dues.some(d => d.year === year && d.paid === 1);
 
   return (
     <div className={styles.page}>
